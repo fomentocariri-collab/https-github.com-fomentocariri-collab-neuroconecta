@@ -1,0 +1,6 @@
+{
+  "name": "NeuroConecta",
+  "description": "Plataforma e assistente virtual de apoio para pessoas autistas (TEA) e suas famílias, com autoavaliações, rotina estruturada, regulação sensorial e apoio em crises.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
