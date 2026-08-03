@@ -195,7 +195,7 @@ app.post("/api/chat", async (req, res) => {
       const fullPrompt = `${contextPrompt}${formattedHistory}\n\nNeuroConecta:`;
 
       // Try gemini models
-      const modelsToTry = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       for (const modelName of modelsToTry) {
         try {
           const response = await ai.models.generateContent({

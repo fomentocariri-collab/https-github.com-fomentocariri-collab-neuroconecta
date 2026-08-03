@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, RefreshCw, Copy, Check, ShieldAlert, Heart, MessageSquare } from "lucide-react";
+import { Send, Bot, User, Sparkles, Copy, Check } from "lucide-react";
 import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
 
 interface ChatAssistantProps {
@@ -9,12 +9,125 @@ interface ChatAssistantProps {
   onOpenCrisis: () => void;
 }
 
+const getSmartAssistantReply = (userMessage: string, profile: UserProfile): string => {
+  const text = userMessage.toLowerCase();
+  const name = profile.preferredName ? `, ${profile.preferredName}` : "";
+
+  if (
+    text.includes("crise") ||
+    text.includes("meltdown") ||
+    text.includes("shutdown") ||
+    text.includes("panico") ||
+    text.includes("pânico") ||
+    text.includes("desespero") ||
+    text.includes("socorro") ||
+    text.includes("sobrecarga") ||
+    text.includes("ansiedade")
+  ) {
+    return `Olá${name}. Estou aqui com você. Percebo que você pode estar passando por um momento de sobrecarga ou crise.
+
+Sua segurança e acolhimento são a nossa prioridade.
+
+💙 **Passos Práticos de Regulação Imediata:**
+1. **Reduza Estímulos:** Vá para um local seguro, diminua a iluminação ou use fones de ouvido.
+2. **Exercício de Grounding (5-4-3-2-1):**
+   - 👁️ Identifique 5 objetos ao seu redor.
+   - 🖐️ Sinta 4 texturas conhecidas.
+   - 👂 Ouça 3 sons distantes.
+   - 👃 Note 2 aromas sutis.
+   - 👅 Respire fundo focando na expansão do seu tórax.
+
+⚠️ *Se precisar de suporte emocional imediato ou atendimento de emergência, utilize o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
+  }
+
+  if (
+    text.includes("rotina") ||
+    text.includes("tarefa") ||
+    text.includes("organiza") ||
+    text.includes("tempo") ||
+    text.includes("foco") ||
+    text.includes("executiv")
+  ) {
+    return `Olá${name}! Organizar a rotina de forma neuroafirmativa envolve respeitar seus limites cognitivos e energia diária.
+
+✨ **Três Estratégias Práticas:**
+1. **Divisão em Micro-etapas (Chunking):** Divida uma tarefa grande em pequenos passos simples.
+2. **Pausas Sensoriais Ativas:** Insira pausas de 5 a 10 minutos entre blocos de foco para descompressão.
+3. **Uso de Suportes Visuais:** Acesse a aba **Rotina Visual & Tarefas** no menu do app para priorizar suas atividades por urgência e demanda de energia.
+
+Como posso te ajudar no planejamento da sua próxima tarefa?`;
+  }
+
+  if (
+    text.includes("comunica") ||
+    text.includes("script") ||
+    text.includes("falar") ||
+    text.includes("trabalho") ||
+    text.includes("explicar") ||
+    text.includes("social")
+  ) {
+    return `Olá${name}! Expressar suas necessidades e limites de maneira assertiva e sem sentimento de culpa é um passo essencial de auto-advocacia.
+
+📌 **Exemplo de Script para Pedir Acomodação:**
+*"Olá! Para que eu possa desempenhar minhas atividades com melhor foco e conforto, prefiro receber direcionamentos por escrito e contar com breves intervalos de descompressão. Agradeço pelo apoio e compreensão!"*
+
+Você pode acessar a aba **Comunicação** no menu para mais cartões ilustrados e modelos de scripts prontos!`;
+  }
+
+  if (
+    text.includes("teste") ||
+    text.includes("aq-10") ||
+    text.includes("cat-q") ||
+    text.includes("perfil") ||
+    text.includes("diagnostico") ||
+    text.includes("diagnóstico") ||
+    text.includes("laudo")
+  ) {
+    return `Olá${name}! Os questionários do **NeuroConecta** (AQ-10, CAT-Q de camuflagem social, Perfil Sensorial e Burnout Autista) foram elaborados para **autoavaliação e rastreio de traços**.
+
+Eles auxiliam na identificação de padrões e preferências sensoriais, **mas não substituem o diagnóstico médico formal**.
+
+Acesse as abas **Testes de Triagem** ou **Relatórios & Diagnóstico** para preencher as avaliações e emitir um parecer consolidado para apresentar ao seu profissional de saúde!`;
+  }
+
+  if (
+    text.includes("sensorial") ||
+    text.includes("som") ||
+    text.includes("luz") ||
+    text.includes("barulho") ||
+    text.includes("textura") ||
+    text.includes("estimulo") ||
+    text.includes("estímulo")
+  ) {
+    return `Olá${name}! O processamento sensorial hiper ou hipossensível é um aspecto central do perfil autista.
+
+🌿 **Dicas de Acomodação Sensorial:**
+- **Estímulos Auditivos:** Fones com cancelamento de ruído ou sons de chuva/ruído marrom.
+- **Estímulos Visuais:** Redução de brilho nas telas ou ativação do Modo Baixa Estimulação no topo da tela.
+- **Tato & Propriocepção:** Roupas sem costuras incômodas, mantas de peso e objetos de stimming.
+
+Acesse a aba **Regulação Sensorial** para guias visuais e exercícios para descompressão diária!`;
+  }
+
+  return `Olá${name}! Sou o assistente neuroafirmativo do **NeuroConecta**. Como posso te apoiar neste momento?
+
+Possuo conhecimento para te orientar em:
+1. 🗓️ **Organização da Rotina:** Técnicas contra fadiga executiva.
+2. 🧘 **Regulação Sensorial:** Exercícios de grounding e estratégias de descompressão.
+3. 💬 **Comunicação & Scripts:** Frases para impor limites e solicitar acomodações.
+4. 📋 **Testes & Relatórios:** Informações sobre as ferramentas de triagem do app.
+
+Sinta-se à vontade para enviar sua dúvida ou compartilhar o que está sentindo!`;
+};
+
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   userProfile,
   onUpdateProfile,
   onNavigateToTab,
   onOpenCrisis,
 }) => {
+  const isDark = userProfile.lowStimulationMode;
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +182,8 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
     setInputText("");
     setIsLoading(true);
 
+    let replyText = "";
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -83,29 +198,30 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
         }),
       });
 
-      const data = await response.json();
-      if (data.reply) {
-        const assistantMsg: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: data.reply,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
-      } else {
-        throw new Error(data.error || "Erro desconhecido");
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.reply) {
+          replyText = data.reply;
+        }
       }
-    } catch (err: any) {
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        role: "assistant",
-        content: "⚠️ Tive uma pequena instabilidade de conexão. Por favor, tente enviar sua mensagem novamente. Se você estiver em um momento de crise urgente, utilize o botão **SOS Crise** no topo.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.warn("API de chat indisponível, utilizando resposta local inteligente:", err);
     }
+
+    // Always fallback to smart response if API returned empty or failed
+    if (!replyText) {
+      replyText = getSmartAssistantReply(text, userProfile);
+    }
+
+    const assistantMsg: ChatMessage = {
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      content: replyText,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    setMessages((prev) => [...prev, assistantMsg]);
+    setIsLoading(false);
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -132,24 +248,34 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
       
       {/* Onboarding Box if not completed */}
       {onboardingStep !== "done" && (
-        <div className="mb-4 bg-slate-900 border border-teal-700/80 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-3 text-teal-300">
-            <Sparkles className="w-6 h-6 text-teal-400 animate-pulse" />
+        <div className={`mb-4 rounded-2xl p-6 shadow-xl space-y-4 border ${
+          isDark 
+            ? "bg-slate-900 border-teal-700/80 text-slate-100" 
+            : "bg-white border-teal-200 text-slate-900 shadow-md"
+        }`}>
+          <div className="flex items-center gap-3 text-teal-600 dark:text-teal-300">
+            <Sparkles className="w-6 h-6 text-teal-500 animate-pulse" />
             <h2 className="text-lg font-bold">Bem-vindo(a) ao NeuroConecta!</h2>
           </div>
-          <p className="text-slate-300 text-sm leading-relaxed">
+          <p className={`${isDark ? "text-slate-300" : "text-slate-600"} text-sm leading-relaxed`}>
             Para personalizar melhor seu atendimento com linguagem neuroafirmativa, nos diga brevemente:
           </p>
 
           {onboardingStep === 1 && (
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-200">1. Como prefere ser chamado(a)?</label>
+              <label className={`block text-sm font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>
+                1. Como prefere ser chamado(a)?
+              </label>
               <input
                 type="text"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 placeholder="Seu nome ou apelido"
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-teal-500"
+                className={`w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                  isDark
+                    ? "bg-slate-950 border border-slate-700 text-slate-100"
+                    : "bg-slate-50 border border-slate-300 text-slate-900"
+                }`}
               />
               <button
                 onClick={() => setOnboardingStep(2)}
@@ -162,7 +288,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
 
           {onboardingStep === 2 && (
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-200">
+              <label className={`block text-sm font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>
                 2. {tempName ? `${tempName}, você` : "Você"} já possui diagnóstico de TEA ou está em processo de investigação?
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
@@ -179,7 +305,11 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
                       onUpdateProfile({ ...userProfile, diagnosisStatus: opt.val as DiagnosisStatus });
                       setOnboardingStep(3);
                     }}
-                    className="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left text-slate-200 font-medium transition"
+                    className={`p-3 border rounded-xl text-left font-medium transition ${
+                      isDark
+                        ? "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200"
+                        : "bg-slate-50 hover:bg-teal-50 border-slate-200 text-slate-800"
+                    }`}
                   >
                     {opt.label}
                   </button>
@@ -190,7 +320,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
 
           {onboardingStep === 3 && (
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-200">
+              <label className={`block text-sm font-semibold ${isDark ? "text-slate-200" : "text-slate-700"}`}>
                 3. Qual área da vida você gostaria de trabalhar hoje?
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
@@ -205,7 +335,11 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
                   <button
                     key={item.focus}
                     onClick={() => finishOnboarding(item.focus as FocusArea)}
-                    className="p-3 bg-teal-950/80 hover:bg-teal-900 border border-teal-800 rounded-xl text-teal-200 text-center font-medium transition"
+                    className={`p-3 border rounded-xl text-center font-medium transition ${
+                      isDark
+                        ? "bg-teal-950/80 hover:bg-teal-900 border-teal-800 text-teal-200"
+                        : "bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-800"
+                    }`}
                   >
                     {item.label}
                   </button>
@@ -216,8 +350,12 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
         </div>
       )}
 
-      {/* Main Chat Conversation */}
-      <div className="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 overflow-y-auto space-y-4 shadow-inner">
+      {/* Main Chat Conversation Container */}
+      <div className={`flex-1 rounded-2xl p-4 sm:p-5 overflow-y-auto space-y-4 shadow-sm border ${
+        isDark
+          ? "bg-slate-900/90 border-slate-800 text-slate-100"
+          : "bg-slate-50 border-slate-200 text-slate-900"
+      }`}>
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -225,8 +363,8 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
           >
             {/* Avatar */}
             <div
-              className={`p-2 rounded-xl text-white flex-shrink-0 ${
-                msg.role === "user" ? "bg-emerald-600" : "bg-teal-700"
+              className={`p-2 rounded-xl text-white flex-shrink-0 shadow-sm ${
+                msg.role === "user" ? "bg-teal-600" : "bg-emerald-700 dark:bg-emerald-800"
               }`}
             >
               {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -234,10 +372,14 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
 
             {/* Message Bubble */}
             <div
-              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed space-y-2 relative group ${
+              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed space-y-2 relative group shadow-sm border ${
                 msg.role === "user"
-                  ? "bg-emerald-950/80 text-emerald-100 border border-emerald-800/80 rounded-tr-none"
-                  : "bg-slate-800/90 text-slate-100 border border-slate-700 rounded-tl-none"
+                  ? isDark
+                    ? "bg-teal-950/90 text-teal-100 border-teal-800/80 rounded-tr-none"
+                    : "bg-teal-600 text-white font-medium border-teal-700 rounded-tr-none"
+                  : isDark
+                    ? "bg-slate-800/90 text-slate-100 border-slate-700 rounded-tl-none"
+                    : "bg-white text-slate-900 border-slate-200 rounded-tl-none"
               }`}
             >
               <div className="whitespace-pre-wrap font-sans leading-relaxed">
@@ -245,14 +387,20 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
               </div>
 
               {/* Action Bar inside bubble */}
-              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 border-t border-slate-700/50 mt-2">
+              <div className={`flex items-center justify-between pt-1 text-[11px] border-t mt-2 ${
+                msg.role === "user" && !isDark
+                  ? "text-teal-100 border-teal-500/40"
+                  : isDark
+                    ? "text-slate-400 border-slate-700/50"
+                    : "text-slate-400 border-slate-100"
+              }`}>
                 <span>{msg.timestamp}</span>
                 <button
                   onClick={() => handleCopy(msg.id, msg.content)}
-                  className="opacity-0 group-hover:opacity-100 transition p-1 hover:text-slate-200 flex items-center gap-1"
+                  className="opacity-0 group-hover:opacity-100 transition p-1 hover:underline flex items-center gap-1"
                   title="Copiar texto"
                 >
-                  {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   {copiedId === msg.id ? "Copiado" : "Copiar"}
                 </button>
               </div>
@@ -261,8 +409,8 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
         ))}
 
         {isLoading && (
-          <div className="flex items-center gap-3 text-slate-400 text-xs italic p-2">
-            <Bot className="w-4 h-4 text-teal-400 animate-spin" />
+          <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs italic p-2">
+            <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-spin" />
             <span>O assistente NeuroConecta está formulando a resposta...</span>
           </div>
         )}
@@ -286,7 +434,11 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
               if (chip.action) chip.action();
               else if (chip.prompt) handleSendMessage(chip.prompt);
             }}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-teal-300 rounded-full font-medium whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0"
+            className={`px-3 py-1.5 border rounded-full font-medium whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 shadow-sm ${
+              isDark
+                ? "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300 hover:text-teal-300"
+                : "bg-white hover:bg-teal-50 border-slate-300 text-slate-700 hover:text-teal-800"
+            }`}
           >
             <span>{chip.label}</span>
           </button>
@@ -307,7 +459,11 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Digite sua dúvida ou desabafo..."
           disabled={isLoading}
-          className="flex-1 px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-slate-100 text-sm focus:outline-none focus:border-teal-500 placeholder-slate-500 shadow-sm"
+          className={`flex-1 px-4 py-3 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm transition ${
+            isDark
+              ? "bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500"
+              : "bg-white border-slate-300 text-slate-900 placeholder-slate-400"
+          }`}
         />
         <button
           type="submit"
