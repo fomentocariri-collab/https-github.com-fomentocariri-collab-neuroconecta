@@ -12,6 +12,7 @@ import { ReportHub } from "./components/ReportHub";
 import { SupabaseHub } from "./components/SupabaseHub";
 import { CaregiverHub } from "./components/CaregiverHub";
 import { EducationHub } from "./components/EducationHub";
+import { CapsHealthHub } from "./components/CapsHealthHub";
 import { CrisisModal } from "./components/CrisisModal";
 import { UserProfileModal } from "./components/UserProfileModal";
 import { AuthModal } from "./components/AuthModal";
@@ -169,6 +170,13 @@ export default function App() {
           <CaregiverHub
             currentSupportLevel={userProfile.supportLevel}
             userName={userProfile.preferredName || "Visitante"}
+          />
+        )}
+
+        {activeTab === "caps" && (
+          <CapsHealthHub
+            isDark={userProfile.lowStimulationMode}
+            patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
           />
         )}
 

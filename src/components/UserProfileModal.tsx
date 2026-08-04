@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { User, X, Plus, Trash2, Save, Shield, Users, Bell } from "lucide-react";
-import { UserProfile, DiagnosisStatus, FocusArea, SupportLevel } from "../types";
+import { User, X, Plus, Trash2, Save, Shield, Users, Bell, Sparkles } from "lucide-react";
+import { UserProfile, DiagnosisStatus, FocusArea, SupportLevel, UserRole } from "../types";
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -17,6 +17,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   const [name, setName] = useState(userProfile.preferredName);
   const [pronouns, setPronouns] = useState(userProfile.pronouns);
+  const [role, setRole] = useState<UserRole>(userProfile.userRole || (userProfile.isSuperAdmin ? "superadmin" : "pcd"));
   const [diagnosis, setDiagnosis] = useState<DiagnosisStatus>(userProfile.diagnosisStatus);
   const [supportLevel, setSupportLevel] = useState<SupportLevel>(userProfile.supportLevel || "nao_especificado");
   const [focus, setFocus] = useState<FocusArea>(userProfile.currentFocus);
@@ -54,6 +55,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       ...userProfile,
       preferredName: name,
       pronouns,
+      userRole: role,
       diagnosisStatus: diagnosis,
       supportLevel,
       currentFocus: focus,
@@ -113,6 +115,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               placeholder="Ex: ela/dela, ele/dele, elu/delu..."
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-teal-500"
             />
+          </div>
+
+          {/* User Role Selection */}
+          <div className="space-y-1.5 p-3.5 bg-slate-950 border border-teal-800/80 rounded-2xl">
+            <label className="block font-bold text-teal-300 text-xs flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-teal-400" /> Perfil / Módulo Principal de Acesso
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
+              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs font-semibold focus:outline-none focus:border-teal-500"
+            >
+              <option value="pcd">🧩 Pessoa Neurodivergente / PCD (Interface Calma & Autorregulação)</option>
+              <option value="cuidador_educador">🎓 Educador Especial / Cuidador / Pai (Módulo PEI & Orientação)</option>
+              <option value="saude_caps">🩺 Médico / Enfermeiro / Saúde Mental CAPS (Prontuário & Escalas)</option>
+              <option value="superadmin">⚡ Gestor / Superadmin de TI (Acesso Geral & Banco)</option>
+            </select>
           </div>
 
           {/* Diagnosis & Support Level */}

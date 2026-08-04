@@ -18,10 +18,11 @@ import {
   Headphones,
   Gamepad2,
   GraduationCap,
+  Stethoscope,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "supabase";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -42,24 +43,40 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   toggleLowStimMode,
 }) => {
-  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com";
+  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.userRole === "superadmin";
+  const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
 
   const allTabs = [
-    { id: "chat", label: "Assistente IA", icon: Bot },
-    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones },
-    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2 },
-    { id: "testes", label: "Autoavaliação", icon: ClipboardCheck },
-    { id: "rotina", label: "Rotina Visual", icon: CalendarCheck },
-    { id: "sensorial", label: "Regulação Sensorial", icon: Waves },
-    { id: "humor", label: "Diário & Humor", icon: HeartPulse },
-    { id: "comunicacao", label: "Comunicação", icon: MessageSquare },
-    { id: "relatorio", label: "Relatórios & Diagnóstico", icon: FileText },
-    { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true },
-    { id: "cuidador", label: "Cuidadores & Educadores", icon: GraduationCap },
-    { id: "educacao", label: "Biblioteca", icon: BookOpen },
+    { id: "chat", label: "Assistente IA", icon: Bot, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "rotina", label: "Rotina Visual", icon: CalendarCheck, roles: ["pcd", "cuidador_educador", "superadmin"] },
+    { id: "sensorial", label: "Regulação Sensorial", icon: Waves, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "humor", label: "Diário & Humor", icon: HeartPulse, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "comunicacao", label: "Comunicação AAC", icon: MessageSquare, roles: ["pcd", "cuidador_educador", "superadmin"] },
+    { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "caps", label: "Saúde CAPS & Prontuário", icon: Stethoscope, roles: ["saude_caps", "superadmin"] },
+    { id: "relatorio", label: "Relatórios & Laudo", icon: FileText, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
-  const tabs = allTabs.filter(tab => !('adminOnly' in tab && tab.adminOnly) || isSuperAdmin);
+  // Filter tabs by role unless superadmin or if user wants full view
+  const tabs = allTabs.filter(tab => {
+    if ('adminOnly' in tab && tab.adminOnly) return isSuperAdmin;
+    if (isSuperAdmin) return true;
+    return (tab.roles as readonly string[]).includes(userRole);
+  });
+
+  const getRoleLabel = () => {
+    switch(userRole) {
+      case "cuidador_educador": return "🎓 Educador / Cuidador";
+      case "saude_caps": return "🩺 Saúde CAPS / Médico";
+      case "superadmin": return "⚡ Superadmin TI";
+      default: return "🧩 PCD Neurodivergente";
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 border-b border-slate-800 backdrop-blur-md transition-all">
@@ -79,9 +96,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">
                 NeuroConecta
               </span>
-              <span className="hidden sm:inline-block ml-2 text-[11px] px-2 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-800/60 font-medium">
-                Apoio TEA
-              </span>
+              <button
+                onClick={onOpenProfile}
+                className="hidden sm:inline-block ml-2 text-[11px] px-2.5 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-800/60 font-semibold hover:border-teal-500 transition"
+                title="Clique para alterar seu perfil de acesso"
+              >
+                {getRoleLabel()}
+              </button>
             </div>
           </div>
 

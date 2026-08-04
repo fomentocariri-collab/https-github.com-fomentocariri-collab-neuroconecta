@@ -16,11 +16,14 @@ export type FocusArea =
 
 export type SupportLevel = 1 | 2 | 3 | "nao_especificado";
 
+export type UserRole = "pcd" | "cuidador_educador" | "saude_caps" | "superadmin";
+
 export interface UserProfile {
   id?: string;
   email?: string;
   preferredName: string;
   pronouns: string;
+  userRole?: UserRole;
   diagnosisStatus: DiagnosisStatus;
   supportLevel?: SupportLevel;
   currentFocus: FocusArea;

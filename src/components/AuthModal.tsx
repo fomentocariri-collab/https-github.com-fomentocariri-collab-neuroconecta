@@ -25,6 +25,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [userRole, setUserRole] = useState<"pcd" | "cuidador_educador" | "saude_caps" | "superadmin">("pcd");
   const [diagnosisStatus, setDiagnosisStatus] = useState("laudo_formal");
   const [lgpdConsent, setLgpdConsent] = useState(false);
   
@@ -91,6 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: email.trim().toLowerCase(),
         preferredName: name.trim() || (isSuperAdminEmail ? "Programador Admin" : "Usuário"),
         pronouns: "não informado",
+        userRole: isSuperAdminEmail ? "superadmin" : userRole,
         diagnosisStatus: diagnosisStatus as any,
         supportLevel: 2,
         currentFocus: "geral",
@@ -407,6 +409,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 placeholder="Repita sua senha"
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-teal-300 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Perfil de Acesso no Cadastro
+              </label>
+              <select
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-teal-800/80 rounded-xl text-xs text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="pcd">🧩 Pessoa Neurodivergente / PCD (Interface Calma & Autorregulação)</option>
+                <option value="cuidador_educador">🎓 Educador Especial / Cuidador / Pai (Módulo PEI & Orientação)</option>
+                <option value="saude_caps">🩺 Médico / Enfermeiro / Saúde Mental CAPS (Prontuário & Escalas)</option>
+                <option value="superadmin">⚡ Gestor / Superadmin de TI (Acesso Geral & Banco)</option>
+              </select>
             </div>
 
             <div className="space-y-1">
