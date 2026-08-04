@@ -139,6 +139,15 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   );
   const [tempName, setTempName] = useState(userProfile.preferredName || "");
 
+  useEffect(() => {
+    if (userProfile.onboardingCompleted) {
+      setOnboardingStep("done");
+    }
+    if (userProfile.preferredName && userProfile.preferredName !== "Visitante") {
+      setTempName(userProfile.preferredName);
+    }
+  }, [userProfile.onboardingCompleted, userProfile.preferredName]);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -149,13 +158,14 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Initial welcome message if conversation is empty
+  // Initial welcome message if conversation is empty or if user profile name changed
   useEffect(() => {
-    if (messages.length === 0 && onboardingStep === "done") {
+    if ((messages.length === 0 || (messages.length === 1 && messages[0].id === "msg-welcome")) && onboardingStep === "done") {
+      const realName = userProfile.preferredName && userProfile.preferredName !== "Visitante" ? `, ${userProfile.preferredName}` : "";
       const initialGreeting: ChatMessage = {
         id: "msg-welcome",
         role: "assistant",
-        content: `Olá${userProfile.preferredName ? `, ${userProfile.preferredName}` : ""}! Sou o assistente virtual do **NeuroConecta**.
+        content: `Olá${realName}! Sou o assistente virtual do **NeuroConecta**.
 
 Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicação neuroafirmativa, regulação sensorial e escuta acolhedora.
 

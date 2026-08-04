@@ -13,7 +13,8 @@ import {
   HeartPulse,
   Users,
   FileText,
-  Database
+  Database,
+  Lock,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -25,6 +26,7 @@ interface NavbarProps {
   userProfile: UserProfile;
   onOpenCrisis: () => void;
   onOpenProfile: () => void;
+  onOpenAuth: () => void;
   toggleLowStimMode: () => void;
 }
 
@@ -34,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userProfile,
   onOpenCrisis,
   onOpenProfile,
+  onOpenAuth,
   toggleLowStimMode,
 }) => {
   const tabs = [
@@ -108,6 +111,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden md:inline max-w-[100px] truncate">
                 {userProfile.preferredName || "Seu Perfil"}
               </span>
+            </button>
+
+            {/* Account / LGPD Auth Button */}
+            <button
+              onClick={onOpenAuth}
+              className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-teal-950/90 hover:bg-teal-900 border border-teal-700/80 text-teal-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition shadow-sm"
+              title="Acesso individual seguro & Proteção LGPD"
+            >
+              <Lock className="w-3.5 h-3.5 text-teal-400" />
+              <span className="hidden sm:inline">Acesso / Conta</span>
             </button>
           </div>
 

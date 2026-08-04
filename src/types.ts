@@ -17,6 +17,8 @@ export type FocusArea =
 export type SupportLevel = 1 | 2 | 3 | "nao_especificado";
 
 export interface UserProfile {
+  id?: string;
+  email?: string;
   preferredName: string;
   pronouns: string;
   diagnosisStatus: DiagnosisStatus;
@@ -31,6 +33,8 @@ export interface UserProfile {
   caregiverMode?: boolean;
   notificationsEnabled?: boolean;
   onboardingCompleted: boolean;
+  createdAt?: string;
+  isGuest?: boolean;
 }
 
 export interface ChatMessage {

@@ -12,43 +12,82 @@ import { CaregiverHub } from "./components/CaregiverHub";
 import { EducationHub } from "./components/EducationHub";
 import { CrisisModal } from "./components/CrisisModal";
 import { UserProfileModal } from "./components/UserProfileModal";
+import { AuthModal } from "./components/AuthModal";
 import { UserProfile } from "./types";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>("chat");
   const [isCrisisOpen, setIsCrisisOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    preferredName: "Ana",
-    pronouns: "ela/dela",
-    diagnosisStatus: "laudo_formal",
-    supportLevel: 2,
-    currentFocus: "geral",
-    emergencyContacts: [],
-    lowStimulationMode: false,
-    onboardingCompleted: true,
-  });
-
-  // Load user profile from localStorage
+  // Auto-open login/registration modal on initial load if user has not logged in yet
   useEffect(() => {
+    const activeUserId = localStorage.getItem("neuroconecta_active_user_id");
+    if (!activeUserId || userProfile.isGuest) {
+      setIsAuthOpen(true);
+    }
+  }, []);
+
+  // Initialize or load active user profile
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
-      const stored = localStorage.getItem("neuroconecta_user_profile");
-      if (stored) {
-        setUserProfile(JSON.parse(stored));
+      const activeUserId = localStorage.getItem("neuroconecta_active_user_id");
+      if (activeUserId) {
+        const stored = localStorage.getItem(`neuroconecta_profile_${activeUserId}`);
+        if (stored) return JSON.parse(stored);
       }
     } catch (e) {
       console.error(e);
     }
-  }, []);
+    // Default fallback initial session
+    return {
+      id: "guest_" + Math.random().toString(36).substring(2, 9),
+      preferredName: "Visitante",
+      pronouns: "não informado",
+      diagnosisStatus: "laudo_formal",
+      supportLevel: 2,
+      currentFocus: "geral",
+      emergencyContacts: [],
+      lowStimulationMode: false,
+      onboardingCompleted: false,
+      isGuest: true,
+    };
+  });
 
+  // Save profile to active user's isolated storage
   const handleSaveProfile = (updated: UserProfile) => {
     setUserProfile(updated);
     try {
-      localStorage.setItem("neuroconecta_user_profile", JSON.stringify(updated));
+      const userId = updated.id || "guest_default";
+      localStorage.setItem("neuroconecta_active_user_id", userId);
+      localStorage.setItem(`neuroconecta_profile_${userId}`, JSON.stringify(updated));
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleLoginSuccess = (user: UserProfile) => {
+    handleSaveProfile(user);
+    setIsAuthOpen(false);
+  };
+
+  const handleLogout = () => {
+    const freshGuest: UserProfile = {
+      id: "guest_" + Math.random().toString(36).substring(2, 9),
+      preferredName: "Visitante",
+      pronouns: "não informado",
+      diagnosisStatus: "laudo_formal",
+      supportLevel: 2,
+      currentFocus: "geral",
+      emergencyContacts: [],
+      lowStimulationMode: false,
+      onboardingCompleted: false,
+      isGuest: true,
+    };
+    localStorage.removeItem("neuroconecta_active_user_id");
+    setUserProfile(freshGuest);
+    setIsAuthOpen(true);
   };
 
   const toggleLowStimMode = () => {
@@ -71,6 +110,7 @@ export default function App() {
         userProfile={userProfile}
         onOpenCrisis={() => setIsCrisisOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
         toggleLowStimMode={toggleLowStimMode}
       />
 
@@ -104,7 +144,7 @@ export default function App() {
         {activeTab === "cuidador" && (
           <CaregiverHub
             currentSupportLevel={userProfile.supportLevel}
-            userName={userProfile.preferredName || "Ana"}
+            userName={userProfile.preferredName || "Visitante"}
           />
         )}
 
@@ -125,6 +165,15 @@ export default function App() {
         onClose={() => setIsProfileOpen(false)}
         userProfile={userProfile}
         onSaveProfile={handleSaveProfile}
+      />
+
+      {/* Interactive Account & LGPD Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        currentUser={userProfile}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
       />
     </div>
   );
