@@ -19,10 +19,11 @@ import {
   Gamepad2,
   GraduationCap,
   Stethoscope,
+  Pill,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "supabase";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -51,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "rotina", label: "Rotina Visual", icon: CalendarCheck, roles: ["pcd", "cuidador_educador", "superadmin"] },
+    { id: "agenda", label: "Agenda & Medicamentos", icon: Pill, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "sensorial", label: "Regulação Sensorial", icon: Waves, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "humor", label: "Diário & Humor", icon: HeartPulse, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "comunicacao", label: "Comunicação AAC", icon: MessageSquare, roles: ["pcd", "cuidador_educador", "superadmin"] },

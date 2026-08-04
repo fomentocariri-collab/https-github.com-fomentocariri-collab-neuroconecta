@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { User, X, Plus, Trash2, Save, Shield, Users, Bell, Sparkles } from "lucide-react";
+import { User, X, Plus, Trash2, Save, Shield, Users, Bell, Sparkles, Download, Upload, Database } from "lucide-react";
 import { UserProfile, DiagnosisStatus, FocusArea, SupportLevel, UserRole } from "../types";
 
 interface UserProfileModalProps {
@@ -29,7 +29,56 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [newContactPhone, setNewContactPhone] = useState("");
   const [newContactRel, setNewContactRel] = useState("");
 
+  const [backupStatus, setBackupStatus] = useState("");
+
   if (!isOpen) return null;
+
+  const handleExportBackup = () => {
+    try {
+      const dataToExport: Record<string, any> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("neuroconecta_")) {
+          dataToExport[key] = localStorage.getItem(key);
+        }
+      }
+      const jsonStr = JSON.stringify(dataToExport, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `neuroconecta_backup_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setBackupStatus("✓ Backup gerado com sucesso!");
+    } catch (e) {
+      console.error(e);
+      setBackupStatus("Erro ao exportar backup.");
+    }
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target?.result as string);
+          Object.keys(importedData).forEach((key) => {
+            if (key.startsWith("neuroconecta_")) {
+              localStorage.setItem(key, importedData[key]);
+            }
+          });
+          setBackupStatus("✓ Dados restaurados com sucesso! Recarregue para aplicar.");
+          setTimeout(() => window.location.reload(), 1500);
+        } catch (err) {
+          setBackupStatus("Arquivo de backup inválido.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const handleAddContact = () => {
     if (!newContactName.trim() || !newContactPhone.trim()) return;
@@ -220,6 +269,35 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <option value="aprendizado">Educação e Empoderamento</option>
               <option value="geral">Geral / Diversos</option>
             </select>
+          </div>
+
+          {/* Backup & Local Data Export */}
+          <div className="pt-4 border-t border-slate-800 space-y-3">
+            <div className="flex items-center gap-2 text-teal-400 font-semibold">
+              <Database className="w-4 h-4" />
+              <span>Backup Local & Portabilidade dos Dados</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Exporte seus registros (rotinas, humor, testes, medicamentos) para um arquivo JSON seguro ou restaure em outro aparelho:
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleExportBackup}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition"
+              >
+                <Download className="w-4 h-4" /> Exportar Backup (JSON)
+              </button>
+
+              <label className="cursor-pointer px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition">
+                <Upload className="w-4 h-4 text-teal-400" /> Restaurar de Arquivo
+                <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
+              </label>
+            </div>
+
+            {backupStatus && (
+              <p className="text-xs text-emerald-400 font-medium font-mono">{backupStatus}</p>
+            )}
           </div>
 
           {/* Emergency Contacts */}

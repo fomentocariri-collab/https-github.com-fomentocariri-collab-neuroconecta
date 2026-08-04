@@ -5,6 +5,7 @@ import { MusicotherapyHub } from "./components/MusicotherapyHub";
 import { StimmingGamesHub } from "./components/StimmingGamesHub";
 import { TestCenter } from "./components/TestCenter";
 import { RoutinePlanner } from "./components/RoutinePlanner";
+import { AgendaAndMeds } from "./components/AgendaAndMeds";
 import { SensoryHub } from "./components/SensoryHub";
 import { MoodTracker } from "./components/MoodTracker";
 import { CommunicationHub } from "./components/CommunicationHub";
@@ -144,6 +145,8 @@ export default function App() {
         )}
 
         {activeTab === "rotina" && <RoutinePlanner />}
+
+        {activeTab === "agenda" && <AgendaAndMeds isDark={userProfile.lowStimulationMode} />}
 
         {activeTab === "sensorial" && <SensoryHub />}
 

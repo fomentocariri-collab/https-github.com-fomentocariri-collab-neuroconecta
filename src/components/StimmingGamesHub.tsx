@@ -27,14 +27,20 @@ import {
   Undo2,
   Trophy,
   Star,
-  Check
+  Check,
+  Brain,
+  Cpu,
+  Layers,
+  Binary,
+  HelpCircle,
+  Activity
 } from "lucide-react";
 
 interface StimmingGamesHubProps {
   isDark?: boolean;
 }
 
-type ToyMode = "popit" | "numeros" | "pintura" | "puzzle" | "memoria" | "bolhas" | "classificador";
+type ToyMode = "popit" | "numeros" | "superdotacao" | "pintura" | "puzzle" | "memoria" | "bolhas" | "classificador";
 
 export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = false }) => {
   const [activeToy, setActiveToy] = useState<ToyMode>("popit");
@@ -122,46 +128,233 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
     playPopSound(1.2);
   };
 
-  // --- 2. TOY COM NÚMEROS (15-PUZZLE & SEQUÊNCIA NUMÉRICA) ---
+  // --- 2. TOY COM NÚMEROS (15-PUZZLE & SEQUÊNCIA NUMÉRICA EXPANDIDA) ---
   const [numberMode, setNumberMode] = useState<"sequencia" | "15puzzle">("sequencia");
+  const [seqType, setSeqType] = useState<"1a36" | "1a100" | "primos" | "fibonacci" | "potencias">("1a36");
   
   // Sequência Numérica State
-  const [nextExpectedNumber, setNextExpectedNumber] = useState(1);
-  const [numberPops, setNumberPops] = useState<boolean[]>(Array(36).fill(false));
+  const [nextExpectedIndex, setNextExpectedIndex] = useState(0);
+  const [numberPops, setNumberPops] = useState<boolean[]>(Array(100).fill(false));
   const [numberStreak, setNumberStreak] = useState(0);
 
-  const handleNumberPop = (num: number) => {
-    const index = num - 1;
-    if (numberPops[index]) {
-      // Unpop
-      const updated = [...numberPops];
-      updated[index] = false;
-      setNumberPops(updated);
-      playPopSound(0.5);
-      return;
-    }
+  // Helper arrays for advanced sequences
+  const PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+  const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610];
+  const POWERS_OF_TWO = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
+  const getActiveSequenceList = (): number[] => {
+    if (seqType === "1a36") return Array.from({ length: 36 }, (_, i) => i + 1);
+    if (seqType === "1a100") return Array.from({ length: 100 }, (_, i) => i + 1);
+    if (seqType === "primos") return PRIMES;
+    if (seqType === "fibonacci") return FIBONACCI;
+    if (seqType === "potencias") return POWERS_OF_TWO;
+    return Array.from({ length: 36 }, (_, i) => i + 1);
+  };
+
+  const activeSeqList = getActiveSequenceList();
+
+  const handleNumberPop = (numValue: number, idx: number) => {
     const updated = [...numberPops];
-    updated[index] = true;
+    const isCurrentlyPopped = updated[idx];
+    updated[idx] = !isCurrentlyPopped;
     setNumberPops(updated);
 
-    if (num === nextExpectedNumber) {
-      setNextExpectedNumber(prev => prev + 1);
-      setNumberStreak(prev => prev + 1);
-      playPopSound(0.8 + (num / 36) * 0.8);
-      if (num === 36) {
-        playWinSound();
+    if (!isCurrentlyPopped) {
+      if (idx === nextExpectedIndex) {
+        setNextExpectedIndex(prev => prev + 1);
+        setNumberStreak(prev => prev + 1);
+        playPopSound(0.8 + (idx / activeSeqList.length) * 0.8);
+        if (idx === activeSeqList.length - 1) {
+          playWinSound();
+        }
+      } else {
+        playPopSound(0.7);
       }
     } else {
-      playPopSound(0.7);
+      playPopSound(0.5);
     }
   };
 
   const handleResetNumbers = () => {
-    setNumberPops(Array(36).fill(false));
-    setNextExpectedNumber(1);
+    setNumberPops(Array(100).fill(false));
+    setNextExpectedIndex(0);
     setNumberStreak(0);
     playPopSound(1.0);
+  };
+
+  // --- 2B. DESAFIOS DE SUPERDOTAÇÃO & ALTAS HABILIDADES (AH/SD & ADULTOS) ---
+  const [superMode, setSuperMode] = useState<"raven" | "hanoi" | "nback">("raven");
+
+  // RAVEN LOGICAL MATRICES STATE
+  const RAVEN_QUESTIONS = [
+    {
+      id: "r1",
+      title: "Desafio 1: Rotação & Projeção Geométrica 2D",
+      description: "Uma figura quadrada de 4 quadrantes gira 90° no sentido horário a cada coluna e inverte o padrão de cor (preto/branco) a cada linha. Qual elemento completa a posição vazia [?]:",
+      grid: [
+        ["▲ Branco (Topo)", "► Branco (Direita)", "▼ Branco (Base)"],
+        ["▲ Preto (Topo)", "► Preto (Direita)", "▼ Preto (Base)"],
+        ["▲ Alter (Topo)", "► Alter (Direita)", "[ ? ]"]
+      ],
+      options: [
+        { label: "▼ Alter (Base)", correct: true, explanation: "Correto! A regra combina rotação horário (0° -> 90° -> 180°) com alternância de preenchimento." },
+        { label: "◄ Alter (Esquerda)", correct: false, explanation: "Incorreto. A rotação no 3º passo do vetor de 180° deve apontar para baixo (▼)." },
+        { label: "▲ Preto (Topo)", correct: false, explanation: "Incorreto. A direção de rotação da coluna 3 é 180° (para baixo)." },
+        { label: "▼ Branco (Base)", correct: false, explanation: "Incorreto. Falhou a alternância da linha 3." }
+      ]
+    },
+    {
+      id: "r2",
+      title: "Desafio 2: Lógica Booleana de Formas (Operação XOR)",
+      description: "A 3ª coluna de cada linha é o resultado da fusão XOR (ou exclusivo) entre a 1ª e a 2ª coluna. Linhas sobrepostas se cancelam. Qual padrão completa [?]:",
+      grid: [
+        ["Linha Vertical (|)", "Linha Horizontal (-)", "Cruz (+)"],
+        ["Círculo (○)", "Linha Vertical (|)", "Círculo com Risco (🛈)"],
+        ["Quadrado (□)", "Linha Diagonal (/)", "[ ? ]"]
+      ],
+      options: [
+        { label: "Quadrado cortado por Diagonal (□ + /)", correct: true, explanation: "Exato! Como não há segmentos comuns entre o Quadrado e a Diagonal, a operação XOR preserva ambos os elementos." },
+        { label: "Apenas Quadrado (□)", correct: false, explanation: "Incorreto. A diagonal da 2ª coluna não foi cancelada por nada no quadrado." },
+        { label: "Apenas Diagonal (/)", correct: false, explanation: "Incorreto. O quadrado não se cancela." },
+        { label: "Cruz sem borda (+)", correct: false, explanation: "Incorreto. Operação XOR mantém traços não-coincidentes." }
+      ]
+    },
+    {
+      id: "r3",
+      title: "Desafio 3: Matriz Aritmética Modular & Primos",
+      description: "Observe a regra: Elemento C(i,j) = (Prime(i) * Prime(j)) mod 7. Onde Primes = [2, 3, 5]. Qual o valor de [?]:",
+      grid: [
+        ["(2*2) mod 7 = 4", "(2*3) mod 7 = 6", "(2*5) mod 7 = 3"],
+        ["(3*2) mod 7 = 6", "(3*3) mod 7 = 2", "(3*5) mod 7 = 1"],
+        ["(5*2) mod 7 = 3", "(5*3) mod 7 = 1", "[ ? ]"]
+      ],
+      options: [
+        { label: "4", correct: true, explanation: "Excelente! (5 * 5) = 25. 25 mod 7 = 4 (pois 21 é o múltiplo de 7 mais próximo e 25 - 21 = 4)." },
+        { label: "2", correct: false, explanation: "Incorreto. 25 mod 7 é 4, não 2." },
+        { label: "6", correct: false, explanation: "Incorreto. 25 mod 7 = 4." },
+        { label: "1", correct: false, explanation: "Incorreto. 25 / 7 = 3 com resto 4." }
+      ]
+    }
+  ];
+
+  const [ravenIndex, setRavenIndex] = useState(0);
+  const [selectedRavenOpt, setSelectedRavenOpt] = useState<number | null>(null);
+  const [ravenScore, setRavenScore] = useState(0);
+
+  const handleAnswerRaven = (optIdx: number) => {
+    setSelectedRavenOpt(optIdx);
+    if (RAVEN_QUESTIONS[ravenIndex].options[optIdx].correct) {
+      setRavenScore(prev => prev + 1);
+      playWinSound();
+    } else {
+      playPopSound(0.5);
+    }
+  };
+
+  // TOWERS OF HANOI STATE
+  const [hanoiDisksCount, setHanoiDisksCount] = useState<number>(4);
+  const [hanoiTowers, setHanoiTowers] = useState<number[][]>([[4, 3, 2, 1], [], []]);
+  const [hanoiSelectedTower, setHanoiSelectedTower] = useState<number | null>(null);
+  const [hanoiMoves, setHanoiMoves] = useState(0);
+
+  const resetHanoi = (count = hanoiDisksCount) => {
+    const initialPeg: number[] = [];
+    for (let i = count; i >= 1; i--) initialPeg.push(i);
+    setHanoiTowers([initialPeg, [], []]);
+    setHanoiSelectedTower(null);
+    setHanoiMoves(0);
+    setHanoiDisksCount(count);
+    playPopSound(1.0);
+  };
+
+  const handleHanoiClick = (towerIdx: number) => {
+    if (hanoiSelectedTower === null) {
+      // Select source tower if not empty
+      if (hanoiTowers[towerIdx].length > 0) {
+        setHanoiSelectedTower(towerIdx);
+        playPopSound(1.1);
+      }
+    } else {
+      // Target tower selected
+      if (hanoiSelectedTower === towerIdx) {
+        // Deselect
+        setHanoiSelectedTower(null);
+        playPopSound(0.6);
+        return;
+      }
+
+      const sourcePeg = [...hanoiTowers[hanoiSelectedTower]];
+      const targetPeg = [...hanoiTowers[towerIdx]];
+
+      const movingDisk = sourcePeg[sourcePeg.length - 1];
+      const targetTopDisk = targetPeg.length > 0 ? targetPeg[targetPeg.length - 1] : Infinity;
+
+      // Rule: cannot place larger disk on smaller disk
+      if (movingDisk < targetTopDisk) {
+        sourcePeg.pop();
+        targetPeg.push(movingDisk);
+
+        const newTowers = [...hanoiTowers];
+        newTowers[hanoiSelectedTower] = sourcePeg;
+        newTowers[towerIdx] = targetPeg;
+
+        setHanoiTowers(newTowers);
+        setHanoiMoves(prev => prev + 1);
+        setHanoiSelectedTower(null);
+        playPopSound(1.4);
+
+        // Win check (if target peg 2 or 3 has all disks)
+        if (newTowers[1].length === hanoiDisksCount || newTowers[2].length === hanoiDisksCount) {
+          playWinSound();
+        }
+      } else {
+        // Invalid move
+        playPopSound(0.4);
+        setHanoiSelectedTower(null);
+      }
+    }
+  };
+
+  // DUAL N-BACK STATE
+  const [nBackLevel, setNBackLevel] = useState<1 | 2 | 3>(2);
+  const [nBackActive, setNBackActive] = useState(false);
+  const [nBackHistory, setNBackHistory] = useState<{ pos: number; sound: string }[]>([]);
+  const [nBackStep, setNBackStep] = useState(0);
+  const [nBackScore, setNBackScore] = useState(0);
+  const [nBackFeedback, setNBackFeedback] = useState("");
+
+  const NBACK_POSITIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const NBACK_SOUNDS = ["A", "B", "C", "D", "E", "F"];
+
+  const handleStartNBack = () => {
+    setNBackActive(true);
+    setNBackHistory([]);
+    setNBackStep(0);
+    setNBackScore(0);
+    setNBackFeedback("Sessão Iniciada! Observe o quadrado e o som.");
+    generateNextNBackStep([]);
+  };
+
+  const generateNextNBackStep = (currentHist: { pos: number; sound: string }[]) => {
+    const nextPos = Math.floor(Math.random() * 9);
+    const nextSound = NBACK_SOUNDS[Math.floor(Math.random() * NBACK_SOUNDS.length)];
+    const newHist = [...currentHist, { pos: nextPos, sound: nextSound }];
+    setNBackHistory(newHist);
+    playPopSound(1.2 + nextPos * 0.1);
+  };
+
+  const handleNBackCheckPos = () => {
+    if (nBackHistory.length <= nBackLevel) return;
+    const current = nBackHistory[nBackHistory.length - 1];
+    const target = nBackHistory[nBackHistory.length - 1 - nBackLevel];
+    if (current.pos === target.pos) {
+      setNBackScore(prev => prev + 10);
+      setNBackFeedback("✓ Correto! Coincidência de posição detectada (+10 pts)");
+      playWinSound();
+    } else {
+      setNBackFeedback("✗ Incorreto. A posição não correspondia a N-passos atrás.");
+      playPopSound(0.5);
+    }
   };
 
   // 15-Puzzle Sliding Numbers State
@@ -593,6 +786,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
         {[
           { id: "popit", label: "Pop-It Infinito", icon: Grid, color: "text-amber-500" },
           { id: "numeros", label: "Toys com Números", icon: Hash, color: "text-teal-400" },
+          { id: "superdotacao", label: "Lógica & Superdotação (AH/SD)", icon: Brain, color: "text-purple-400" },
           { id: "pintura", label: "Painel de Pintura", icon: Palette, color: "text-rose-400" },
           { id: "puzzle", label: "Quebra-Cabeça", icon: Puzzle, color: "text-indigo-400" },
           { id: "memoria", label: "Jogo da Memória", icon: Shapes, color: "text-cyan-400" },
@@ -641,6 +835,17 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
             </button>
           </div>
 
+          {/* Technical Explanation Callout */}
+          <div className="p-3.5 bg-teal-500/10 border border-teal-500/20 rounded-2xl flex items-start gap-3 text-xs text-teal-800 dark:text-teal-200">
+            <HelpCircle className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold">Por que a matriz padrão tem 36 bolhas (6x6)?</p>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                A contagem até 36 deriva da escala $6 \times 6$ tátil. Em ergonomia cognitiva, $36$ elementos formam a densidade de toque ideal para telas sensíveis, permitindo subitização visual (reconhecimento rápido de quantidade sem contar um a um) e descompressão rápida de estresse sem exigir rolagem de tela. Para desafios mais complexos voltados a adultos e Superdotação/Altas Habilidades (AH/SD), acesse a aba <strong>Lógica &amp; Superdotação</strong> ou escolha o modo 1 a 100/Primos nos Toys com Números.
+              </p>
+            </div>
+          </div>
+
           {/* Pop-It Tactile Grid */}
           <div className="max-w-md mx-auto p-6 bg-gradient-to-br from-purple-500 via-pink-500 to-amber-400 rounded-3xl shadow-xl grid grid-cols-6 gap-3 sm:gap-4">
             {popItGrid.map((isPopped, idx) => (
@@ -664,7 +869,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
         </div>
       )}
 
-      {/* --- TOY 2: TOYS COM NÚMEROS (15-PUZZLE & SEQUÊNCIA NUMÉRICA) --- */}
+      {/* --- TOY 2: TOYS COM NÚMEROS --- */}
       {activeToy === "numeros" && (
         <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 shadow-sm ${
           isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
@@ -676,18 +881,18 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                 <span>Brinquedos &amp; Jogos com Números</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Atividades numéricas calmantes para estimular o foco, a contagem e o controle do pensamento.
+                Atividades numéricas com modos adaptados para diferentes perfis e níveis de complexidade.
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setNumberMode("sequencia")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   numberMode === "sequencia" ? "bg-teal-600 text-white" : "bg-slate-800 text-slate-400"
                 }`}
               >
-                Contagem 1 a 36
+                Sequência Numérica
               </button>
               <button
                 onClick={() => setNumberMode("15puzzle")}
@@ -703,10 +908,44 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
           {/* Sub-mode 1: Sequência Numérica */}
           {numberMode === "sequencia" && (
             <div className="space-y-5">
+              
+              {/* Type Selector for Sequence */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                <span className="text-xs font-bold text-slate-400 whitespace-nowrap">Selecione o Padrão:</span>
+                {[
+                  { id: "1a36", label: "1 a 36 (Padrão 6x6)" },
+                  { id: "1a100", label: "1 a 100 (Extenso 10x10)" },
+                  { id: "primos", label: "Números Primos" },
+                  { id: "fibonacci", label: "Sequência de Fibonacci" },
+                  { id: "potencias", label: "Potências de 2" },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setSeqType(s.id as any);
+                      handleResetNumbers();
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                      seqType === s.id
+                        ? "bg-teal-600 text-white shadow"
+                        : isDark
+                        ? "bg-slate-950 text-slate-300 border border-slate-800"
+                        : "bg-slate-100 text-slate-700 border border-slate-200"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center justify-between bg-teal-950/60 border border-teal-800 p-3.5 rounded-2xl">
                 <div className="text-xs text-slate-200 space-y-0.5">
-                  <p>Próximo número esperado: <strong className="text-teal-300 text-sm">{nextExpectedNumber <= 36 ? nextExpectedNumber : "36 (Concluído!)"}</strong></p>
-                  <p className="text-slate-400 text-[11px]">Estrelas/Sequência de acertos consecutivas: {numberStreak}</p>
+                  <p>Próximo esperado: <strong className="text-teal-300 text-sm">
+                    {nextExpectedIndex < activeSeqList.length
+                      ? activeSeqList[nextExpectedIndex]
+                      : "Concluído!"}
+                  </strong></p>
+                  <p className="text-slate-400 text-[11px]">Progresso na sequência: {nextExpectedIndex} / {activeSeqList.length}</p>
                 </div>
                 <button
                   onClick={handleResetNumbers}
@@ -716,16 +955,18 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                 </button>
               </div>
 
-              <div className="grid grid-cols-6 sm:grid-cols-6 gap-2 sm:gap-3 max-w-lg mx-auto p-4 bg-slate-950 rounded-3xl border border-slate-800">
-                {Array.from({ length: 36 }, (_, i) => i + 1).map((num) => {
-                  const isPopped = numberPops[num - 1];
-                  const isNext = num === nextExpectedNumber;
+              <div className={`grid gap-2 sm:gap-2.5 max-w-2xl mx-auto p-4 bg-slate-950 rounded-3xl border border-slate-800 ${
+                activeSeqList.length > 50 ? "grid-cols-10" : "grid-cols-6"
+              }`}>
+                {activeSeqList.map((num, idx) => {
+                  const isPopped = numberPops[idx];
+                  const isNext = idx === nextExpectedIndex;
 
                   return (
                     <button
-                      key={num}
-                      onClick={() => handleNumberPop(num)}
-                      className={`h-11 sm:h-13 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center transition transform active:scale-90 ${
+                      key={idx}
+                      onClick={() => handleNumberPop(num, idx)}
+                      className={`h-9 sm:h-11 rounded-xl font-bold text-xs flex items-center justify-center transition transform active:scale-90 ${
                         isPopped
                           ? "bg-teal-950 border border-teal-700 text-teal-400 scale-95 shadow-inner"
                           : isNext
@@ -778,7 +1019,298 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
         </div>
       )}
 
-      {/* --- TOY 3: PAINEL DE PINTURA SENSORIAL --- */}
+      {/* --- TOY 3: LÓGICA & SUPERDOTAÇÃO (AH/SD & ADULTOS) --- */}
+      {activeToy === "superdotacao" && (
+        <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 shadow-sm ${
+          isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span>Desafios Cognitivos Avançados &amp; AH/SD</span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight">
+                Módulo para Adultos &amp; Superdotação / Altas Habilidades
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Lógica dedutiva, teoria dos jogos, otimização algorítmica e treinamento de memória de trabalho.
+              </p>
+            </div>
+
+            {/* Mode selector */}
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {[
+                { id: "raven", label: "Matrizes de Raven", icon: Cpu },
+                { id: "hanoi", label: "Torre de Hanói", icon: Layers },
+                { id: "nback", label: "Dual N-Back", icon: Activity },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setSuperMode(m.id as any)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                    superMode === m.id
+                      ? "bg-purple-600 text-white shadow-md"
+                      : isDark
+                      ? "bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800"
+                      : "bg-slate-100 text-slate-700 border border-slate-200"
+                  }`}
+                >
+                  <m.icon className="w-3.5 h-3.5" />
+                  <span>{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SUB-MODULE 1: RAVEN LOGICAL MATRICES */}
+          {superMode === "raven" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between bg-purple-950/40 border border-purple-800/60 p-4 rounded-2xl">
+                <div>
+                  <h3 className="font-bold text-sm text-purple-200">{RAVEN_QUESTIONS[ravenIndex].title}</h3>
+                  <p className="text-xs text-slate-300 mt-0.5">{RAVEN_QUESTIONS[ravenIndex].description}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-purple-400">Pontuação:</span>
+                  <div className="text-lg font-black text-purple-300">{ravenScore} / {RAVEN_QUESTIONS.length}</div>
+                </div>
+              </div>
+
+              {/* Matrix Display Grid */}
+              <div className="max-w-md mx-auto p-4 bg-slate-950 rounded-3xl border border-slate-800 grid grid-cols-3 gap-3">
+                {RAVEN_QUESTIONS[ravenIndex].grid.map((row, rIdx) =>
+                  row.map((cell, cIdx) => (
+                    <div
+                      key={`${rIdx}-${cIdx}`}
+                      className={`h-20 rounded-2xl border flex items-center justify-center p-2 text-center text-xs font-bold ${
+                        cell.includes("[ ? ]")
+                          ? "bg-purple-950/80 border-purple-500 text-purple-300 animate-pulse text-sm"
+                          : "bg-slate-900 border-slate-800 text-slate-200"
+                      }`}
+                    >
+                      {cell}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Multiple Choice Options */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-slate-400">Selecione a resposta correta:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {RAVEN_QUESTIONS[ravenIndex].options.map((opt, optIdx) => {
+                    const isSelected = selectedRavenOpt === optIdx;
+                    return (
+                      <button
+                        key={optIdx}
+                        onClick={() => handleAnswerRaven(optIdx)}
+                        className={`p-3.5 rounded-2xl border text-left text-xs font-semibold transition ${
+                          isSelected
+                            ? opt.correct
+                              ? "bg-emerald-950 border-emerald-500 text-emerald-200"
+                              : "bg-rose-950 border-rose-500 text-rose-200"
+                            : isDark
+                            ? "bg-slate-950 border-slate-800 hover:border-purple-600 text-slate-200"
+                            : "bg-slate-50 border-slate-200 hover:border-purple-400 text-slate-800"
+                        }`}
+                      >
+                        <div>{opt.label}</div>
+                        {isSelected && (
+                          <div className="mt-2 text-[11px] opacity-90 border-t border-white/20 pt-1.5 italic font-sans">
+                            {opt.explanation}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  disabled={ravenIndex === 0}
+                  onClick={() => { setRavenIndex(prev => prev - 1); setSelectedRavenOpt(null); }}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold disabled:opacity-30"
+                >
+                  Anterior
+                </button>
+
+                <button
+                  disabled={ravenIndex === RAVEN_QUESTIONS.length - 1}
+                  onClick={() => { setRavenIndex(prev => prev + 1); setSelectedRavenOpt(null); }}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold disabled:opacity-30"
+                >
+                  Próximo Desafio
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-MODULE 2: TOWERS OF HANOI */}
+          {superMode === "hanoi" && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 border border-slate-800 p-4 rounded-2xl">
+                <div className="space-y-1">
+                  <h3 className="font-bold text-sm text-purple-300">Otimização Algorítmica: Torre de Hanói</h3>
+                  <p className="text-xs text-slate-400">
+                    Mova a torre inteira da haste 1 para a haste 3. Mínimo teórico de movimentos: <strong className="text-purple-400">{Math.pow(2, hanoiDisksCount) - 1}</strong>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                    <span>Discos:</span>
+                    {[3, 4, 5, 6].map((cnt) => (
+                      <button
+                        key={cnt}
+                        onClick={() => resetHanoi(cnt)}
+                        className={`w-7 h-7 rounded-lg font-bold text-xs ${
+                          hanoiDisksCount === cnt ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        {cnt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => resetHanoi()}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Reiniciar
+                  </button>
+                </div>
+              </div>
+
+              {/* Hanoi Board View */}
+              <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto p-6 bg-slate-950 rounded-3xl border border-slate-800 items-end min-h-[220px]">
+                {hanoiTowers.map((peg, pegIdx) => {
+                  const isSelected = hanoiSelectedTower === pegIdx;
+                  return (
+                    <div
+                      key={pegIdx}
+                      onClick={() => handleHanoiClick(pegIdx)}
+                      className={`flex flex-col-reverse items-center gap-1.5 p-3 rounded-2xl border-2 cursor-pointer transition min-h-[180px] relative ${
+                        isSelected
+                          ? "border-purple-500 bg-purple-950/30 shadow-lg shadow-purple-500/20"
+                          : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+                      }`}
+                    >
+                      {/* Pole line */}
+                      <div className="absolute inset-y-2 left-1/2 w-1.5 bg-slate-700 -translate-x-1/2 rounded-full -z-0" />
+
+                      {peg.map((diskVal) => {
+                        const widthPercent = 30 + diskVal * 14;
+                        return (
+                          <div
+                            key={diskVal}
+                            style={{ width: `${widthPercent}%` }}
+                            className="h-7 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-black text-xs flex items-center justify-center shadow z-10"
+                          >
+                            {diskVal}
+                          </div>
+                        );
+                      })}
+
+                      <span className="text-[10px] font-bold uppercase text-slate-400 absolute bottom-1">
+                        Haste {pegIdx + 1}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="text-center text-xs text-slate-400">
+                Movimentos executados: <strong className="text-purple-400 text-sm">{hanoiMoves}</strong> | Regra: Um disco maior nunca pode ser colocado sobre um menor.
+              </div>
+            </div>
+          )}
+
+          {/* SUB-MODULE 3: DUAL N-BACK */}
+          {superMode === "nback" && (
+            <div className="space-y-6">
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-purple-300">Treinador de Memória de Trabalho Dual N-Back</h3>
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="text-slate-400">Nível (N-passos):</span>
+                    {[1, 2, 3].map((lvl) => (
+                      <button
+                        key={lvl}
+                        onClick={() => setNBackLevel(lvl as any)}
+                        className={`w-6 h-6 rounded-md font-bold text-xs ${
+                          nBackLevel === lvl ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        N={lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400">
+                  O teste Dual N-Back é a única tarefa neuropsicológica comprovada para expansão da inteligência fluida e memória operacional de adultos.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                
+                {/* 3x3 Spatial Grid */}
+                <div className="grid grid-cols-3 gap-2.5 w-60 h-60 p-3 bg-slate-950 rounded-2xl border border-slate-800">
+                  {NBACK_POSITIONS.map((pos) => {
+                    const currentStep = nBackHistory[nBackHistory.length - 1];
+                    const isLit = currentStep && currentStep.pos === pos;
+                    return (
+                      <div
+                        key={pos}
+                        className={`rounded-xl border transition flex items-center justify-center font-bold text-sm ${
+                          isLit
+                            ? "bg-purple-500 border-purple-300 text-white shadow-lg shadow-purple-500/50 scale-105"
+                            : "bg-slate-900 border-slate-800 text-slate-700"
+                        }`}
+                      >
+                        {isLit ? currentStep.sound : ""}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-4 flex-1 text-center sm:text-left">
+                  <button
+                    onClick={handleStartNBack}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
+                  >
+                    {nBackActive ? "Avançar Próximo Estímulo" : "Iniciar Sessão Dual N-Back"}
+                  </button>
+
+                  {nBackActive && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleNBackCheckPos}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition"
+                      >
+                        Match Posição Igual a N={nBackLevel} Passos Atrás!
+                      </button>
+
+                      {nBackFeedback && (
+                        <p className="text-xs font-semibold text-purple-300">{nBackFeedback}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-xs text-slate-400">
+                    Pontuação atual: <strong className="text-purple-400">{nBackScore} pts</strong>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* --- TOY 4: PAINEL DE PINTURA SENSORIAL --- */}
       {activeToy === "pintura" && (
         <div className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-sm ${
           isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"

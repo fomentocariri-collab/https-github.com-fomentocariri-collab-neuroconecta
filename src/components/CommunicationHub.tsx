@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { MessageSquare, Copy, Check, FileText, Share2, HelpCircle } from "lucide-react";
+import { MessageSquare, Copy, Check, FileText, Share2, HelpCircle, Volume2 } from "lucide-react";
 import { SOCIAL_SCRIPTS, LITERAL_LANGUAGE_GUIDE } from "../data/scripts";
 
 export const CommunicationHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"scripts" | "gerador" | "literal">("scripts");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
 
   // Accommodation Generator state
   const [recipient, setRecipient] = useState("Gestor(a) / RH");
@@ -17,6 +18,21 @@ export const CommunicationHub: React.FC = () => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleSpeak = (id: string, text: string) => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "pt-BR";
+      utterance.rate = 0.95;
+      utterance.onstart = () => setSpeakingId(id);
+      utterance.onend = () => setSpeakingId(null);
+      utterance.onerror = () => setSpeakingId(null);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Seu navegador não suporta a síntese de voz nativa.");
+    }
   };
 
   const handleGenerateAccommodation = () => {
@@ -136,13 +152,25 @@ Atenciosamente,`;
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleCopy(sc.id, sc.scriptText)}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
                   >
                     {copiedId === sc.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedId === sc.id ? "Copiado!" : "Copiar Script"}</span>
+                    <span>{copiedId === sc.id ? "Copiado!" : "Copiar"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSpeak(sc.id, sc.scriptText)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                      speakingId === sc.id
+                        ? "bg-teal-600 text-white animate-pulse"
+                        : "bg-slate-800 hover:bg-slate-700 text-teal-300"
+                    }`}
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>{speakingId === sc.id ? "Falando..." : "Ouvir Áudio"}</span>
                   </button>
                 </div>
               </div>
