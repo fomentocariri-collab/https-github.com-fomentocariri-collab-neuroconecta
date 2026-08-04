@@ -141,7 +141,7 @@ export interface SocialScript {
 export interface EducationArticle {
   id: string;
   term: string;
-  category: "conceito" | "estrategia" | "mito";
+  category: "direitos" | "educacao" | "comunicacao" | "conceito" | "estrategia" | "mito";
   shortDefinition: string;
   fullExplanation: string;
   practicalTips: string[];

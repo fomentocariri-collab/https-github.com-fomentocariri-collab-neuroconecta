@@ -139,15 +139,21 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
         {/* Document Header for Formal Clinical Report */}
         <div className="border-b-2 border-teal-700/60 pb-6 space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold text-teal-400 uppercase tracking-widest print:text-black">
-                NEUROCONECTA — SISTEMA INTEGRADO DE APOIO AO TEA
-              </span>
-              <h1 className="text-2xl font-extrabold text-slate-100 print:text-black mt-1">
-                Relatório de Acompanhamento & Diagnóstico Integral
-              </h1>
+            <div className="flex items-center gap-3">
+              <img src="/sistemastop_logo.svg" alt="SISTEMASTOP" className="w-12 h-12 object-contain rounded-xl p-1 bg-slate-950 border border-teal-800 print:w-10 print:h-10" />
+              <div>
+                <span className="text-xs font-bold text-teal-400 uppercase tracking-widest print:text-teal-800">
+                  SISTEMASTOP • NEUROCONECTA — TECNOLOGIA NEUROAFIRMATIVA
+                </span>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-100 print:text-black mt-0.5">
+                  Relatório de Acompanhamento &amp; Diagnóstico Integral
+                </h1>
+                <p className="text-[11px] text-slate-400 print:text-slate-600">
+                  Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE | +55 (88) 99673-9128 | contato@sistemastop.com.br
+                </p>
+              </div>
             </div>
-            <div className="text-right text-xs text-slate-400 print:text-black">
+            <div className="text-right text-xs text-slate-400 print:text-black flex-shrink-0">
               <p><strong>Emissão:</strong> {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
               <p><strong>Período Analisado:</strong> {period === "diario" ? "Relatório Diário" : period === "semanal" ? "Consolidado Semanal" : "Consolidado Mensal"}</p>
             </div>

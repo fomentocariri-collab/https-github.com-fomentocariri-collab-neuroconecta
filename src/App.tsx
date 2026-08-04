@@ -16,6 +16,7 @@ import { CapsHealthHub } from "./components/CapsHealthHub";
 import { CrisisModal } from "./components/CrisisModal";
 import { UserProfileModal } from "./components/UserProfileModal";
 import { AuthModal } from "./components/AuthModal";
+import { FooterAndContact } from "./components/FooterAndContact";
 import { UserProfile } from "./types";
 
 export default function App() {
@@ -182,6 +183,9 @@ export default function App() {
 
         {activeTab === "educacao" && <EducationHub />}
       </main>
+
+      {/* SISTEMASTOP Footer & Fale Conosco */}
+      <FooterAndContact isDark={userProfile.lowStimulationMode} />
 
       {/* Emergency Crisis / Meltdown Support Modal */}
       <CrisisModal

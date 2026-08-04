@@ -86,19 +86,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16 gap-3">
           
           {/* Logo & Brand */}
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab("chat")}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 via-emerald-500 to-cyan-500 p-0.5 shadow-md flex items-center justify-center">
-              <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center text-teal-400">
-                <Sparkles className="w-5 h-5 animate-pulse" />
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("chat")}>
+            <img 
+              src="/neuroconecta_logo.svg" 
+              alt="NeuroConecta Logo" 
+              className="w-10 h-10 object-contain rounded-xl p-0.5 bg-slate-950 border border-teal-800/80 shadow-md"
+            />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">
+                  NeuroConecta
+                </span>
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 font-bold">
+                  SISTEMASTOP
+                </span>
               </div>
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">
-                NeuroConecta
-              </span>
               <button
-                onClick={onOpenProfile}
-                className="hidden sm:inline-block ml-2 text-[11px] px-2.5 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-800/60 font-semibold hover:border-teal-500 transition"
+                onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
+                className="text-left text-[11px] text-teal-400/90 font-medium hover:underline"
                 title="Clique para alterar seu perfil de acesso"
               >
                 {getRoleLabel()}

@@ -2,6 +2,54 @@ import { EducationArticle } from "../types";
 
 export const EDUCATION_ARTICLES: EducationArticle[] = [
   {
+    id: "lei_berenice_piana",
+    term: "Lei Berenice Piana (Lei 12.764/2012) & Direitos PCD",
+    category: "direitos",
+    shortDefinition: "Lei Federal que equipara expressamente a Pessoa com Transtorno do Espectro Autista à Pessoa com Deficiência para todos os efeitos legais.",
+    fullExplanation: "A Lei 12.764/2012 instituiu a Política Nacional de Proteção dos Direitos da Pessoa com Transtorno do Espectro Autista. Garante o acesso a ações e serviços de saúde, atendimento multiprofissional, medicamentos gratuitos pelo SUS, apoio escolar especializado sem custo adicional e isenções tributárias.",
+    practicalTips: [
+      "Apresente a Lei 12.764 em escolas e órgãos para exigir profissional de apoio escolar especializado.",
+      "Plano de saúde não pode recusar nem limitar sessões de terapias prescritas pelo médico do autista.",
+      "O atendimento prioritário em filas e repartições é garantido por lei federal."
+    ]
+  },
+  {
+    id: "ciptea",
+    term: "CIPTEA & Carteira de Identificação da Pessoa com Autismo",
+    category: "direitos",
+    shortDefinition: "Documento oficial gratuito que garante prioridade de atendimento e acesso a serviços públicos e privados.",
+    fullExplanation: "A CIPTEA (Lei Romeo Mion) foi criada para garantir a atenção integral e a identificação do autista em todo o território nacional. Evita constrangimentos na comprovação do direito a filas preferenciais, transporte e espaços públicos.",
+    practicalTips: [
+      "Solicite a CIPTEA no órgão de assistência social do seu município ou estado portando laudo médico com CID.",
+      "Mantenha a versão digital no celular e uma cópia física com cordão de fita de girassol.",
+      "Utilize para acesso a assentos reservados e prioridade em aeroportos, bancos e supermercados."
+    ]
+  },
+  {
+    id: "pei_escolar",
+    term: "PEI (Plano de Ensino Individualizado) & Acomodações",
+    category: "educacao",
+    shortDefinition: "Planejamento pedagógico adaptado que considera as metas, habilidades e necessidades sensoriais do estudante neurodivergente.",
+    fullExplanation: "O PEI é um direito assegurado pela Lei Brasileira de Inclusão (LBI - Lei 13.146/2015). Não significa simplificar o conteúdo para 'inferiorizar', mas sim oferecer caminhos alternativos de aprendizagem, provas adaptadas, tempo estendido e salas de descompressão.",
+    practicalTips: [
+      "Exija reuniões periódicas entre escola, família e equipe de saúde para revisão das metas do PEI.",
+      "Solicite tempo adicional (geralmente 50% a mais) em provas regulares, vestibulares e ENEM.",
+      "Permita o uso de abafadores de ruído e pausas sensoriais durante as aulas."
+    ]
+  },
+  {
+    id: "caa",
+    term: "CAA (Comunicação Aumentativa e Alternativa)",
+    category: "comunicacao",
+    shortDefinition: "Métodos, pranchas de símbolos e aplicativos que auxiliam ou substituem a fala oral.",
+    fullExplanation: "A CAA não impede o desenvolvimento da fala; pelo contrário, reduz a frustração de pessoas autistas não falantes ou parcialmente falantes (apraxia da fala / shutdowns), estimulando a linguagem expressiva por meio de pictogramas e síntese de voz.",
+    practicalTips: [
+      "Inicie com pranchas de comunicação de alta ou baixa tecnologia (como o módulo AAC do NeuroConecta).",
+      "Respeite o tempo do indivíduo para selecionar os símbolos sem interromper abruptamente.",
+      "Ganta que o dispositivo de comunicação esteja acessível em todos os ambientes."
+    ]
+  },
+  {
     id: "stimming",
     term: "Stimming (Comportamento Autoestimulatório)",
     category: "conceito",
@@ -50,10 +98,10 @@ export const EDUCATION_ARTICLES: EducationArticle[] = [
   },
   {
     id: "funcao_executiva",
-    term: "Disfunção Executiva",
+    term: "Disfunção Executiva & Ferramentas Visuais",
     category: "conceito",
     shortDefinition: "Dificuldade em iniciar tarefas, alternar o foco, estimar tempo e organizar etapas.",
-    fullExplanation: "A função executiva é o maestro do cérebro. No autismo, iniciar uma tarefa simples pode parecer uma montanha por causa da sobrecarga de decisões invisíveis envolvidas.",
+    fullExplanation: "A função executiva é o maestro do cérebro. No autismo e TDAH, iniciar uma tarefa simples pode parecer uma montanha por causa da sobrecarga de decisões invisíveis envolvidas.",
     practicalTips: [
       "Divida tarefas em micro-passos visuais minúsculos.",
       "Use timers com contagem regressiva visual.",
@@ -70,6 +118,10 @@ export const MYTHS_AND_FACTS = [
   {
     myth: "O autismo é uma condição apenas infantil.",
     fact: "FATO: Crianças autistas crescem e se tornam adultos autistas. Muitos adultos descobrem o diagnóstico tardiamente."
+  },
+  {
+    myth: "Acomodações na escola ou concurso 'dão vantagem indevida' ao autista.",
+    fact: "FATO: As acomodações (tempo extra, sala silenciosa) apenas removem barreiras sensoriais e comunicacionais, garantindo equidade e acesso justo ao direito."
   },
   {
     myth: "Todo autista tem um dom genial em matemática ou artes.",
