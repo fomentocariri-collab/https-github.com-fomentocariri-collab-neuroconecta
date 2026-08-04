@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Navbar, NavTab } from "./components/Navbar";
 import { ChatAssistant } from "./components/ChatAssistant";
 import { MusicotherapyHub } from "./components/MusicotherapyHub";
+import { StimmingGamesHub } from "./components/StimmingGamesHub";
 import { TestCenter } from "./components/TestCenter";
 import { RoutinePlanner } from "./components/RoutinePlanner";
 import { SensoryHub } from "./components/SensoryHub";
@@ -130,6 +131,10 @@ export default function App() {
 
         {activeTab === "musicoterapia" && (
           <MusicotherapyHub isDark={userProfile.lowStimulationMode} />
+        )}
+
+        {activeTab === "jogos" && (
+          <StimmingGamesHub isDark={userProfile.lowStimulationMode} />
         )}
 
         {activeTab === "testes" && (

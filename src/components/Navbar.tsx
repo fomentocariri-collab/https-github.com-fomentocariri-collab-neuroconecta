@@ -16,10 +16,12 @@ import {
   Database,
   Lock,
   Headphones,
+  Gamepad2,
+  GraduationCap,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "musicoterapia" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "supabase";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -45,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const allTabs = [
     { id: "chat", label: "Assistente IA", icon: Bot },
     { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones },
+    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2 },
     { id: "testes", label: "Autoavaliação", icon: ClipboardCheck },
     { id: "rotina", label: "Rotina Visual", icon: CalendarCheck },
     { id: "sensorial", label: "Regulação Sensorial", icon: Waves },
@@ -52,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "comunicacao", label: "Comunicação", icon: MessageSquare },
     { id: "relatorio", label: "Relatórios & Diagnóstico", icon: FileText },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true },
-    { id: "cuidador", label: "Modo Cuidador", icon: Users },
+    { id: "cuidador", label: "Cuidadores & Educadores", icon: GraduationCap },
     { id: "educacao", label: "Biblioteca", icon: BookOpen },
   ] as const;
 
