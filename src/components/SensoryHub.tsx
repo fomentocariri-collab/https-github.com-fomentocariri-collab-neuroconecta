@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Waves, Eye, Hand, Volume2, Wind, Heart, Plus, Trash2, VolumeX, Play, Pause, Square, Sparkles } from "lucide-react";
 import { SensoryTrigger } from "../types";
 
-export const SensoryHub: React.FC = () => {
+export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
   const [activeSubTab, setActiveSubTab] = useState<"grounding" | "respiracao" | "sons" | "gatilhos">("grounding");
 
   // Grounding 5-4-3-2-1 state
@@ -189,23 +189,25 @@ export const SensoryHub: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8 animate-fadeIn">
       
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className={`rounded-2xl p-6 border shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition ${
+        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+      }`}>
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <Waves className="w-6 h-6 text-teal-400" />
-            Central de Regulação Sensorial
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Waves className="w-6 h-6 text-teal-500 dark:text-teal-400" />
+            <span>Central de Regulação Sensorial</span>
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Técnicas de grounding, marcapasso de respiração, áudio ambiente sintetizado e registro de gatilhos.
           </p>
         </div>
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex overflow-x-auto no-scrollbar gap-2 border-b border-slate-800 pb-2">
+      <div className="flex overflow-x-auto no-scrollbar gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         {[
           { id: "grounding", label: "🧘 Grounding 5-4-3-2-1" },
           { id: "respiracao", label: "🫁 Respiração Guiada" },
@@ -215,10 +217,12 @@ export const SensoryHub: React.FC = () => {
           <button
             key={sub.id}
             onClick={() => setActiveSubTab(sub.id as any)}
-            className={`px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm transition whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm transition whitespace-nowrap border ${
               activeSubTab === sub.id
-                ? "bg-teal-950 text-teal-200 border border-teal-700"
-                : "bg-slate-900 hover:bg-slate-800 text-slate-400 border border-transparent"
+                ? "bg-teal-600 text-white border-teal-500 shadow"
+                : isDark
+                ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800"
+                : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
             }`}
           >
             {sub.label}
@@ -228,44 +232,50 @@ export const SensoryHub: React.FC = () => {
 
       {/* 1. Grounding 5-4-3-2-1 */}
       {activeSubTab === "grounding" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+        <div className={`border rounded-2xl p-6 space-y-6 shadow-xl ${
+          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+        }`}>
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-slate-100">Técnica de Grounding (Ancoragem)</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-xl font-bold">Técnica de Grounding (Ancoragem)</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Reduza a ansiedade e a sobrecarga ancorando seus sentidos no momento presente.
             </p>
           </div>
 
-          <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl space-y-6 text-center">
+          <div className={`p-6 border rounded-2xl space-y-6 text-center ${
+            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+          }`}>
             {(() => {
               const currentG = groundingSteps[groundingStep - 1];
               const Icon = currentG.icon;
               return (
                 <div className="space-y-4 max-w-md mx-auto">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-teal-950 border border-teal-800 flex items-center justify-center text-teal-400">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
                     <Icon className="w-8 h-8 animate-bounce" />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-xs font-bold text-teal-400 uppercase tracking-wider">Passo {groundingStep} de 5 • Sense: {currentG.sense}</span>
-                    <h3 className="text-lg font-bold text-slate-100">{currentG.title}</h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{currentG.desc}</p>
+                    <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Passo {groundingStep} de 5 • Sense: {currentG.sense}</span>
+                    <h3 className="text-lg font-bold">{currentG.title}</h3>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{currentG.desc}</p>
                   </div>
                 </div>
               );
             })()}
 
-            <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-800">
+            <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
               <button
                 disabled={groundingStep === 1}
                 onClick={() => setGroundingStep((prev) => prev - 1)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs sm:text-sm rounded-xl transition"
+                className={`px-4 py-2 disabled:opacity-40 text-xs sm:text-sm rounded-xl transition border ${
+                  isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700" : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                }`}
               >
                 Anterior
               </button>
               <button
                 disabled={groundingStep === 5}
                 onClick={() => setGroundingStep((prev) => prev + 1)}
-                className="px-5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold text-xs sm:text-sm rounded-xl transition"
+                className="px-5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold text-xs sm:text-sm rounded-xl transition shadow-md"
               >
                 Próximo Passo
               </button>
@@ -276,10 +286,12 @@ export const SensoryHub: React.FC = () => {
 
       {/* 2. Respiração Quadrada Guiada */}
       {activeSubTab === "respiracao" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl text-center">
+        <div className={`border rounded-2xl p-6 space-y-6 shadow-xl text-center ${
+          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+        }`}>
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-slate-100">Marcapasso de Respiração Quadrada (4-4-4-4)</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-xl font-bold">Marcapasso de Respiração Quadrada (4-4-4-4)</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Acalme o nervo vago e reduza batimentos cardíacos com ritmos suaves de respiração.
             </p>
           </div>
@@ -289,12 +301,12 @@ export const SensoryHub: React.FC = () => {
             <div
               className={`w-48 h-48 rounded-full border-4 flex items-center justify-center transition-all duration-1000 shadow-2xl ${
                 breathPhase === "Inalar"
-                  ? "scale-125 border-teal-400 bg-teal-950/60 text-teal-200"
+                  ? "scale-125 border-teal-500 bg-teal-500/10 text-teal-700 dark:text-teal-200"
                   : breathPhase === "Reter"
-                  ? "scale-125 border-emerald-400 bg-emerald-950/60 text-emerald-200"
+                  ? "scale-125 border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
                   : breathPhase === "Exalar"
-                  ? "scale-90 border-cyan-400 bg-cyan-950/60 text-cyan-200"
-                  : "scale-90 border-slate-600 bg-slate-950 text-slate-400"
+                  ? "scale-90 border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:text-cyan-200"
+                  : "scale-90 border-slate-400 bg-slate-100 dark:bg-slate-950 text-slate-500"
               }`}
             >
               <div className="text-center space-y-1">
@@ -316,10 +328,12 @@ export const SensoryHub: React.FC = () => {
 
       {/* 3. Audio Synthesizer */}
       {activeSubTab === "sons" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+        <div className={`border rounded-2xl p-6 space-y-6 shadow-xl ${
+          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+        }`}>
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-slate-100">Gerador de Áudio Calmante Sintetizado</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-xl font-bold">Gerador de Áudio Calmante Sintetizado</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Sons gerados em tempo real direto no seu navegador sem consumir dados de internet.
             </p>
           </div>
@@ -327,28 +341,30 @@ export const SensoryHub: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* Brown Noise */}
-            <div className="p-5 bg-slate-950 border border-slate-800 rounded-2xl space-y-4">
+            <div className={`p-5 border rounded-2xl space-y-4 ${
+              isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-teal-950 text-teal-400 rounded-xl">
+                <div className="p-3 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl">
                   <Volume2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-100">Ruído Marrom (Brownian Noise)</h3>
-                  <p className="text-xs text-slate-400">Frequências graves suaves parecidas com cachoeira ou vento suave.</p>
+                  <h3 className="font-bold text-sm sm:text-base">Ruído Marrom (Brownian Noise)</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Frequências graves suaves parecidas com cachoeira ou vento suave.</p>
                 </div>
               </div>
               
               {audioPlaying === "brown" ? (
                 <button
                   onClick={stopAudio}
-                  className="w-full py-2.5 bg-rose-700 hover:bg-rose-600 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
                 >
                   <Square className="w-4 h-4" /> Parar Ruído Marrom
                 </button>
               ) : (
                 <button
                   onClick={startBrownNoise}
-                  className="w-full py-2.5 bg-teal-700 hover:bg-teal-600 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md"
                 >
                   <Play className="w-4 h-4" /> Tocar Ruído Marrom
                 </button>
@@ -356,28 +372,30 @@ export const SensoryHub: React.FC = () => {
             </div>
 
             {/* Calm Drone */}
-            <div className="p-5 bg-slate-950 border border-slate-800 rounded-2xl space-y-4">
+            <div className={`p-5 border rounded-2xl space-y-4 ${
+              isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-950 text-emerald-400 rounded-xl">
+                <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-100">Tom de Frequência Calma (136.1 Hz)</h3>
-                  <p className="text-xs text-slate-400">Tom puro e suave de meditação profunda para desacelerar pensamentos.</p>
+                  <h3 className="font-bold text-sm sm:text-base">Tom de Frequência Calma (136.1 Hz)</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Tom puro e suave de meditação profunda para desacelerar pensamentos.</p>
                 </div>
               </div>
 
               {audioPlaying === "drone" ? (
                 <button
                   onClick={stopAudio}
-                  className="w-full py-2.5 bg-rose-700 hover:bg-rose-600 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
                 >
                   <Square className="w-4 h-4" /> Parar Frequência
                 </button>
               ) : (
                 <button
                   onClick={startCalmDrone}
-                  className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md"
                 >
                   <Play className="w-4 h-4" /> Tocar Frequência Calma
                 </button>
@@ -390,30 +408,36 @@ export const SensoryHub: React.FC = () => {
 
       {/* 4. Sensory Triggers Log */}
       {activeSubTab === "gatilhos" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+        <div className={`border rounded-2xl p-6 space-y-6 shadow-xl ${
+          isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+        }`}>
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-slate-100">Seu Diário de Gatilhos Sensoriais</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-xl font-bold">Seu Diário de Gatilhos Sensoriais</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Anote o que te sobrecarrega e quais estratégias funcionam melhor para o seu perfil.
             </p>
           </div>
 
           <div className="space-y-3">
             {triggers.map((t) => (
-              <div key={t.id} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+              <div key={t.id} className={`p-4 border rounded-2xl space-y-2 ${
+                isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+              }`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-teal-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
                     Canal: {t.sense}
                   </span>
                   <button
                     onClick={() => handleDeleteTrigger(t.id)}
-                    className="text-slate-500 hover:text-rose-400 transition"
+                    className="text-slate-400 hover:text-rose-500 transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                <h4 className="font-bold text-slate-100 text-sm">⚡ Gatilho: {t.trigger}</h4>
-                <p className="text-xs text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <h4 className="font-bold text-sm">⚡ Gatilho: {t.trigger}</h4>
+                <p className={`text-xs p-2.5 rounded-xl border ${
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-white border-slate-200 text-slate-800"
+                }`}>
                   🛡️ <strong>Estratégia de Adaptação:</strong> {t.copingStrategy}
                 </p>
               </div>
@@ -421,13 +445,17 @@ export const SensoryHub: React.FC = () => {
           </div>
 
           {/* Add Form */}
-          <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Cadastrar Novo Gatilho Pessoal:</h4>
+          <div className={`p-4 border rounded-2xl space-y-3 ${
+            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+          }`}>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Cadastrar Novo Gatilho Pessoal:</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <select
                 value={newSense}
                 onChange={(e) => setNewSense(e.target.value as any)}
-                className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                className={`px-3 py-2 border rounded-xl text-xs ${
+                  isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                }`}
               >
                 <option value="audicao">Audição (Som/Barulho)</option>
                 <option value="visao">Visão (Luzes/Cores)</option>
@@ -441,7 +469,9 @@ export const SensoryHub: React.FC = () => {
                 placeholder="Qual é o gatilho? (Ex: Fita adesiva barulhenta)"
                 value={newTriggerText}
                 onChange={(e) => setNewTriggerText(e.target.value)}
-                className="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                className={`px-3.5 py-2 border rounded-xl text-xs ${
+                  isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                }`}
               />
 
               <input
@@ -449,13 +479,15 @@ export const SensoryHub: React.FC = () => {
                 placeholder="Estratégia de alívio? (Ex: Usar protetor auricular)"
                 value={newCopingText}
                 onChange={(e) => setNewCopingText(e.target.value)}
-                className="sm:col-span-2 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                className={`sm:col-span-2 px-3.5 py-2 border rounded-xl text-xs ${
+                  isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                }`}
               />
             </div>
 
             <button
               onClick={handleAddTrigger}
-              className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"
+              className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Salvar Gatilho</span>

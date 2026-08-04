@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { BookOpen, Search, Sparkles, CheckCircle2, HelpCircle, Printer, Building2, Phone, Mail, MapPin, FileText, Download } from "lucide-react";
 import { EDUCATION_ARTICLES, MYTHS_AND_FACTS } from "../data/education";
 
-export const EducationHub: React.FC = () => {
+export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
 
@@ -118,18 +118,20 @@ export const EducationHub: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8 animate-fadeIn">
       
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className={`rounded-2xl p-6 border shadow-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 transition ${
+        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+      }`}>
         <div className="space-y-1 max-w-xl">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-teal-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-100">
+            <BookOpen className="w-6 h-6 text-teal-500 dark:text-teal-400" />
+            <h1 className="text-xl sm:text-2xl font-bold">
               Biblioteca & Direitos Neuroafirmativos
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
             Guia completo de conceitos, Leis (Berenice Piana, CIPTEA), acomodações escolares e estratégias práticas explicadas de forma clara e acessível.
           </p>
         </div>
@@ -138,7 +140,7 @@ export const EducationHub: React.FC = () => {
           {/* Print PDF Button */}
           <button
             onClick={handlePrintPdf}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-teal-950/50"
+            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-md"
             title="Imprimir ou salvar a biblioteca completa em PDF"
           >
             <Printer className="w-4 h-4" />
@@ -153,14 +155,16 @@ export const EducationHub: React.FC = () => {
               placeholder="Buscar por termo ou lei..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-teal-500"
+              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs focus:outline-none focus:border-teal-500 border ${
+                isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+              }`}
             />
           </div>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -168,7 +172,9 @@ export const EducationHub: React.FC = () => {
             className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
               selectedCategory === cat.id
                 ? "bg-teal-600 text-white border-teal-500 shadow"
-                : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
+                : isDark
+                ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
             }`}
           >
             {cat.label}
@@ -179,46 +185,52 @@ export const EducationHub: React.FC = () => {
       {/* Articles List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-teal-400" />
-            Artigos e Orientações ({filteredArticles.length})
+          <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+            <Sparkles className="w-5 h-5 text-teal-500 dark:text-teal-400" />
+            <span>Artigos e Orientações ({filteredArticles.length})</span>
           </h2>
-          <span className="text-xs text-slate-500">Formato pronto para impressão</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Formato pronto para impressão</span>
         </div>
 
         <div className="space-y-4">
           {filteredArticles.length === 0 ? (
-            <div className="p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center text-slate-400 text-xs">
+            <div className={`p-8 border rounded-2xl text-center text-xs ${
+              isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-white border-slate-200 text-slate-600"
+            }`}>
               Nenhum termo encontrado para &quot;{searchTerm}&quot;. Tente buscar por lei, CIPTEA, PEI ou conceito.
             </div>
           ) : (
             filteredArticles.map((art) => (
               <div
                 key={art.id}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 shadow-md hover:border-slate-700 transition"
+                className={`p-5 rounded-2xl space-y-3 border shadow-sm transition ${
+                  isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+                }`}
               >
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-teal-200">{art.term}</h3>
-                  <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider bg-teal-950 px-2.5 py-0.5 rounded-md border border-teal-800">
+                  <h3 className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-300">{art.term}</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20">
                     {art.category}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-300 font-semibold leading-relaxed">
+                <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-300">
                   {art.shortDefinition}
                 </p>
 
-                <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div className={`p-4 border rounded-xl text-xs sm:text-sm leading-relaxed ${
+                  isDark ? "bg-slate-950 border-slate-800/80 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
+                }`}>
                   {art.fullExplanation}
                 </div>
 
                 {art.practicalTips && art.practicalTips.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <h4 className="text-xs font-bold text-teal-400 uppercase tracking-wider">Estratégias Práticas:</h4>
-                    <ul className="space-y-1 text-xs text-slate-300">
+                    <h4 className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Estratégias Práticas:</h4>
+                    <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                       {art.practicalTips.map((tip, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-teal-400 font-bold">•</span>
+                          <span className="text-teal-500 font-bold">•</span>
                           <span>{tip}</span>
                         </li>
                       ))}
@@ -232,19 +244,25 @@ export const EducationHub: React.FC = () => {
       </div>
 
       {/* Myths vs Facts */}
-      <div className="space-y-4 pt-6 border-t border-slate-800">
-        <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-emerald-400" />
-          Desmistificando Mitos Comuns
+      <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+          <HelpCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+          <span>Desmistificando Mitos Comuns</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {MYTHS_AND_FACTS.map((item, idx) => (
-            <div key={idx} className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 shadow-md">
-              <div className="p-3 bg-rose-950/60 border border-rose-800/50 rounded-xl text-xs text-rose-200">
+            <div key={idx} className={`p-5 rounded-2xl space-y-3 border shadow-sm ${
+              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+            }`}>
+              <div className={`p-3 border rounded-xl text-xs ${
+                isDark ? "bg-rose-950/60 border-rose-800/50 text-rose-200" : "bg-rose-50 border-rose-200 text-rose-900"
+              }`}>
                 <strong>❌ MITO:</strong> {item.myth}
               </div>
-              <div className="p-3 bg-emerald-950/60 border border-emerald-800/50 rounded-xl text-xs text-emerald-200">
+              <div className={`p-3 border rounded-xl text-xs ${
+                isDark ? "bg-emerald-950/60 border-emerald-800/50 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
+              }`}>
                 <strong>✅ {item.fact}</strong>
               </div>
             </div>
@@ -253,15 +271,21 @@ export const EducationHub: React.FC = () => {
       </div>
 
       {/* Company Contact Card Banner */}
-      <div className="p-6 bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-800/80 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+      <div className={`p-6 border rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl ${
+        isDark
+          ? "bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border-emerald-800/80 text-white"
+          : "bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-emerald-200 text-slate-900"
+      }`}>
         <div className="flex items-center gap-4">
-          <img src="/sistemastop_logo.svg" alt="SISTEMASTOP Logo" className="w-14 h-14 object-contain rounded-xl p-1 bg-slate-950 border border-emerald-800" />
+          <img src="/sistemastop_logo.svg" alt="SISTEMASTOP Logo" className={`w-14 h-14 object-contain rounded-xl p-1 border ${
+            isDark ? "bg-slate-950 border-emerald-800" : "bg-white border-emerald-300"
+          }`} />
           <div className="space-y-1">
-            <h3 className="text-base font-extrabold text-white">SISTEMASTOP • Soluções Tecnológicas</h3>
-            <p className="text-xs text-slate-300">
+            <h3 className="text-base font-extrabold">SISTEMASTOP • Soluções Tecnológicas</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
               Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE, CEP 63.119-060
             </p>
-            <p className="text-xs text-emerald-400 font-semibold">
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
               📞 +55 (88) 99673-9128 (WhatsApp) | ✉️ contato@sistemastop.com.br
             </p>
           </div>
@@ -269,7 +293,7 @@ export const EducationHub: React.FC = () => {
 
         <button
           onClick={handlePrintPdf}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition whitespace-nowrap shadow-md shadow-emerald-950/50"
+          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition whitespace-nowrap shadow-md"
         >
           <Printer className="w-4 h-4" /> Baixar PDF para Impressão
         </button>

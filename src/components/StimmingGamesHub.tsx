@@ -234,18 +234,54 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
 
   const STAMP_OPTIONS = ["❤️", "⭐", "🌸", "🦋", "🧩", "☀️", "🌈", "😊"];
 
+  // Initialize canvas width/height to match container width
   useEffect(() => {
     if (activeToy === "pintura" && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      if (ctx && canvas.width === 0) {
-        canvas.width = canvas.parentElement?.clientWidth || 600;
-        canvas.height = 380;
-        ctx.fillStyle = isDark ? "#0f172a" : "#f8fafc";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (ctx) {
+        const containerWidth = canvas.parentElement?.clientWidth || 700;
+        const targetWidth = Math.max(containerWidth - 16, 320);
+        const targetHeight = 400;
+
+        // Save existing canvas image if resizing
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        if (tempCtx && canvas.width > 0 && canvas.height > 0) {
+          tempCtx.drawImage(canvas, 0, 0);
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Fill background
+        ctx.fillStyle = isDark ? "#0f172a" : "#ffffff";
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+        // Restore image if previous canvas had contents
+        if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+          ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+        }
       }
     }
   }, [activeToy, isDark]);
+
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+
+    const scaleX = canvas.width / (rect.width || 1);
+    const scaleY = canvas.height / (rect.height || 1);
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    return { x, y };
+  };
 
   const saveCanvasState = () => {
     const canvas = canvasRef.current;
@@ -275,7 +311,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     saveCanvasState();
-    ctx.fillStyle = isDark ? "#0f172a" : "#f8fafc";
+    ctx.fillStyle = isDark ? "#0f172a" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     playPopSound(0.6);
   };
@@ -288,11 +324,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
 
     saveCanvasState();
 
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const { x, y } = getCanvasCoords(e);
 
     if (activeTool === "stamp") {
       ctx.font = `${brushSize * 4}px sans-serif`;
@@ -306,10 +338,12 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
     setIsDrawing(true);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.strokeStyle = activeTool === "eraser" ? (isDark ? "#0f172a" : "#f8fafc") : brushColor;
+    ctx.strokeStyle = activeTool === "eraser" ? (isDark ? "#0f172a" : "#ffffff") : brushColor;
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.lineTo(x + 0.1, y + 0.1);
+    ctx.stroke();
   };
 
   const drawMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -319,18 +353,21 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const { x, y } = getCanvasCoords(e);
 
     ctx.lineTo(x, y);
     ctx.stroke();
   };
 
   const stopDrawing = () => {
+    if (!isDrawing) return;
     setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.closePath();
+    }
   };
 
   const handleDownloadPaint = () => {
@@ -760,14 +797,22 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={handleUndoPaint}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1"
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1 transition ${
+                  isDark
+                    ? "bg-slate-800 hover:bg-slate-700 text-slate-200"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
+                }`}
                 title="Desfazer traço"
               >
                 <Undo2 className="w-3.5 h-3.5" /> Desfazer
               </button>
               <button
                 onClick={handleClearPaint}
-                className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-bold rounded-xl flex items-center gap-1"
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1 transition ${
+                  isDark
+                    ? "bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800"
+                    : "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200"
+                }`}
                 title="Limpar tela"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Limpar
@@ -782,13 +827,19 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
           </div>
 
           {/* Palette Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+          <div className={`flex flex-wrap items-center justify-between gap-4 p-3 rounded-2xl border ${
+            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
+          }`}>
             {/* Tool Selection */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setActiveTool("brush")}
                 className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 ${
-                  activeTool === "brush" ? "bg-teal-600 text-white" : "bg-slate-900 text-slate-400"
+                  activeTool === "brush"
+                    ? "bg-teal-600 text-white shadow"
+                    : isDark
+                    ? "bg-slate-900 text-slate-300"
+                    : "bg-white text-slate-700 border border-slate-200"
                 }`}
               >
                 <Brush className="w-4 h-4" /> Pincel
@@ -796,7 +847,11 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
               <button
                 onClick={() => setActiveTool("eraser")}
                 className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 ${
-                  activeTool === "eraser" ? "bg-teal-600 text-white" : "bg-slate-900 text-slate-400"
+                  activeTool === "eraser"
+                    ? "bg-teal-600 text-white shadow"
+                    : isDark
+                    ? "bg-slate-900 text-slate-300"
+                    : "bg-white text-slate-700 border border-slate-200"
                 }`}
               >
                 <Eraser className="w-4 h-4" /> Borracha
@@ -804,7 +859,11 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
               <button
                 onClick={() => setActiveTool("stamp")}
                 className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 ${
-                  activeTool === "stamp" ? "bg-teal-600 text-white" : "bg-slate-900 text-slate-400"
+                  activeTool === "stamp"
+                    ? "bg-teal-600 text-white shadow"
+                    : isDark
+                    ? "bg-slate-900 text-slate-300"
+                    : "bg-white text-slate-700 border border-slate-200"
                 }`}
               >
                 <Sparkles className="w-4 h-4" /> Carimbo
@@ -820,7 +879,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                     onClick={() => { setBrushColor(c.hex); setActiveTool("brush"); }}
                     style={{ backgroundColor: c.hex }}
                     className={`w-7 h-7 rounded-full border-2 transition ${
-                      brushColor === c.hex ? "border-teal-400 scale-110 shadow" : "border-slate-800"
+                      brushColor === c.hex ? "border-teal-400 scale-110 shadow" : "border-slate-400 dark:border-slate-800"
                     }`}
                     title={c.label}
                   />
@@ -835,8 +894,12 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                   <button
                     key={st}
                     onClick={() => setSelectedStamp(st)}
-                    className={`px-2 py-1 rounded-xl text-sm transition ${
-                      selectedStamp === st ? "bg-teal-900 border border-teal-500 scale-110" : "bg-slate-900"
+                    className={`px-2.5 py-1 rounded-xl text-sm transition ${
+                      selectedStamp === st
+                        ? "bg-teal-600 text-white border border-teal-500 scale-110 shadow"
+                        : isDark
+                        ? "bg-slate-900 text-slate-200"
+                        : "bg-white text-slate-800 border border-slate-200"
                     }`}
                   >
                     {st}
@@ -846,7 +909,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
             )}
 
             {/* Brush Size Slider */}
-            <div className="flex items-center gap-2 text-xs text-slate-300">
+            <div className={`flex items-center gap-2 text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
               <span>Espessura:</span>
               <input
                 type="range"
@@ -856,12 +919,14 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                 onChange={(e) => setBrushSize(Number(e.target.value))}
                 className="w-20 accent-teal-500"
               />
-              <span className="font-bold text-teal-400">{brushSize}px</span>
+              <span className="font-bold text-teal-600 dark:text-teal-400">{brushSize}px</span>
             </div>
           </div>
 
           {/* HTML5 Painting Canvas */}
-          <div className="rounded-3xl border border-slate-800 overflow-hidden shadow-2xl bg-slate-950 flex items-center justify-center p-2">
+          <div className={`rounded-3xl border overflow-hidden shadow-xl flex items-center justify-center p-2 ${
+            isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-100"
+          }`}>
             <canvas
               ref={canvasRef}
               onMouseDown={startDrawing}
