@@ -13,14 +13,38 @@
 }
 
 .theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/95,
 .theme-light .bg-slate-900\/90,
-.theme-light .bg-slate-900\/60,
 .theme-light .bg-slate-900\/80,
+.theme-light .bg-slate-900\/60,
 .theme-light .bg-slate-950,
+.theme-light .bg-slate-950\/90,
 .theme-light .bg-slate-950\/80,
 .theme-light .bg-slate-950\/60 {
   background-color: #ffffff !important;
   border-color: #e1ede5 !important;
+}
+
+.theme-light .bg-teal-950,
+.theme-light .bg-teal-900 {
+  background-color: #e6f7f5 !important;
+  border-color: #99f6e4 !important;
+  color: #0f766e !important;
+}
+
+.theme-light .bg-rose-950,
+.theme-light .bg-rose-950\/80,
+.theme-light .bg-rose-950\/60 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+
+.theme-light .bg-emerald-950,
+.theme-light .bg-emerald-950\/60 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
 }
 
 .theme-light .text-slate-100,

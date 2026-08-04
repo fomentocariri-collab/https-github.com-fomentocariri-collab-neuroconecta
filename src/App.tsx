@@ -210,6 +210,7 @@ export default function App() {
         currentUser={userProfile}
         onLoginSuccess={handleLoginSuccess}
         onLogout={handleLogout}
+        isDark={userProfile.lowStimulationMode}
       />
     </div>
   );
