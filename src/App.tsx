@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navbar, NavTab } from "./components/Navbar";
 import { ChatAssistant } from "./components/ChatAssistant";
+import { MusicotherapyHub } from "./components/MusicotherapyHub";
 import { TestCenter } from "./components/TestCenter";
 import { RoutinePlanner } from "./components/RoutinePlanner";
 import { SensoryHub } from "./components/SensoryHub";
@@ -95,6 +96,8 @@ export default function App() {
     handleSaveProfile(updated);
   };
 
+  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com";
+
   return (
     <div
       className={`min-h-screen font-sans transition-colors duration-300 flex flex-col ${
@@ -125,6 +128,10 @@ export default function App() {
           />
         )}
 
+        {activeTab === "musicoterapia" && (
+          <MusicotherapyHub isDark={userProfile.lowStimulationMode} />
+        )}
+
         {activeTab === "testes" && (
           <TestCenter onNavigateToChat={() => setActiveTab("chat")} />
         )}
@@ -139,7 +146,19 @@ export default function App() {
 
         {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
 
-        {activeTab === "supabase" && <SupabaseHub />}
+        {activeTab === "supabase" && (
+          isSuperAdmin ? (
+            <SupabaseHub />
+          ) : (
+            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Superadmin</h3>
+              <p className="text-xs">O módulo do Banco de Dados Supabase está invisível e restrito para o administrador técnico.</p>
+              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition">
+                Voltar ao Assistente IA
+              </button>
+            </div>
+          )
+        )}
 
         {activeTab === "cuidador" && (
           <CaregiverHub

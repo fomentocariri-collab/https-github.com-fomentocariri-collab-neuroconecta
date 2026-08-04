@@ -15,10 +15,11 @@ import {
   FileText,
   Database,
   Lock,
+  Headphones,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "testes" | "rotina" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "supabase";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -39,18 +40,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   toggleLowStimMode,
 }) => {
-  const tabs = [
+  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com";
+
+  const allTabs = [
     { id: "chat", label: "Assistente IA", icon: Bot },
+    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones },
     { id: "testes", label: "Autoavaliação", icon: ClipboardCheck },
     { id: "rotina", label: "Rotina Visual", icon: CalendarCheck },
     { id: "sensorial", label: "Regulação Sensorial", icon: Waves },
     { id: "humor", label: "Diário & Humor", icon: HeartPulse },
     { id: "comunicacao", label: "Comunicação", icon: MessageSquare },
     { id: "relatorio", label: "Relatórios & Diagnóstico", icon: FileText },
-    { id: "supabase", label: "Supabase DB", icon: Database },
+    { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true },
     { id: "cuidador", label: "Modo Cuidador", icon: Users },
     { id: "educacao", label: "Biblioteca", icon: BookOpen },
   ] as const;
+
+  const tabs = allTabs.filter(tab => !('adminOnly' in tab && tab.adminOnly) || isSuperAdmin);
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 border-b border-slate-800 backdrop-blur-md transition-all">

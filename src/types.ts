@@ -35,6 +35,7 @@ export interface UserProfile {
   onboardingCompleted: boolean;
   createdAt?: string;
   isGuest?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export interface ChatMessage {

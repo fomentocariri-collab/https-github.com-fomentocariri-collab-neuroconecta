@@ -83,10 +83,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         console.warn("Supabase auth fallback to local account:", sbErr);
       }
 
+      // Special check for Superadmin / Programmer email
+      const isSuperAdminEmail = email.trim().toLowerCase() === "sistemastop@gmail.com";
+
       const newUser: UserProfile = {
         id: authUserId,
         email: email.trim().toLowerCase(),
-        preferredName: name.trim(),
+        preferredName: name.trim() || (isSuperAdminEmail ? "Programador Admin" : "Usuário"),
         pronouns: "não informado",
         diagnosisStatus: diagnosisStatus as any,
         supportLevel: 2,
@@ -96,6 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onboardingCompleted: true,
         createdAt: new Date().toISOString(),
         isGuest: false,
+        isSuperAdmin: isSuperAdminEmail,
       };
 
       // Save user account metadata in local vault list
@@ -149,6 +153,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       const cleanEmail = email.trim().toLowerCase();
+
+      // Check Superadmin programmer master login
+      if (cleanEmail === "sistemastop@gmail.com") {
+        if (password === "^Shutdown0") {
+          const superAdminUser: UserProfile = {
+            id: "superadmin_sistemastop",
+            email: "sistemastop@gmail.com",
+            preferredName: "Programador Admin",
+            pronouns: "ele/dele",
+            diagnosisStatus: "laudo_formal",
+            supportLevel: 2,
+            currentFocus: "geral",
+            emergencyContacts: [],
+            lowStimulationMode: false,
+            onboardingCompleted: true,
+            isGuest: false,
+            isSuperAdmin: true,
+          };
+
+          setSuccessMessage("Autenticado com Sucesso como Superadmin / Programador! Módulo Supabase DB liberado.");
+          setTimeout(() => {
+            onLoginSuccess(superAdminUser);
+            onClose();
+          }, 800);
+          return;
+        } else {
+          setErrorMessage("Senha incorreta para a conta Superadmin/Programador.");
+          setLoading(false);
+          return;
+        }
+      }
+
       const accountsRaw = localStorage.getItem("neuroconecta_registered_accounts") || "[]";
       const accounts = JSON.parse(accountsRaw);
 

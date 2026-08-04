@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
-/* Theme overrides for Skin Dia (Light Mode) vs Skin Noturna */
+/* Theme overrides for Skin Dia (Light Mode) - Soft, Soothing & Neurodivergent-friendly */
 .theme-light {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
+  background-color: #f4f8f6 !important;
+  color: #1e293b !important;
 }
 
 .theme-light header,
 .theme-light nav {
   background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e2ece6 !important;
 }
 
 .theme-light .bg-slate-900,
@@ -20,7 +20,7 @@
 .theme-light .bg-slate-950\/80,
 .theme-light .bg-slate-950\/60 {
   background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
+  border-color: #e1ede5 !important;
 }
 
 .theme-light .text-slate-100,
@@ -35,19 +35,19 @@
 
 .theme-light .border-slate-800,
 .theme-light .border-slate-700 {
-  border-color: #cbd5e1 !important;
+  border-color: #e2ece6 !important;
 }
 
 .theme-light input,
 .theme-light select,
 .theme-light textarea {
-  background-color: #f1f5f9 !important;
+  background-color: #f0f7f3 !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border-color: #cbdcd1 !important;
 }
 
 .theme-light .bg-slate-800 {
-  background-color: #e2e8f0 !important;
+  background-color: #e6f0eb !important;
   color: #1e293b !important;
 }
 
