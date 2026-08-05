@@ -63,12 +63,10 @@ export default function App() {
     }
   };
 
-  // Auto-open login/registration modal on initial load if user has not logged in yet
+  // User arrives at the clean welcome cover screen with logo and can click the button to open login/registration modal
   useEffect(() => {
-    const activeUserId = localStorage.getItem("neuroconecta_active_user_id");
-    if (!activeUserId || userProfile.isGuest) {
-      setIsAuthOpen(true);
-    }
+    // Keep auth modal closed by default so user can view cover page first
+    setIsAuthOpen(false);
   }, []);
 
   // Initialize or load active user profile

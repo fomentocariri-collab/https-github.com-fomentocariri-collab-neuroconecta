@@ -45,19 +45,19 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
         {/* Large Central Brand Logo Box - PURE WHITE BACKGROUND FOR MAXIMUM LOGO VISIBILITY */}
         <div className="relative inline-block group">
           <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 opacity-20 blur-xl group-hover:opacity-40 transition duration-500"></div>
-          <div className="relative p-6 sm:p-10 bg-white border-2 border-teal-200/90 rounded-3xl shadow-2xl flex flex-col items-center justify-center gap-5 max-w-md mx-auto">
-            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl w-full flex items-center justify-center">
+          <div className="relative p-6 sm:p-8 bg-white border-2 border-teal-200/90 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-4 max-w-lg mx-auto">
+            <div className="p-4 bg-white border border-slate-100 rounded-2xl w-full flex items-center justify-center">
               <img 
                 src="/neuroconecta_logo.svg" 
-                alt="NeuroConecta Capa Logo" 
-                className="w-48 h-48 sm:w-60 sm:h-60 object-contain drop-shadow-md"
+                alt="NeuroConecta Logo Oficial" 
+                className="w-64 h-64 sm:w-80 sm:h-80 object-contain"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-center">
               <span className="text-[10px] uppercase font-black tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
                 Acesso Seguro & Proteção LGPD
               </span>
-              <h2 className="text-xl font-extrabold text-slate-900">
+              <h2 className="text-xl font-black text-slate-900">
                 Plataforma Neuroafirmativa
               </h2>
             </div>
