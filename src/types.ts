@@ -51,7 +51,7 @@ export interface ChatMessage {
 export interface Question {
   id: number;
   text: string;
-  category?: string;
+  category?: string; // Sub-domain / sub-scale name e.g. "Relacionamento Social", "Talento", "Linguagem"
   options: {
     label: string;
     score: number;
@@ -59,18 +59,24 @@ export interface Question {
 }
 
 export interface TestDefinition {
-  id: "aq10" | "sqeq" | "sensory" | "burnout" | "catq";
+  id: string; // "raads-r" | "aq50" | "aspie-quiz" | "aq10" | "sqeq" | "sensory" | "burnout" | "catq"
   title: string;
   shortDescription: string;
   fullDescription: string;
+  validatedClinically: boolean;
+  validationReference?: string;
+  usageType: "Triagem Clínica Adultos" | "Triagem Geral" | "Triagem Rápida" | "Reflexão Pessoal Online";
   estimatedMinutes: number;
   questionsCount: number;
+  domains?: string[];
   questions: Question[];
-  interpretResult: (score: number) => {
+  interpretResult: (score: number, domainScores?: Record<string, number>) => {
     level: string;
     summary: string;
     recommendation: string;
     tips: string[];
+    aspieScore?: number;
+    neurotypicalScore?: number;
   };
 }
 
@@ -83,6 +89,7 @@ export interface SavedTestResult {
   date: string;
   interpretationLevel: string;
   interpretationSummary: string;
+  domainScores?: Record<string, number>;
 }
 
 export interface RoutineTask {
