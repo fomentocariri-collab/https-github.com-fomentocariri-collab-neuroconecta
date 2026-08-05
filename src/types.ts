@@ -70,11 +70,10 @@ export interface TestDefinition {
   questionsCount: number;
   domains?: string[];
   questions: Question[];
-  interpretResult: (score: number, domainScores?: Record<string, number>) => {
+  interpretResult: (score: number, domainScores?: Record<string, { scored: number; max: number }>) => {
     level: string;
-    summary: string;
+    technicalReview: string; // Resenha técnica em prosa contínua e denso referencial psicométrico sem marcadores
     recommendation: string;
-    tips: string[];
     aspieScore?: number;
     neurotypicalScore?: number;
   };
@@ -82,14 +81,21 @@ export interface TestDefinition {
 
 export interface SavedTestResult {
   id: string;
+  userId?: string;
+  userName?: string;
+  userRole?: string;
   testId: string;
   testTitle: string;
   score: number;
   maxScore: number;
   date: string;
   interpretationLevel: string;
-  interpretationSummary: string;
-  domainScores?: Record<string, number>;
+  technicalReview: string; // Resenha técnica densa em texto único sem marcadores
+  recommendation: string;
+  clinicalStatus?: string;
+  domainScores?: Record<string, { scored: number; max: number }>;
+  validatedClinically?: boolean;
+  validationReference?: string;
 }
 
 export interface RoutineTask {

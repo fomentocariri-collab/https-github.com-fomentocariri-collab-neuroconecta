@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Copy, Check } from "lucide-react";
+import { Send, Bot, User, Sparkles, Copy, Check, Stethoscope, HeartPulse, Brain, GraduationCap, UserCheck } from "lucide-react";
 import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
 
 interface ChatAssistantProps {
@@ -9,9 +9,53 @@ interface ChatAssistantProps {
   onOpenCrisis: () => void;
 }
 
-const getSmartAssistantReply = (userMessage: string, profile: UserProfile): string => {
+export type InteractionRole = "usuario" | "medico" | "enfermeiro" | "psiquiatra" | "educador";
+
+const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "usuario"): string => {
   const text = userMessage.toLowerCase();
   const name = profile.preferredName ? `, ${profile.preferredName}` : "";
+
+  if (role === "medico") {
+    return `[PARECER TÉCNICO-CLÍNICO / NEUROLOGIA E DIAGNÓSTICO]
+Prezado(a) paciente/profissional${name}. No acompanhamento de adultos neurodivergentes e investigação de Transtorno do Espectro Autista (TEA Nível 1 de suporte / Perfil Camuflado), a avaliação nosológica deve integrar os critérios diagnósticos do DSM-5-TR e CID-11 (Código 6A02).
+
+Pontos chave na investigação clínica:
+1. **Instrumentos de Rastreio:** O RAADS-R (Ritvo Autism Asperger Diagnostic Scale-Revised) possui sensibilidade de 97% e corte clínico aos 65 pontos. O CAT-Q (Camouflaging Autistic Traits Questionnaire) mede a compensação cognitiva e máscara social.
+2. **Diagnósticos Diferenciais:** Investigar Transtorno de Deficit de Atenção com Hiperatividade (TDAH), Transtorno de Personalidade Evitativa, Síndrome de Burnout Autista e Transtornos de Processamento Sensorial isolados.
+3. **Encaminhamento Recomendado:** Solicitar avaliação neuropsicológica focada em funções executivas, coerência central, cognição social e perfil psicométrico de QI (WAIS-IV).`;
+  }
+
+  if (role === "enfermeiro") {
+    return `[PLANO DE CUIDADOS E ENFERMAGEM / SISTEMATIZAÇÃO SAE]
+Acolhendo sua solicitação na perspectiva da Enfermagem Neuroafirmativa${name}:
+
+1. **Avaliando Sinais de Crise Sensorial:** Monitoramento de hiperventilação, sudorese, rigidez muscular e fadiga pelo esforço de interação social prolongada.
+2. **Prescrição de Cuidados:**
+   - **Ambiente de Descompressão:** Diminuir luminosidade (<200 lux), disponibilizar abafadores auditivos e manta proprioceptiva.
+   - **Protocolo de Hidratação e Nutrição:** Respeitar seletividade alimentar extrema sem julgamentos morais durante a internação ou consulta.
+   - **Comunicação Adaptada:** Fornecer fichas de comunicação visual e aguardar o tempo de latência de resposta de 10 a 15 segundos sem interrupção.`;
+  }
+
+  if (role === "psiquiatra") {
+    return `[PARECER PSIQUIÁTRICO & SAÚDE MENTAL]
+Prezado(a)${name}. Na psiquiatria da neurodivergência, é fundamental distinguir entre quadros depressivos primários e o Burnout Autista Decorrente de Sobrecarga Executiva e Camuflagem Social (Hull et al., 2019).
+
+Análise Psicopatológica e Manejo:
+- **Burnout Autista:** Apresenta perda temporária de habilidades adaptativas previamente adquiridas, aumento da hiper-reatividade a estímulos sensoriais e apatia profunda por exaustão do sistema de recompensa dopaminérgico.
+- **Transtornos Comórbidos de Humor e Ansiedade:** A prevalência de Ansiedade Generalizada e Rejeição Sensível a Disforia (RSD) em autistas é elevada.
+- **Diretriz de Suporte:** Priorizar a redução de estressores ambientais e acomodações no trabalho/estudo antes de polifarmácia reativa.`;
+  }
+
+  if (role === "educador") {
+    return `[PARECER PEDAGÓGICO & INCLUSÃO ESCOLAR]
+Olá${name}! Sob a perspectiva do Direito à Educação (LBI nº 13.146/2015) e Desenho Universal para a Aprendizagem (DUA):
+
+1. **Elaboração do PEI (Plano de Ensino Individualizado):** Mapear potencialidades e necessidades de acessibilidade pedagógica do estudante.
+2. **Acomodações em Sala de Aula:**
+   - Permissão de fones de ruído e objetos de stimming para auto-regulação.
+   - Flexibilização de provas (tempo adicional de 50%, sala silenciosa reservada, enunciado fracionado).
+   - Apoio de Acompanhante Terapêutico (AT) ou Mediador Escolar para suporte na organização executiva.`;
+  }
 
   if (
     text.includes("crise") ||
@@ -40,75 +84,6 @@ Sua segurança e acolhimento são a nossa prioridade.
 ⚠️ *Se precisar de suporte emocional imediato ou atendimento de emergência, utilize o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
   }
 
-  if (
-    text.includes("rotina") ||
-    text.includes("tarefa") ||
-    text.includes("organiza") ||
-    text.includes("tempo") ||
-    text.includes("foco") ||
-    text.includes("executiv")
-  ) {
-    return `Olá${name}! Organizar a rotina de forma neuroafirmativa envolve respeitar seus limites cognitivos e energia diária.
-
-✨ **Três Estratégias Práticas:**
-1. **Divisão em Micro-etapas (Chunking):** Divida uma tarefa grande em pequenos passos simples.
-2. **Pausas Sensoriais Ativas:** Insira pausas de 5 a 10 minutos entre blocos de foco para descompressão.
-3. **Uso de Suportes Visuais:** Acesse a aba **Rotina Visual & Tarefas** no menu do app para priorizar suas atividades por urgência e demanda de energia.
-
-Como posso te ajudar no planejamento da sua próxima tarefa?`;
-  }
-
-  if (
-    text.includes("comunica") ||
-    text.includes("script") ||
-    text.includes("falar") ||
-    text.includes("trabalho") ||
-    text.includes("explicar") ||
-    text.includes("social")
-  ) {
-    return `Olá${name}! Expressar suas necessidades e limites de maneira assertiva e sem sentimento de culpa é um passo essencial de auto-advocacia.
-
-📌 **Exemplo de Script para Pedir Acomodação:**
-*"Olá! Para que eu possa desempenhar minhas atividades com melhor foco e conforto, prefiro receber direcionamentos por escrito e contar com breves intervalos de descompressão. Agradeço pelo apoio e compreensão!"*
-
-Você pode acessar a aba **Comunicação** no menu para mais cartões ilustrados e modelos de scripts prontos!`;
-  }
-
-  if (
-    text.includes("teste") ||
-    text.includes("aq-10") ||
-    text.includes("cat-q") ||
-    text.includes("perfil") ||
-    text.includes("diagnostico") ||
-    text.includes("diagnóstico") ||
-    text.includes("laudo")
-  ) {
-    return `Olá${name}! Os questionários do **NeuroConecta** (AQ-10, CAT-Q de camuflagem social, Perfil Sensorial e Burnout Autista) foram elaborados para **autoavaliação e rastreio de traços**.
-
-Eles auxiliam na identificação de padrões e preferências sensoriais, **mas não substituem o diagnóstico médico formal**.
-
-Acesse as abas **Testes de Triagem** ou **Relatórios & Diagnóstico** para preencher as avaliações e emitir um parecer consolidado para apresentar ao seu profissional de saúde!`;
-  }
-
-  if (
-    text.includes("sensorial") ||
-    text.includes("som") ||
-    text.includes("luz") ||
-    text.includes("barulho") ||
-    text.includes("textura") ||
-    text.includes("estimulo") ||
-    text.includes("estímulo")
-  ) {
-    return `Olá${name}! O processamento sensorial hiper ou hipossensível é um aspecto central do perfil autista.
-
-🌿 **Dicas de Acomodação Sensorial:**
-- **Estímulos Auditivos:** Fones com cancelamento de ruído ou sons de chuva/ruído marrom.
-- **Estímulos Visuais:** Redução de brilho nas telas ou ativação do Modo Baixa Estimulação no topo da tela.
-- **Tato & Propriocepção:** Roupas sem costuras incômodas, mantas de peso e objetos de stimming.
-
-Acesse a aba **Regulação Sensorial** para guias visuais e exercícios para descompressão diária!`;
-  }
-
   return `Olá${name}! Sou o assistente neuroafirmativo do **NeuroConecta**. Como posso te apoiar neste momento?
 
 Possuo conhecimento para te orientar em:
@@ -117,7 +92,7 @@ Possuo conhecimento para te orientar em:
 3. 💬 **Comunicação & Scripts:** Frases para impor limites e solicitar acomodações.
 4. 📋 **Testes & Relatórios:** Informações sobre as ferramentas de triagem do app.
 
-Sinta-se à vontade para enviar sua dúvida ou compartilhar o que está sentindo!`;
+Sinta-se à vontade para enviar sua dúvida ou selecionar o Nível Médico, Enfermagem, Psiquiatria ou Educação no topo do chat!`;
 };
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
@@ -128,6 +103,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 }) => {
   const isDark = userProfile.lowStimulationMode;
 
+  const [interactionRole, setInteractionRole] = useState<InteractionRole>("usuario");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -158,7 +134,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Initial welcome message if conversation is empty or if user profile name changed
+  // Initial welcome message if conversation is empty
   useEffect(() => {
     if ((messages.length === 0 || (messages.length === 1 && messages[0].id === "msg-welcome")) && onboardingStep === "done") {
       const realName = userProfile.preferredName && userProfile.preferredName !== "Visitante" ? `, ${userProfile.preferredName}` : "";
@@ -167,9 +143,9 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         role: "assistant",
         content: `Olá${realName}! Sou o assistente virtual do **NeuroConecta**.
 
-Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicação neuroafirmativa, regulação sensorial e escuta acolhedora.
+Você pode selecionar o nível de profundidade e perspectiva técnica no topo do chat (Médico, Enfermagem, Psiquiatria, Educação ou Usuário).
 
-**Como posso te ajudar hoje?** Escolha uma opção rápida abaixo ou digite sua mensagem:`,
+**Como posso te ajudar hoje?** Digite sua dúvida ou escolha um dos atalhos abaixo:`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([initialGreeting]);
@@ -200,6 +176,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          interactionRole,
           userContext: {
             preferredName: userProfile.preferredName,
             diagnosisStatus: userProfile.diagnosisStatus,
@@ -220,7 +197,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
 
     // Always fallback to smart response if API returned empty or failed
     if (!replyText) {
-      replyText = getSmartAssistantReply(text, userProfile);
+      replyText = getSmartAssistantReply(text, userProfile, interactionRole);
     }
 
     const assistantMsg: ChatMessage = {
@@ -254,11 +231,46 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-125px)] max-w-5xl mx-auto p-3 sm:p-4">
+    <div className="flex flex-col h-[calc(100vh-125px)] max-w-5xl mx-auto p-3 sm:p-4 space-y-3">
       
+      {/* Role Selection Selector */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 pl-1">
+          <Sparkles className="w-4 h-4 text-teal-400" />
+          Nível de Interação da IA:
+        </span>
+
+        <div className="flex flex-wrap gap-1.5 text-xs">
+          {[
+            { id: "usuario", label: "Usuário / Acolhimento", icon: UserCheck, color: "text-teal-400 bg-teal-950/80 border-teal-800" },
+            { id: "medico", label: "Médico / Neurologia", icon: Stethoscope, color: "text-blue-400 bg-blue-950/80 border-blue-800" },
+            { id: "enfermeiro", label: "Enfermagem / Cuidado", icon: HeartPulse, color: "text-rose-400 bg-rose-950/80 border-rose-800" },
+            { id: "psiquiatra", label: "Psiquiatria / Saúde Mental", icon: Brain, color: "text-purple-400 bg-purple-950/80 border-purple-800" },
+            { id: "educador", label: "Educador / PEI Escola", icon: GraduationCap, color: "text-amber-400 bg-amber-950/80 border-amber-800" },
+          ].map((role) => {
+            const Icon = role.icon;
+            const isSelected = interactionRole === role.id;
+            return (
+              <button
+                key={role.id}
+                onClick={() => setInteractionRole(role.id as InteractionRole)}
+                className={`px-2.5 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
+                  isSelected
+                    ? role.color + " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold"
+                    : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{role.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Onboarding Box if not completed */}
       {onboardingStep !== "done" && (
-        <div className={`mb-4 rounded-2xl p-6 shadow-xl space-y-4 border ${
+        <div className={`mb-2 rounded-2xl p-5 shadow-xl space-y-4 border ${
           isDark 
             ? "bg-slate-900 border-teal-700/80 text-slate-100" 
             : "bg-white border-teal-200 text-slate-900 shadow-md"
@@ -421,7 +433,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
         {isLoading && (
           <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs italic p-2">
             <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-spin" />
-            <span>O assistente NeuroConecta está formulando a resposta...</span>
+            <span>O assistente NeuroConecta ({interactionRole}) está formulando a resposta...</span>
           </div>
         )}
 
@@ -429,13 +441,13 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
       </div>
 
       {/* Quick Action Chips */}
-      <div className="py-2 overflow-x-auto no-scrollbar flex items-center gap-2 text-xs">
+      <div className="py-1 overflow-x-auto no-scrollbar flex items-center gap-2 text-xs">
         {[
-          { label: "💬 Pedir Script Social", prompt: "Pode me sugerir um script social para comunicar uma necessidade sensorial ou pedir desculpas por faltar a um evento?" },
+          { label: "🩺 Discutir RAADS-R / AQ-10", prompt: "Gostaria de discutir a validade psicométrica e hipóteses dos testes RAADS-R e AQ-10 para triagem de adultos." },
+          { label: "🧠 Analisar Burnout Autista x Depressão", prompt: "Pode fazer uma diferenciação clínica detalhada entre Burnout Autista e Depressão Unipolar?" },
+          { label: "🎓 Orientações para PEI na Escola", prompt: "Como estruturar o Plano de Ensino Individualizado (PEI) garantindo acessibilidade sensorial para o aluno autista?" },
+          { label: "💬 Pedir Script Social de Acomodação", prompt: "Pode me sugerir um script social para comunicar uma necessidade sensorial ou pedir acomodação no trabalho?" },
           { label: "🧘 Exercício de Grounding", prompt: "Pode me guiar passo a passo em uma técnica de grounding (5-4-3-2-1) para desacelerar agora?" },
-          { label: "📅 Pausas Sensoriais na Rotina", prompt: "Como posso organizar blocos de tempo com pausas sensoriais no meu dia de trabalho/estudo?" },
-          { label: "📋 Fazer Teste de Burnout", prompt: "Gostaria de entender melhor como funciona o teste de Burnout Autista disponível no aplicativo." },
-          { label: "💡 O que é Stimming?", prompt: "Pode me explicar o que é Stimming e por que é uma ferramenta importante de autorregulação?" },
           { label: "🆘 Apoio em crise", action: onOpenCrisis },
         ].map((chip, idx) => (
           <button
@@ -467,7 +479,7 @@ Estou aqui para te apoiar com ferramentas práticas, rotinas visuais, comunicaç
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Digite sua dúvida ou desabafo..."
+          placeholder={`Digite sua dúvida no nível (${interactionRole.toUpperCase()})...`}
           disabled={isLoading}
           className={`flex-1 px-4 py-3 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm transition ${
             isDark

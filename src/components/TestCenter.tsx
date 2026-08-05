@@ -13,10 +13,16 @@ import {
   Check,
   BarChart2,
   FileText,
-  ListFilter
+  Search,
+  UserCheck,
+  Stethoscope,
+  GraduationCap,
+  HeartPulse,
+  Eye
 } from "lucide-react";
 import { TestDefinition, SavedTestResult } from "../types";
 import { TESTS_LIST } from "../data/tests";
+import { getGlobalTestHistory, saveTestResultToStore } from "../data/testHistory";
 
 interface TestCenterProps {
   onNavigateToChat: () => void;
@@ -32,26 +38,22 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
     score: number;
     maxScore: number;
     level: string;
-    summary: string;
+    technicalReview: string;
     recommendation: string;
-    tips: string[];
     domainScores?: Record<string, { scored: number; max: number }>;
     aspieScore?: number;
     neurotypicalScore?: number;
   } | null>(null);
 
   const [savedHistory, setSavedHistory] = useState<SavedTestResult[]>([]);
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
+  const [historyRoleFilter, setHistoryRoleFilter] = useState<string>("todos");
+  const [viewingHistoryDetail, setViewingHistoryDetail] = useState<SavedTestResult | null>(null);
 
-  // Load history from localStorage
+  // Load history from store
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("neuroconecta_test_history");
-      if (stored) {
-        setSavedHistory(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    const history = getGlobalTestHistory();
+    setSavedHistory(history);
   }, []);
 
   const handleStartTest = (test: TestDefinition) => {
@@ -78,7 +80,6 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
     const updated = { ...answers, [questionId]: optionIndex };
     setAnswers(updated);
 
-    // Save draft
     if (selectedTest) {
       try {
         localStorage.setItem(`neuroconecta_draft_${selectedTest.id}`, JSON.stringify(updated));
@@ -94,7 +95,6 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
     let totalScore = 0;
     let maxPossibleScore = 0;
 
-    // Sub-domain tracking
     const domainScores: Record<string, { scored: number; max: number }> = {};
 
     selectedTest.questions.forEach((q) => {
@@ -115,15 +115,14 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
       }
     });
 
-    const interpretation = selectedTest.interpretResult(totalScore);
+    const interpretation = selectedTest.interpretResult(totalScore, domainScores);
 
     const result = {
       score: totalScore,
       maxScore: maxPossibleScore,
       level: interpretation.level,
-      summary: interpretation.summary,
+      technicalReview: interpretation.technicalReview,
       recommendation: interpretation.recommendation,
-      tips: interpretation.tips,
       domainScores,
       aspieScore: interpretation.aspieScore,
       neurotypicalScore: interpretation.neurotypicalScore,
@@ -138,61 +137,81 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
       console.error(e);
     }
 
-    // Save history item
+    // Save history item to global store
     const historyItem: SavedTestResult = {
       id: `res-${Date.now()}`,
+      userId: "usr-paciente-atual",
+      userName: "Usuário do NeuroConecta",
+      userRole: "pcd",
       testId: selectedTest.id,
       testTitle: selectedTest.title,
       score: totalScore,
       maxScore: maxPossibleScore,
       date: new Date().toLocaleDateString("pt-BR"),
       interpretationLevel: interpretation.level,
-      interpretationSummary: interpretation.summary,
+      technicalReview: interpretation.technicalReview,
+      recommendation: interpretation.recommendation,
+      domainScores,
+      validatedClinically: selectedTest.validatedClinically,
+      validationReference: selectedTest.validationReference,
+      clinicalStatus: "Concluído / Disponível para Equipe Multiprofissional",
     };
 
-    const newHistory = [historyItem, ...savedHistory];
-    setSavedHistory(newHistory);
-    try {
-      localStorage.setItem("neuroconecta_test_history", JSON.stringify(newHistory));
-    } catch (e) {
-      console.error(e);
-    }
+    const updatedStore = saveTestResultToStore(historyItem);
+    setSavedHistory(updatedStore);
   };
 
-  const handleCopyClinicalReport = () => {
-    if (!selectedTest || !testResult) return;
+  const handleCopyClinicalReport = (itemToCopy?: SavedTestResult) => {
+    const test = selectedTest;
+    const res = itemToCopy || testResult;
+    if (!res) return;
 
     let domainText = "";
-    if (testResult.domainScores) {
-      domainText = Object.entries(testResult.domainScores)
-        .map(([domain, val]) => `  - ${domain}: ${val.scored} / ${val.max} pts (${Math.round((val.scored / val.max) * 100)}%)`)
+    if (res.domainScores) {
+      domainText = Object.entries(res.domainScores)
+        .map(([domain, val]: [string, { scored: number; max: number }]) => `  - ${domain}: ${val.scored} / ${val.max} pts (${Math.round((val.scored / val.max) * 100)}%)`)
         .join("\n");
     }
 
-    const reportText = `[RELATÓRIO DE AUTOAVALIAÇÃO - NEUROCONECTA]
-Data: ${new Date().toLocaleDateString("pt-BR")}
-Instrumento: ${selectedTest.title}
-Validação Científica: ${selectedTest.validatedClinically ? `Sim (${selectedTest.validationReference})` : "Não (Reflexão Pessoal Comunitária)"}
+    const reportText = `[PARECER TÉCNICO & RESENHA CLÍNICA - NEUROCONECTA]
+Data da Avaliação: ${itemToCopy ? itemToCopy.date : new Date().toLocaleDateString("pt-BR")}
+Paciente / Usuário: ${itemToCopy?.userName || "Usuário Registrado"}
+Instrumento Avaliativo: ${itemToCopy ? itemToCopy.testTitle : test?.title}
+Validação Científica: ${itemToCopy?.validatedClinically || test?.validatedClinically ? `Sim (${itemToCopy?.validationReference || test?.validationReference})` : "Não (Reflexão Pessoal Comunitária)"}
 
-PONTUAÇÃO TOTAL: ${testResult.score} / ${testResult.maxScore} pts
-INTERPRETAÇÃO DE TRIAGEM: ${testResult.level}
+PONTUAÇÃO OBTIDA: ${res.score} / ${res.maxScore} pts
+CLASSIFICAÇÃO DE TRIAGEM: ${itemToCopy ? itemToCopy.interpretationLevel : res.level}
 
-RESUMO EXECUTIVO:
-${testResult.summary}
+RESENHA TÉCNICA (AVALIAÇÃO EM PROSA CONTINUA):
+${itemToCopy ? itemToCopy.technicalReview : res.technicalReview}
 
-RECOMENDAÇÃO TÉCNICA:
-${testResult.recommendation}
+DIRETRIZES E RECOMENDAÇÕES MULTIPROFISSIONAIS:
+${itemToCopy ? itemToCopy.recommendation : res.recommendation}
 
-${domainText ? `DESCOMPOSIÇÃO POR DOMÍNIOS COGNITIVOS/SENSORIAIS:\n${domainText}\n` : ""}
-SINAIS E DICAS PRÁTICAS:
-${testResult.tips.map(t => `- ${t}`).join("\n")}
-
-Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e autoavaliação. Não substitui consulta e laudo clínico com equipe multiprofissional (médico neurologista/psiquiatra ou neuropsicólogo).`;
+${domainText ? `DESCOMPOSIÇÃO POR DOMÍNIOS AVALIADOS:\n${domainText}\n` : ""}
+Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de triagem. A interpretação final e laudo definitivo exigem avaliação presencial multiprofissional (Médico Neurologista/Psiquiatra, Enfermeiro e Neuropsicólogo).`;
 
     navigator.clipboard.writeText(reportText);
     setCopiedReport(true);
     setTimeout(() => setCopiedReport(false), 2500);
   };
+
+  // Filtered history list for patients, professionals and admins
+  const filteredHistory = savedHistory.filter((item) => {
+    const matchesSearch =
+      item.testTitle.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
+      (item.userName && item.userName.toLowerCase().includes(historySearchQuery.toLowerCase())) ||
+      item.interpretationLevel.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
+      item.technicalReview.toLowerCase().includes(historySearchQuery.toLowerCase());
+
+    const matchesRole =
+      historyRoleFilter === "todos" ||
+      (historyRoleFilter === "medicina" && item.validatedClinically) ||
+      (historyRoleFilter === "enfermagem" && item.clinicalStatus) ||
+      (historyRoleFilter === "escola" && (item.testId === "catq" || item.testId === "raads-r"));
+
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
@@ -350,32 +369,105 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
             ))}
           </div>
 
-          {/* Test Result History */}
-          {savedHistory.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-teal-400" />
-                Histórico de Autoavaliações Salvas
-              </h3>
-              <div className="space-y-3">
-                {savedHistory.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm"
-                  >
-                    <div>
-                      <span className="text-[11px] text-slate-500 font-mono">{item.date}</span>
-                      <h4 className="font-bold text-slate-200">{item.testTitle}</h4>
-                      <p className="text-teal-400 font-medium text-xs mt-0.5">{item.interpretationLevel}</p>
-                    </div>
-                    <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300 font-mono text-center">
-                      {item.score} / {item.maxScore} pts
-                    </div>
-                  </div>
-                ))}
+          {/* Test Result History Section - Accessible to Users, Doctors, Nurses, Teachers & Super Admin */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-teal-400" />
+                  Histórico Consolidado de Avaliações &amp; Pareceres Clínicos
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Acesso compartilhado para Pacientes, Médicos, Enfermeiros, Professores e Super Admins.
+                </p>
+              </div>
+
+              {/* Role filter buttons */}
+              <div className="flex flex-wrap gap-1.5 text-xs">
+                {[
+                  { id: "todos", label: "Todos", icon: UserCheck },
+                  { id: "medicina", label: "Medicina", icon: Stethoscope },
+                  { id: "enfermagem", label: "Enfermagem", icon: HeartPulse },
+                  { id: "escola", label: "Escola / PEI", icon: GraduationCap },
+                ].map((rf) => {
+                  const Icon = rf.icon;
+                  return (
+                    <button
+                      key={rf.id}
+                      onClick={() => setHistoryRoleFilter(rf.id)}
+                      className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
+                        historyRoleFilter === rf.id
+                          ? "bg-teal-950 text-teal-200 border-teal-700 shadow-sm"
+                          : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{rf.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                placeholder="Buscar no histórico por paciente, instrumento ou palavras da resenha técnica..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+
+            {/* History Items Cards */}
+            <div className="space-y-3">
+              {filteredHistory.length > 0 ? (
+                filteredHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs sm:text-sm transition"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] text-slate-400 font-mono">{item.date}</span>
+                        {item.userName && (
+                          <span className="text-[11px] font-bold text-teal-300 bg-teal-950 px-2 py-0.5 rounded border border-teal-800">
+                            👤 {item.userName}
+                          </span>
+                        )}
+                        {item.validatedClinically && (
+                          <span className="text-[10px] text-emerald-400 font-medium bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Validado
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-slate-100">{item.testTitle}</h4>
+                      <p className="text-teal-400 font-medium text-xs">{item.interpretationLevel}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-slate-200 font-mono text-center font-bold">
+                        {item.score} / {item.maxScore} pts
+                      </div>
+                      <button
+                        onClick={() => setViewingHistoryDetail(item)}
+                        className="px-3 py-2 bg-teal-700 hover:bg-teal-600 text-white font-medium text-xs rounded-xl flex items-center gap-1.5 transition"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Ver Resenha</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center text-slate-500 text-xs italic bg-slate-950/60 rounded-xl border border-slate-800">
+                  Nenhum registro encontrado para os filtros selecionados.
+                </div>
+              )}
+            </div>
+          </div>
 
         </div>
       ) : (
@@ -494,13 +586,13 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
 
             </div>
           ) : (
-            /* Test Results Display */
+            /* Test Results Display - Continuous Prose Monograph without Bullet Points */
             <div className="space-y-6">
               
               <div className="p-6 bg-slate-950 border border-teal-800/80 rounded-2xl space-y-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                   <div>
-                    <span className="text-xs uppercase tracking-wider text-teal-400 font-bold">Resultado da Autoavaliação</span>
+                    <span className="text-xs uppercase tracking-wider text-teal-400 font-bold">Resultado da Autoavaliação &amp; Parecer</span>
                     <h3 className="text-xl font-bold text-slate-100">{testResult.level}</h3>
                   </div>
                   <div className="text-2xl font-extrabold text-teal-300 font-mono bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl">
@@ -508,11 +600,20 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
                   </div>
                 </div>
 
-                <div className="space-y-3 text-slate-200 text-sm leading-relaxed">
-                  <p className="font-medium text-teal-200">{testResult.summary}</p>
-                  <p className="text-slate-300 bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
-                    💡 <strong>Recomendação Técnica:</strong> {testResult.recommendation}
-                  </p>
+                {/* Dense Technical Review Monograph in Prose */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-teal-400" />
+                    Resenha Técnica Avaliativa (Análise Monográfica em Prosa):
+                  </h4>
+
+                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-xl text-slate-200 text-sm leading-relaxed whitespace-pre-line text-justify font-sans">
+                    {testResult.technicalReview}
+                  </div>
+
+                  <div className="text-slate-300 bg-slate-900/90 p-4 rounded-xl border border-slate-800 text-xs sm:text-sm leading-relaxed">
+                    💡 <strong>Diretriz Técnica Multiprofissional:</strong> {testResult.recommendation}
+                  </div>
                 </div>
 
                 {/* Sub-Domains Breakdown Meters */}
@@ -524,7 +625,7 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
                     </h4>
 
                     <div className="space-y-2.5">
-                      {Object.entries(testResult.domainScores).map(([domName, val]) => {
+                      {Object.entries(testResult.domainScores).map(([domName, val]: [string, { scored: number; max: number }]) => {
                         const pct = Math.round((val.scored / val.max) * 100);
                         return (
                           <div key={domName} className="space-y-1">
@@ -544,24 +645,12 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
                     </div>
                   </div>
                 )}
-
-                <div className="space-y-2 pt-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sugestões Práticas Personalizadas:</h4>
-                  <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
-                    {testResult.tips.map((tip, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-teal-400 font-bold">•</span>
-                        <span>{tip}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={handleCopyClinicalReport}
+                  onClick={() => handleCopyClinicalReport()}
                   className="px-5 py-2.5 bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs sm:text-sm rounded-xl transition flex items-center gap-2 shadow"
                 >
                   {copiedReport ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
@@ -588,6 +677,74 @@ Aviso Legal: Este documento é fruto de ferramenta pedagógica de autorrelato e 
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* History Detail Modal View */}
+      {viewingHistoryDetail && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-mono text-teal-400">{viewingHistoryDetail.date}</span>
+                <h3 className="text-lg font-bold text-slate-100">{viewingHistoryDetail.testTitle}</h3>
+                <p className="text-xs text-slate-400">Paciente: {viewingHistoryDetail.userName || "Usuário"}</p>
+              </div>
+              <button
+                onClick={() => setViewingHistoryDetail(null)}
+                className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 uppercase font-bold">Classificação</span>
+                  <p className="text-sm font-bold text-teal-300">{viewingHistoryDetail.interpretationLevel}</p>
+                </div>
+                <div className="text-lg font-bold font-mono text-slate-100 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                  {viewingHistoryDetail.score} / {viewingHistoryDetail.maxScore} pts
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                  Resenha Técnica (Análise Monográfica em Prosa):
+                </h4>
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 leading-relaxed text-justify whitespace-pre-line">
+                  {viewingHistoryDetail.technicalReview}
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300">
+                💡 <strong>Recomendação:</strong> {viewingHistoryDetail.recommendation}
+              </div>
+
+              {viewingHistoryDetail.domainScores && Object.keys(viewingHistoryDetail.domainScores).length > 0 && (
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase">Domínios Avaliados:</h4>
+                  {Object.entries(viewingHistoryDetail.domainScores).map(([dom, val]: [string, { scored: number; max: number }]) => (
+                    <div key={dom} className="flex justify-between text-xs text-slate-300">
+                      <span>{dom}</span>
+                      <span className="font-mono text-teal-400">{val.scored} / {val.max} pts</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => handleCopyClinicalReport(viewingHistoryDetail)}
+                className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white font-medium text-xs rounded-xl flex items-center gap-1.5 transition"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copiar Parecer para Prontuário</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

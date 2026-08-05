@@ -35,154 +35,97 @@ function getGenAI(): GoogleGenAI | null {
   return aiClient;
 }
 
-const SYSTEM_INSTRUCTION = `Você é o assistente virtual do aplicativo "NeuroConecta", desenvolvido para apoiar pessoas autistas (TEA) e suas famílias, melhorando a qualidade de vida por meio de ferramentas práticas, testes de autoavaliação, suporte sensorial, comunicação e acolhimento.
+const SYSTEM_INSTRUCTION = `Você é o assistente virtual inteligente e especializado do aplicativo "NeuroConecta", desenvolvido para ser um ecossistema completo de apoio à neurodiversidade.
 
-## PERSONALIDADE E TOM
-- Seja claro, direto, empático e extremamente respeitoso. Evite metáforas excessivas, ironias ou linguagem ambígua.
-- Use linguagem inclusiva e neuroafirmativa (ex: "suas características sensoriais", "seu perfil neurodivergente", "suas preferências de comunicação").
-- Valide as experiências e sentimentos do usuário sem medicalizar nem julgar.
-- Ofereça opções estruturadas e passo a passo sempre que conveniente (ex: "Escolha uma opção: 1, 2 ou 3").
-- Responda no idioma do usuário (predominantemente Português do Brasil).
+Você possui capacidade técnica para interagir em múltiplos NÍVEIS E PERSONAS PROFISSIONAIS, ajustando dinamicamente o vocabulário, profundidade científica e direcionamentos de acordo com o papel selecionado:
 
-## ÁREAS DE SUPORTE
-1. Rotina e Organização: Dicas para rotinas visuais, blocos de tempo, pausas sensoriais e combate ao esgotamento.
-2. Regulação Sensorial: Grounding (técnica 5-4-3-2-1), estratégias para hiper/hiposensibilidades a som, luz, tato, texturas.
-3. Comunicação e Relacionamentos: Scripts sociais práticos para trabalho, família, consultas médicas; como pedir acomodações.
-4. Testes e Autoavaliação: Esclarecer dúvidas sobre testes do app (AQ-10, SQ-EQ, Perfil Sensorial, Burnout Autista, Máscara Social CAT-Q). Lembre sempre que são triagens adaptadas, não diagnósticos médicos.
-5. Emergência e Crise: Passo a passo calmo para Meltdown e Shutdown, redução de estímulos.
-6. Educação e Empoderamento: Explicar conceitos como Stimming, Interesses Especiais, Máscara (Camouflaging), Função Executiva e Dupla Empatia.
+## NÍVEIS DE INTERAÇÃO DISPONÍVEIS:
+1. 🩺 **NÍVEL MÉDICO & NEUROLOGISTA (medico):**
+   - Utilize terminologia nosológica e neurobiológica precisa (ex: critérios DSM-5-TR, CID-11 6A02, neuroconectividade atípica, funções executivas dorso-laterais, coerência central local).
+   - Analise testes de triagem (RAADS-R, AQ-10, CAT-Q) do ponto de vista de validade psicométrica, sensibilidade, especificidade e diagnósticos diferenciais (ex: TDAH, Transtorno de Personalidade Esquizóide, MMT/Síndrome de Burnout Autista).
+   - Forneça orientação rigorosa para condução de investigação neuropsicológica e emissão de laudo formal.
 
-## REGRAS INVIOLÁVEIS DE SEGURANÇA
-- NUNCA forneça diagnóstico formal.
-- Sempre recomende a busca por profissionais qualificados (psicólogos, neuropediatras, psiquiatras) para avaliação médica.
-- Em crises graves de saúde mental ou risco, forneça contatos de emergência no Brasil: CVV 188 (apoio emocional), SAMU 192 (emergência) ou serviços locais de saúde.
-- Respeite o nome e pronomes que o usuário indicar.`;
+2. 🩺 **NÍVEL ENFERMAGEM & CUIDADOS (enfermeiro):**
+   - Aplique o raciocínio do Processo de Enfermagem e Sistematização da Assistência (SAE), focando na identificação de sinais vitais de desconforto sensorial, prevenção de úlceras por estresse, manejo de meltdowns e rotinas de higiene/nutrição sensoriais.
+   - Orientações de biossegurança, acolhimento em triagem (Classificação de Risco Manchester/SUS) e prescrição de cuidados de enfermagem adaptados.
 
-function getFallbackAssistantReply(userMessage: string, userContext?: any): string {
+3. 🧠 **NÍVEL PSIQUIATRIA & SAÚDE MENTAL (psiquiatra):**
+   - Analise interações entre traços autistas e comorbidades do afeto e humor (Ansiedade Social, Depressão Maior, Rejeição Sensível a Disforia - RSD, Alexitimia, Trauma Complexo C-PTSD).
+   - Aborde a síndrome de Burnout Autista x Depressão Unipolar e apresente diretrizes gerais de estadiamento psiquiátrico, manejo de sobrecarga de dopamina/serotonina e estabilização de crises.
+
+4. 🎓 **NÍVEL EDUCACIONAL & PEDAGÓGICO (educador):**
+   - Fundamente respostas na Lei Brasileira de Inclusão (LBI nº 13.146/2015) e Lei Berenice Piana (nº 12.764/2012).
+   - Forneça diretrizes práticas para elaboração de Plano de Ensino Individualizado (PEI/PDI), desenho universal para a aprendizagem (DUA), acomodações de provas (tempo estendido, sala reservada) e mediação escolar por Acompanhante Terapêutico (AT).
+
+5. 💙 **NÍVEL USUÁRIO & AUTOADVOCACIA (usuario):**
+   - Tom neuroafirmativo, claro, empático, direto, sem jargões desnecessários.
+   - Orientações práticas de rotina, regulação sensorial, scripts sociais e descompressão.
+
+## REGRAS GERAIS:
+- Responda com texto fluido, denso e articulado, priorizando análises técnicas e embasadas.
+- Respeite rigorosamente os limites de segurança: não forneça prescrição medicamentosa direta nem substitua a consulta presencial.
+- Responda predominantemente em Português do Brasil.`;
+
+function getFallbackAssistantReply(userMessage: string, userContext?: any, role: string = "usuario"): string {
   const text = userMessage.toLowerCase();
   const name = userContext?.preferredName ? `, ${userContext.preferredName}` : "";
 
-  if (
-    text.includes("crise") ||
-    text.includes("meltdown") ||
-    text.includes("shutdown") ||
-    text.includes("panico") ||
-    text.includes("pânico") ||
-    text.includes("desespero") ||
-    text.includes("socorro") ||
-    text.includes("sobrecarga") ||
-    text.includes("ansiedad")
-  ) {
-    return `Olá${name}. Percebo que você pode estar passando por um momento de sobrecarga ou crise. 
+  // Role-specific tailored fallback responses
+  if (role === "medico") {
+    return `[Parecer Técnico-Médico / Neurologia]
+Prezado(a) profissional/paciente${name}. Do ponto de vista neurológico e neurodesenvolvimental, a análise do quadro clínico do Transtorno do Espectro Autista em adultos envolve a investigação sistemática dos domínios do DSM-5-TR (A - Comunicação e Interação Social; B - Padrões Restritos e Repetitivos de Comportamento).
 
-Sua segurança e bem-estar são a nossa prioridade absoluta.
-
-💙 **Passos de Regulação Imediata:**
-1. **Reduza Estímulos:** Se possível, vá para um ambiente escuro e silencioso ou use fones com cancelamento de ruído.
-2. **Exercício 5-4-3-2-1 (Grounding):**
-   - 👁️ Observe 5 coisas ao seu redor.
-   - 🖐️ Sinta 4 texturas acessíveis.
-   - 👂 Identifique 3 sons distantes.
-   - 👃 Note 2 cheiros presentes.
-   - 👅 Respire fundo focando no ar entrando e saindo.
-
-⚠️ *Se sentir que precisa de suporte imediato em crise ou apoio emocional gratuito, utilize o botão **SOS Crise** no topo da página ou entre em contato com o CVV (188) ou SAMU (192).*`;
+Em triagens com marcadores significativos (como escores do RAADS-R superiores a 65 pontos ou AQ-10 superior a 6/10), recomenda-se o prosseguimento da investigação via bateria neuropsicológica quantitativa (ex: WAIS-IV para inteligência, FDT/TAVIS para funções executivas e ADOS-2 Módulo 4). Diagnósticos diferenciais primários incluem Transtorno de Deficit de Atenção e Hiperatividade (TDAH comórbido em ~50-70% dos casos), Transtorno de Ansiedade Social e Transtorno de Personalidade Evitativa. Fico à disposição para aprofundar qualquer dimensão nosológica ou psicométrica específica.`;
   }
 
-  if (
-    text.includes("rotina") ||
-    text.includes("tarefa") ||
-    text.includes("organiza") ||
-    text.includes("tempo") ||
-    text.includes("foco") ||
-    text.includes("executiv")
-  ) {
-    return `Olá${name}! Para organizar a rotina de forma neuroafirmativa e evitar a fadiga executiva, aqui estão algumas estratégias práticas:
+  if (role === "enfermeiro") {
+    return `[Parecer de Enfermagem & Cuidado Holístico]
+Olá${name}. A assistência de enfermagem neuroafirmativa prioriza a identificação precoce de indicadores fisio-comportamentais de sobrecarga sensorial e fadiga executiva.
 
-1. **Micro-passos (Chunking):** Quebre tarefas grandes em etapas minúsculas. Em vez de "arrumar o quarto", comece recolhendo 2 objetos.
-2. **Pausas Sensoriais Programadas:** Não espere o esgotamento para descansar. Programe 5 a 10 minutos de descompressão a cada tarefa.
-3. **Organizador do App:** Acesse a aba **Rotina Visual & Tarefas** no menu para estruturar suas atividades por urgência e demanda de energia.
-
-Como posso te ajudar a planejar sua próxima atividade?`;
+No plano de cuidados de enfermagem (SISTEMATIZAÇÃO SAE):
+1. **Diagnóstico de Enfermagem:** Risco de Conflito de Papel Social relacionado a ambiente de hiperestimulação sensorial; Resposta de Enfrentamento Ineficaz por exaustão do sistema nervoso autônomo.
+2. **Intervenções Imediatas (NIC):** Promoção de ambiente de baixa estimulação (iluminação difusa <300 lux, redução de ruídos de fundo), monitoramento de taquicardia e hiperventilação compensatória, e implementação de pausado estruturado com hidratação e descompressão tátil.
+3. **Avaliação contínua (NOC):** Nível de ansiedade atenuado e recuperação do tônus de autorregulação. Como a equipe de enfermagem pode atuar melhor no seu plano de cuidado hoje?`;
   }
 
-  if (
-    text.includes("comunica") ||
-    text.includes("script") ||
-    text.includes("falar") ||
-    text.includes("trabalho") ||
-    text.includes("explicar") ||
-    text.includes("social")
-  ) {
-    return `Olá${name}! A comunicação neuroafirmativa ajuda a expressar necessidades e limites com clareza e sem sentimento de culpa.
+  if (role === "psiquiatra") {
+    return `[Parecer Psiquiátrico & Saúde Mental]
+Acolhendo sua solicitação no âmbito da psiquiatria da neurodivergência${name}. A intersecção entre o perfil autista e manifestações de sofrimento psíquico exige diferenciação criteriosa entre Depressão Clássica e a Síndrome de Burnout Autista (Raymaker et al., 2020).
 
-📌 **Exemplo de Script para Solicitar Acomodação:**
-*"Olá! Para que eu possa desempenhar meu trabalho com melhor foco e conforto, prefiro receber instruções detalhadas por escrito e ter breves pausas silenciosas. Agradeço pela compreensão!"*
-
-Você pode navegar até a aba **Comunicação** para explorar mais cartões ilustrados e scripts sociais prontos!`;
+Enquanto a depressão cursa com anedonia generalizada e pensamentos de desvalia, o Burnout Autista caracteriza-se por exaustão bio-psico-sensorial crônica decorrente do esforço contínuo de camuflagem social (Mapeado no CAT-Q). Clinicamente, observa-se regressão temporária no desempenho executivo e perda do limiar de tolerância sensorial. O plano terapêutico psiquiátrico deve priorizar a remoção de estressores ambientais e psicoeducação neuroafirmativa antes de escalonamentos farmacológicos desnecessários.`;
   }
 
-  if (
-    text.includes("teste") ||
-    text.includes("aq-10") ||
-    text.includes("cat-q") ||
-    text.includes("perfil") ||
-    text.includes("diagnostico") ||
-    text.includes("diagnóstico") ||
-    text.includes("laudo")
-  ) {
-    return `Olá${name}! Os questionários disponíveis no **NeuroConecta** (como AQ-10, CAT-Q de camuflagem social e Perfil Sensorial) são ferramentas para **autoconhecimento e triagem**.
+  if (role === "educador") {
+    return `[Parecer Pedagógico & Inclusão Escolar / PEI]
+Olá${name}! Sob a perspectiva da Pedagogia Inclusiva e legislação vigente (LBI nº 13.146/2015 e Lei Berenice Piana nº 12.764/2012), a garantia de acesso ao conhecimento para estudantes neurodivergentes exige flexibilização curricular estruturada por meio do Plano de Ensino Individualizado (PEI/PDI).
 
-Eles ajudam a mapear traços autistas e preferências sensoriais, mas **não substituem um diagnóstico médico ou neurológico formal**.
-
-Acesse a aba **Testes de Triagem** para realizar as autoavaliações ou **Relatórios & Diagnóstico** para gerar resumos de resultados para seu médico ou terapeuta!`;
-  }
-
-  if (
-    text.includes("sensorial") ||
-    text.includes("som") ||
-    text.includes("luz") ||
-    text.includes("barulho") ||
-    text.includes("textura") ||
-    text.includes("estimulo") ||
-    text.includes("estímulo")
-  ) {
-    return `Olá${name}! O processamento sensorial hiper ou hipossensível é uma parte essencial do perfil neurodivergente.
-
-✨ **Estratégias de Regulação:**
-- **Auditição:** Utilize fones com cancelamento ativo de ruído ou ruído branco/marrom.
-- **Visão:** Reduza o brilho de telas, ative o Modo Baixa Estimulação no topo da tela.
-- **Tato/Propriocepção:** Experimente mantas de peso, objetos de stimming (fidgets) e roupas sem costura incômoda.
-
-Visite a aba **Regulação Sensorial** para guias visuais e exercícios de descompressão!`;
+Diretrizes pedagógicas recomendadas:
+- **Acomodação Ambiental:** Assento estratégico longe de fontes de ruído e luz direta, permissão para fones de ouvido durante momentos de estudo individual.
+- **Adaptação de Avaliações:** Provas impressas em fonte legível com espaçamento ampliado, tempo adicional de 50% e permissão para pausas de descompressão a cada 40 minutos.
+- **Desenho Universal para Aprendizagem (DUA):** Apresentação de conteúdos com apoios visuais esquemáticos, mapas mentais e roteiros de passo a passo de tarefas complexas. Como posso auxiliar na montagem do plano educacional?`;
   }
 
   return `Olá${name}! Sou o assistente neuroafirmativo do **NeuroConecta**. Como posso te apoiar hoje?
 
-Principais áreas que posso te ajudar:
-1. 🗓️ **Rotina & Organização:** Micro-passos para combate à sobrecarga executiva.
-2. 🧘 **Regulação Sensorial:** Exercícios de grounding e descompressão.
-3. 💬 **Comunicação & Scripts:** Frases para solicitar acomodações e impor limites.
-4. 📋 **Orientações sobre Triagens:** Explicações sobre os testes de autoavaliação.
-
-Sinta-se à vontade para me fazer uma pergunta ou compartilhar o que está sentindo!`;
+Sinta-se à vontade para me fazer perguntas sobre rotinas, regulação sensorial, testes de triagem ou comunicação! Você também pode alterar o modo de interação no topo do chat para conversar no Nível Médico, Enfermagem, Psiquiatria ou Educação Inclusiva.`;
 }
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { messages, userContext } = req.body;
+    const { messages, userContext, interactionRole } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Campo 'messages' é obrigatório e deve ser um array." });
     }
 
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
+    const activeRole = interactionRole || "usuario";
     const ai = getGenAI();
 
     if (ai) {
-      let contextPrompt = "";
+      let contextPrompt = `[MODO DE INTERAÇÃO SELECIONADO: Nível ${activeRole.toUpperCase()}]\n`;
       if (userContext) {
-        contextPrompt = `[Contexto do Usuário: Nome="${userContext.preferredName || "Não informado"}", Diagnóstico="${userContext.diagnosisStatus || "Não informado"}", Foco Atual="${userContext.currentFocus || "Geral"}"]\n\n`;
+        contextPrompt += `[Contexto do Usuário: Nome="${userContext.preferredName || "Não informado"}", Diagnóstico="${userContext.diagnosisStatus || "Não informado"}", Foco="Geral"]\n\n`;
       }
 
       const formattedHistory = messages
@@ -192,7 +135,7 @@ app.post("/api/chat", async (req, res) => {
         })
         .join("\n\n");
 
-      const fullPrompt = `${contextPrompt}${formattedHistory}\n\nNeuroConecta:`;
+      const fullPrompt = `${contextPrompt}${formattedHistory}\n\nNeuroConecta (${activeRole}):`;
 
       // Try gemini models
       const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
@@ -217,11 +160,11 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // Fallback if AI key is missing or model calls fail
-    const fallbackReply = getFallbackAssistantReply(lastUserMsg, userContext);
+    const fallbackReply = getFallbackAssistantReply(lastUserMsg, userContext, activeRole);
     return res.json({ reply: fallbackReply });
   } catch (error: any) {
     console.error("Erro na rota /api/chat:", error);
-    const fallbackReply = getFallbackAssistantReply("", req.body?.userContext);
+    const fallbackReply = getFallbackAssistantReply("", req.body?.userContext, req.body?.interactionRole || "usuario");
     return res.json({ reply: fallbackReply });
   }
 });
