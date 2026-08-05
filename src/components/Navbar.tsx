@@ -157,11 +157,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Logo & Brand */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("chat")}>
-            <img 
-              src="/neuroconecta_logo.svg" 
-              alt="NeuroConecta Logo" 
-              className="w-10 h-10 object-contain rounded-xl p-0.5 bg-slate-950 border border-teal-800/80 shadow-md"
-            />
+            <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0">
+              <img 
+                src="/neuroconecta_exact.png" 
+                alt="NeuroConecta Logo" 
+                className="w-9 h-9 object-contain"
+              />
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">

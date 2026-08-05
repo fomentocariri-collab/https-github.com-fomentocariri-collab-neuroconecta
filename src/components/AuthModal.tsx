@@ -289,7 +289,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-white border border-teal-200 rounded-2xl shadow-sm shrink-0">
               <img 
-                src="/neuroconecta_logo.svg" 
+                src="/neuroconecta_exact.png" 
                 alt="Logo NeuroConecta" 
                 className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />

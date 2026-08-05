@@ -80,11 +80,13 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
           {/* Col 2: NeuroConecta Branding */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <img 
-                src="/neuroconecta_logo.svg" 
-                alt="NeuroConecta Logo" 
-                className="w-12 h-12 object-contain rounded-xl p-1 bg-slate-900 border border-slate-800" 
-              />
+              <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0">
+                <img 
+                  src="/neuroconecta_exact.png" 
+                  alt="NeuroConecta Logo" 
+                  className="w-10 h-10 object-contain" 
+                />
+              </div>
               <div>
                 <h3 className="text-base font-bold text-teal-300">
                   NeuroConecta

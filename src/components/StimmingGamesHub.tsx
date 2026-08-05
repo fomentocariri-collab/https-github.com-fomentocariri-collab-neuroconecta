@@ -1503,7 +1503,9 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
             {/* Reference Thumbnail */}
             <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2 text-center">
               <p className="text-xs font-semibold text-slate-300">Imagem de Referência:</p>
-              <img src="/neuroconecta_logo.svg" alt="NeuroConecta" className="w-36 h-36 object-contain mx-auto p-2 bg-slate-900 rounded-xl border border-slate-800" />
+              <div className="p-2 bg-white rounded-xl border border-teal-200 inline-block mx-auto">
+                <img src="/neuroconecta_exact.png" alt="NeuroConecta" className="w-36 h-36 object-contain mx-auto" />
+              </div>
               <p className="text-[11px] text-teal-400">Troque as peças do painel ao lado para recriar este símbolo.</p>
             </div>
 
