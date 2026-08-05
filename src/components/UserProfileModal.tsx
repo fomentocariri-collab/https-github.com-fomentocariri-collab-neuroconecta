@@ -18,6 +18,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [name, setName] = useState(userProfile.preferredName);
   const [pronouns, setPronouns] = useState(userProfile.pronouns);
   const [role, setRole] = useState<UserRole>(userProfile.userRole || (userProfile.isSuperAdmin ? "superadmin" : "pcd"));
+  const [profRoleType, setProfRoleType] = useState(userProfile.professionalRoleType || "pcd");
+  const [profRegisterNum, setProfRegisterNum] = useState(userProfile.professionalRegisterNumber || "");
   const [diagnosis, setDiagnosis] = useState<DiagnosisStatus>(userProfile.diagnosisStatus);
   const [supportLevel, setSupportLevel] = useState<SupportLevel>(userProfile.supportLevel || "nao_especificado");
   const [focus, setFocus] = useState<FocusArea>(userProfile.currentFocus);
@@ -105,6 +107,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       preferredName: name,
       pronouns,
       userRole: role,
+      professionalRoleType: profRoleType as any,
+      professionalRegisterNumber: profRegisterNum.trim() || undefined,
       diagnosisStatus: diagnosis,
       supportLevel,
       currentFocus: focus,
@@ -167,20 +171,96 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
 
           {/* User Role Selection */}
-          <div className="space-y-1.5 p-3.5 bg-slate-950 border border-teal-800/80 rounded-2xl">
+          <div className="space-y-3 p-3.5 bg-slate-950 border border-teal-800/80 rounded-2xl">
             <label className="block font-bold text-teal-300 text-xs flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-teal-400" /> Perfil / Módulo Principal de Acesso
             </label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
+              onChange={(e) => {
+                const newRole = e.target.value as UserRole;
+                setRole(newRole);
+                if (newRole === "saude_caps") setProfRoleType("medico");
+                else if (newRole === "rh_gestor") setProfRoleType("rh");
+                else if (newRole === "cuidador_educador") setProfRoleType("educador");
+                else setProfRoleType("pcd");
+              }}
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs font-semibold focus:outline-none focus:border-teal-500"
             >
-              <option value="pcd">🧩 Pessoa Neurodivergente / PCD (Interface Calma & Autorregulação)</option>
-              <option value="cuidador_educador">🎓 Educador Especial / Cuidador / Pai (Módulo PEI & Orientação)</option>
-              <option value="saude_caps">🩺 Médico / Enfermeiro / Saúde Mental CAPS (Prontuário & Escalas)</option>
+              <option value="pcd">🧩 Paciente / PCD Neurodivergente (Skin Roxa - Interface Calma)</option>
+              <option value="saude_caps">🩺 Médico / Enfermeiro / Perito CAPS (Skin Rosa/Verde - Prontuário)</option>
+              <option value="rh_gestor">🏢 Recursos Humanos / Gestor de Pessoas (Skin Azul - Dossiê & NR-1)</option>
+              <option value="cuidador_educador">🎓 Educador / Professor / Cuidador (Skin Âmbar - PEI Escola)</option>
               <option value="superadmin">⚡ Gestor / Superadmin de TI (Acesso Geral & Banco)</option>
             </select>
+
+            {role === "saude_caps" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-300">Categoria Profissional</label>
+                  <select
+                    value={profRoleType}
+                    onChange={(e) => setProfRoleType(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                  >
+                    <option value="medico">Médico(a) (Skin Rosa)</option>
+                    <option value="enfermeiro">Enfermeiro(a) (Skin Verde)</option>
+                    <option value="perito">Perito(a) Médico(a) (Skin Rosa)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    {profRoleType === "enfermeiro" ? "Registro COREN" : "Registro CRM"}
+                  </label>
+                  <input
+                    type="text"
+                    value={profRegisterNum}
+                    onChange={(e) => setProfRegisterNum(e.target.value)}
+                    placeholder={profRoleType === "enfermeiro" ? "Ex: COREN/CE 123456" : "Ex: CRM/CE 654321"}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                  />
+                </div>
+              </div>
+            )}
+
+            {role === "rh_gestor" && (
+              <div className="space-y-1 pt-2">
+                <label className="block text-xs font-semibold text-slate-300">Registro Profissional RH / CRA / MTE</label>
+                <input
+                  type="text"
+                  value={profRegisterNum}
+                  onChange={(e) => setProfRegisterNum(e.target.value)}
+                  placeholder="Ex: CRA/CE 98765 ou MTE/RH 00123"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                />
+              </div>
+            )}
+
+            {role === "cuidador_educador" && (
+              <div className="space-y-1 pt-2">
+                <label className="block text-xs font-semibold text-slate-300">Registro MEC / Matrícula Escolar</label>
+                <input
+                  type="text"
+                  value={profRegisterNum}
+                  onChange={(e) => setProfRegisterNum(e.target.value)}
+                  placeholder="Ex: MEC/CE 45678"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                />
+              </div>
+            )}
+
+            {role === "pcd" && (
+              <div className="space-y-1 pt-2">
+                <label className="block text-xs font-semibold text-slate-300">Carteira CIPTEA / Cartão BPC (Opcional)</label>
+                <input
+                  type="text"
+                  value={profRegisterNum}
+                  onChange={(e) => setProfRegisterNum(e.target.value)}
+                  placeholder="Ex: CIPTEA-CE 2026/001"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100"
+                />
+              </div>
+            )}
           </div>
 
           {/* Diagnosis & Support Level */}

@@ -47,22 +47,81 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.userRole === "superadmin";
   const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
+  const profRoleType = userProfile.professionalRoleType;
+
+  // Determine automatic color skin theme based on role/profession
+  const getSkinConfig = () => {
+    if (isSuperAdmin) {
+      return {
+        label: "⚡ Superadmin / Programador TI",
+        badgeClass: "bg-cyan-950 text-cyan-300 border-cyan-700",
+        activeTabClass: "bg-cyan-950 text-cyan-200 border-cyan-700 shadow-cyan-950/50",
+        borderAccent: "border-cyan-800/80",
+        dotColor: "bg-cyan-400",
+      };
+    }
+    if (userRole === "saude_caps" || profRoleType === "medico" || profRoleType === "perito" || profRoleType === "enfermeiro") {
+      if (profRoleType === "enfermeiro") {
+        return {
+          label: `🩺 Enfermagem CAPS ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+          badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-700",
+          activeTabClass: "bg-emerald-950 text-emerald-200 border-emerald-700 shadow-emerald-950/50",
+          borderAccent: "border-emerald-800/80",
+          dotColor: "bg-emerald-400",
+        };
+      }
+      return {
+        label: `🩺 Médico / Perito CAPS ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+        badgeClass: "bg-rose-950 text-rose-300 border-rose-700",
+        activeTabClass: "bg-rose-950 text-rose-200 border-rose-700 shadow-rose-950/50",
+        borderAccent: "border-rose-800/80",
+        dotColor: "bg-rose-400",
+      };
+    }
+    if (userRole === "rh_gestor" || profRoleType === "rh") {
+      return {
+        label: `🏢 Gestão de RH ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+        badgeClass: "bg-blue-950 text-blue-300 border-blue-700",
+        activeTabClass: "bg-blue-950 text-blue-200 border-blue-700 shadow-blue-950/50",
+        borderAccent: "border-blue-800/80",
+        dotColor: "bg-blue-400",
+      };
+    }
+    if (userRole === "cuidador_educador" || profRoleType === "educador") {
+      return {
+        label: `🎓 Educador Especial ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+        badgeClass: "bg-amber-950 text-amber-300 border-amber-700",
+        activeTabClass: "bg-amber-950 text-amber-200 border-amber-700 shadow-amber-950/50",
+        borderAccent: "border-amber-800/80",
+        dotColor: "bg-amber-400",
+      };
+    }
+    return {
+      label: `🧩 PCD / Paciente ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+      badgeClass: "bg-purple-950 text-purple-300 border-purple-700",
+      activeTabClass: "bg-purple-950 text-purple-200 border-purple-700 shadow-purple-950/50",
+      borderAccent: "border-purple-800/80",
+      dotColor: "bg-purple-400",
+    };
+  };
+
+  const skin = getSkinConfig();
 
   const allTabs = [
-    { id: "chat", label: "Assistente IA", icon: Bot, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "chat", label: "Assistente IA", icon: Bot, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
+    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones, roles: ["pcd", "superadmin"] },
+    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "superadmin"] },
     { id: "rotina", label: "Rotina Visual", icon: CalendarCheck, roles: ["pcd", "cuidador_educador", "superadmin"] },
     { id: "agenda", label: "Agenda & Medicamentos", icon: Pill, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "sensorial", label: "Regulação Sensorial", icon: Waves, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "humor", label: "Diário & Humor", icon: HeartPulse, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "comunicacao", label: "Comunicação AAC", icon: MessageSquare, roles: ["pcd", "cuidador_educador", "superadmin"] },
-    { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
     { id: "caps", label: "Saúde CAPS & Prontuário", icon: Stethoscope, roles: ["saude_caps", "superadmin"] },
-    { id: "relatorio", label: "Relatórios & Laudo", icon: FileText, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "relatorio", label: "Relatórios & Laudo", icon: FileText, roles: ["cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
+    { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["rh_gestor", "superadmin"] },
+    { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
@@ -107,10 +166,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
-                className="text-left text-[11px] text-teal-400/90 font-medium hover:underline"
+                className="text-left text-[11px] font-medium flex items-center gap-1.5 hover:underline"
                 title="Clique para alterar seu perfil de acesso"
               >
-                {getRoleLabel()}
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${skin.badgeClass}`}>
+                  {skin.label}
+                </span>
               </button>
             </div>
           </div>
@@ -176,11 +237,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setActiveTab(tab.id as NavTab)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
                   isActive
-                    ? "bg-teal-950 text-teal-200 border border-teal-700/80 shadow-md shadow-teal-950/50"
+                    ? `${skin.activeTabClass} border shadow-md`
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-teal-400" : "text-slate-400"}`} />
+                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
                 <span>{tab.label}</span>
               </button>
             );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Copy, Check, Stethoscope, HeartPulse, Brain, GraduationCap, UserCheck } from "lucide-react";
+import { Send, Bot, User, Sparkles, Copy, Check, Stethoscope, HeartPulse, Brain, GraduationCap, UserCheck, Building2 } from "lucide-react";
 import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
 
 interface ChatAssistantProps {
@@ -9,11 +9,28 @@ interface ChatAssistantProps {
   onOpenCrisis: () => void;
 }
 
-export type InteractionRole = "usuario" | "medico" | "enfermeiro" | "psiquiatra" | "educador";
+export type InteractionRole = "usuario" | "medico" | "enfermeiro" | "psiquiatra" | "educador" | "rh";
 
 const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "usuario"): string => {
   const text = userMessage.toLowerCase();
   const name = profile.preferredName ? `, ${profile.preferredName}` : "";
+
+  if (role === "rh") {
+    return `[PARECER DE RECURSOS HUMANOS & GESTÃO DE PESSOAS / NR-1 GRO]
+Acolhendo sua solicitação no Módulo de Recursos Humanos e Acessibilidade Corporativa${name}:
+
+1. **Acomodações Razoáveis no Trabalho (Art. 3º LBI Lei 13.146/2015):**
+   - Garantia de isolamento acústico/fones ANC em escritórios open-space.
+   - Pauta prévia por escrito para reuniões e priorização de comunicação assíncrona.
+   - Flexibilização de jornada e pausas sensoriais regulares.
+
+2. **Garantia da Regra de Transição do BPC / Auxílio-Inclusão (Lei 14.176/2021):**
+   - Ao ser contratado via CLT (Cotas PCD - Lei 8.213/91), o trabalhador recebe o Auxílio-Inclusão pago pelo INSS (50% do salário mínimo) acumulado com seu salário.
+   - Caso ocorra desligamento, o BPC integral é reativado imediatamente junto ao INSS sem perda de direitos.
+
+3. **Matriz de Riscos Psicossociais (NR-1.5.4 GRO):**
+   - Mapeamento e mitigação de estressores ambientais e prevenção do Burnout Autista e mascaramento social excessivo no ambiente de trabalho.`;
+  }
 
   if (role === "medico") {
     return `[PARECER TÉCNICO-CLÍNICO / NEUROLOGIA E DIAGNÓSTICO]
@@ -247,6 +264,7 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
             { id: "enfermeiro", label: "Enfermagem / Cuidado", icon: HeartPulse, color: "text-rose-400 bg-rose-950/80 border-rose-800" },
             { id: "psiquiatra", label: "Psiquiatria / Saúde Mental", icon: Brain, color: "text-purple-400 bg-purple-950/80 border-purple-800" },
             { id: "educador", label: "Educador / PEI Escola", icon: GraduationCap, color: "text-amber-400 bg-amber-950/80 border-amber-800" },
+            { id: "rh", label: "IA Recursos Humanos & Gestão", icon: Building2, color: "text-cyan-400 bg-cyan-950/80 border-cyan-800" },
           ].map((role) => {
             const Icon = role.icon;
             const isSelected = interactionRole === role.id;

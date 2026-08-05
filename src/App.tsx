@@ -76,6 +76,21 @@ export default function App() {
   const handleLoginSuccess = (user: UserProfile) => {
     handleSaveProfile(user);
     setIsAuthOpen(false);
+
+    // Intuitively route user to their specific module upon login
+    if (user.isSuperAdmin || user.email?.toLowerCase() === "sistemastop@gmail.com") {
+      setActiveTab("rh");
+    } else if (user.professionalRoleType === "medico" || user.userRole === "medico" || user.professionalRoleType === "enfermeiro" || user.userRole === "caps_tecnico") {
+      setActiveTab("caps");
+    } else if (user.professionalRoleType === "professor" || user.userRole === "professor") {
+      setActiveTab("educacao");
+    } else if (user.professionalRoleType === "perito" || user.userRole === "rh_gestor") {
+      setActiveTab("rh");
+    } else if (user.userRole === "cuidador") {
+      setActiveTab("cuidador");
+    } else {
+      setActiveTab("chat");
+    }
   };
 
   const handleLogout = () => {
@@ -158,7 +173,17 @@ export default function App() {
         {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
 
         {activeTab === "rh" && (
-          <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
+          (isSuperAdmin || userProfile.userRole === "rh_gestor" || userProfile.professionalRoleType === "perito") ? (
+            <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
+          ) : (
+            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo RH Corporativo</h3>
+              <p className="text-xs">Este módulo é exclusivo para Gestores de RH, Peritos Técnicos e Superadmin.</p>
+              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">
+                Voltar ao Assistente IA
+              </button>
+            </div>
+          )
         )}
 
         {activeTab === "supabase" && (
@@ -183,13 +208,35 @@ export default function App() {
         )}
 
         {activeTab === "caps" && (
-          <CapsHealthHub
-            isDark={userProfile.lowStimulationMode}
-            patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
-          />
+          (isSuperAdmin || userProfile.userRole === "medico" || userProfile.userRole === "caps_tecnico" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
+            <CapsHealthHub
+              isDark={userProfile.lowStimulationMode}
+              patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
+            />
+          ) : (
+            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo Clínico / CAPS</h3>
+              <p className="text-xs">Módulo reservado a Profissionais da Saúde, Médicos, Enfermeiros e Gestores CAPS.</p>
+              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">
+                Voltar ao Assistente IA
+              </button>
+            </div>
+          )
         )}
 
-        {activeTab === "educacao" && <EducationHub />}
+        {activeTab === "educacao" && (
+          (isSuperAdmin || userProfile.userRole === "professor" || userProfile.professionalRoleType === "professor") ? (
+            <EducationHub />
+          ) : (
+            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito à Educação Inclusiva</h3>
+              <p className="text-xs">Módulo reservado a Educadores, Professores e Equipe Pedagógica Inclusiva.</p>
+              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition">
+                Voltar ao Assistente IA
+              </button>
+            </div>
+          )
+        )}
       </main>
 
       {/* SISTEMASTOP Footer & Fale Conosco */}

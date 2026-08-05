@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Printer, Calendar, BarChart3, ShieldCheck, HeartPulse, ClipboardCheck, Clock, User, Award, CheckCircle2 } from "lucide-react";
+import { FileText, Printer, Calendar, BarChart3, ShieldCheck, HeartPulse, ClipboardCheck, Clock, User, Award, CheckCircle2, Users, Plus } from "lucide-react";
 import { UserProfile, SavedTestResult, RoutineTask } from "../types";
+
+export interface PatientRecord {
+  id: string;
+  name: string;
+  pronouns: string;
+  diagnosisStatus: "laudo_formal" | "autodiagnosticado" | "investigacao" | "familiar_apoiador" | "nao_informado";
+  supportLevel: 1 | 2 | 3 | "nao_especificado";
+  cipteaNumber?: string;
+  birthDate?: string;
+  focusArea: string;
+  caregiverMode: boolean;
+  aq10Score?: number;
+  sqeqScore?: number;
+  sensoryScore?: number;
+  burnoutScore?: number;
+  catqScore?: number;
+}
 
 interface ReportHubProps {
   userProfile: UserProfile;
@@ -10,6 +27,112 @@ type PeriodFilter = "diario" | "semanal" | "mensal";
 
 export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
   const [period, setPeriod] = useState<PeriodFilter>("semanal");
+
+  // Patient database for reports (does not default to logged in user)
+  const [patients, setPatients] = useState<PatientRecord[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_report_patients");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      {
+        id: "pat-001",
+        name: "Ana Maria Souza",
+        pronouns: "ela/dela",
+        diagnosisStatus: "laudo_formal",
+        supportLevel: 1,
+        cipteaNumber: "CIPTEA-CE 2025/0881",
+        birthDate: "15/04/2012",
+        focusArea: "Regulação Sensorial & Acomodações Escolare",
+        caregiverMode: true,
+        aq10Score: 8,
+        sqeqScore: 32,
+        sensoryScore: 28,
+        burnoutScore: 24,
+        catqScore: 110,
+      },
+      {
+        id: "pat-002",
+        name: "Gabriel Santos Oliveira",
+        pronouns: "ele/dele",
+        diagnosisStatus: "investigacao",
+        supportLevel: 2,
+        cipteaNumber: "CIPTEA-CE 2026/0142",
+        birthDate: "20/09/2015",
+        focusArea: "Comunicação AAC & Rotina Visual",
+        caregiverMode: true,
+        aq10Score: 9,
+        sqeqScore: 35,
+        sensoryScore: 31,
+        burnoutScore: 18,
+        catqScore: 95,
+      },
+      {
+        id: "pat-003",
+        name: "Lucas Silva Ferreira",
+        pronouns: "ele/dele",
+        diagnosisStatus: "laudo_formal",
+        supportLevel: 1,
+        cipteaNumber: "CIPTEA-SP 2024/7741",
+        birthDate: "03/11/1998",
+        focusArea: "Acomodações Laborais & Burnout Autista",
+        caregiverMode: false,
+        aq10Score: 7,
+        sqeqScore: 30,
+        sensoryScore: 22,
+        burnoutScore: 29,
+        catqScore: 125,
+      },
+    ];
+  });
+
+  const [selectedPatId, setSelectedPatId] = useState<string>(patients[0]?.id || "pat-001");
+
+  // Save patients list
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_report_patients", JSON.stringify(patients));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [patients]);
+
+  const selectedPatient = patients.find((p) => p.id === selectedPatId) || patients[0];
+
+  // New Patient Form state
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [newPatName, setNewPatName] = useState("");
+  const [newPatPronouns, setNewPatPronouns] = useState("ela/dela");
+  const [newPatDiag, setNewPatDiag] = useState<PatientRecord["diagnosisStatus"]>("laudo_formal");
+  const [newPatSupport, setNewPatSupport] = useState<PatientRecord["supportLevel"]>(1);
+  const [newPatCiptea, setNewPatCiptea] = useState("");
+  const [newPatFocus, setNewPatFocus] = useState("Autonomia & Rotina Visual");
+
+  const handleAddPatient = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPatName.trim()) return;
+    const newPat: PatientRecord = {
+      id: `pat-${Date.now()}`,
+      name: newPatName.trim(),
+      pronouns: newPatPronouns.trim() || "não informado",
+      diagnosisStatus: newPatDiag,
+      supportLevel: newPatSupport,
+      cipteaNumber: newPatCiptea.trim() || undefined,
+      focusArea: newPatFocus,
+      caregiverMode: true,
+      aq10Score: Math.floor(Math.random() * 4) + 6,
+      sqeqScore: Math.floor(Math.random() * 10) + 25,
+      sensoryScore: Math.floor(Math.random() * 10) + 20,
+      burnoutScore: Math.floor(Math.random() * 10) + 15,
+      catqScore: Math.floor(Math.random() * 30) + 90,
+    };
+    setPatients([...patients, newPat]);
+    setSelectedPatId(newPat.id);
+    setNewPatName("");
+    setShowAddPatientModal(false);
+  };
 
   // Loaded data
   const [testHistory, setTestHistory] = useState<SavedTestResult[]>([]);
@@ -60,19 +183,19 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
   const burnoutResult = testHistory.find((t) => t.testId === "burnout");
   const catqResult = testHistory.find((t) => t.testId === "catq");
 
-  const supportLevelLabel = userProfile.supportLevel === 1
+  const supportLevelLabel = (selectedPatient ? selectedPatient.supportLevel : userProfile.supportLevel) === 1
     ? "Nível 1 de Suporte (Apoio leve/moderado)"
-    : userProfile.supportLevel === 2
+    : (selectedPatient ? selectedPatient.supportLevel : userProfile.supportLevel) === 2
     ? "Nível 2 de Suporte (Apoio substancial)"
-    : userProfile.supportLevel === 3
+    : (selectedPatient ? selectedPatient.supportLevel : userProfile.supportLevel) === 3
     ? "Nível 3 de Suporte (Apoio muito substancial)"
     : "Em Investigação Diagnóstica / Não Especificado";
 
-  const diagnosisLabel = userProfile.diagnosisStatus === "laudo_formal"
+  const diagnosisLabel = (selectedPatient ? selectedPatient.diagnosisStatus : userProfile.diagnosisStatus) === "laudo_formal"
     ? "Laudo Médico Formal Confirmado (TEA)"
-    : userProfile.diagnosisStatus === "autodiagnosticado"
+    : (selectedPatient ? selectedPatient.diagnosisStatus : userProfile.diagnosisStatus) === "autodiagnosticado"
     ? "Autodiagnosticado / Identificação Autista"
-    : userProfile.diagnosisStatus === "investigacao"
+    : (selectedPatient ? selectedPatient.diagnosisStatus : userProfile.diagnosisStatus) === "investigacao"
     ? "Em Avaliação Multiprofissional em Andamento"
     : "Não Especificado";
 
@@ -105,6 +228,166 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
           <span>Imprimir / Salvar PDF</span>
         </button>
       </div>
+
+      {/* Patient Selector Card (Hidden on Print) */}
+      <div className="no-print bg-slate-900 border border-teal-800/80 rounded-2xl p-5 space-y-3 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-teal-950 text-teal-300 border border-teal-700/80 rounded-xl">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-100">
+                Seleção de Paciente / Aluno para Laudo Técnico
+              </h3>
+              <p className="text-xs text-slate-400">
+                Selecione o paciente cadastrado para gerar o relatório em seu nome (evitando utilizar o nome do profissional logado).
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAddPatientModal(true)}
+            className="px-3.5 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" /> Cadastrar Novo Paciente
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-teal-300">
+              Paciente Selecionado no Prontuário
+            </label>
+            <select
+              value={selectedPatId}
+              onChange={(e) => setSelectedPatId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-teal-700/80 rounded-xl text-slate-100 text-xs font-semibold focus:outline-none focus:border-teal-400"
+            >
+              {patients.map((pat) => (
+                <option key={pat.id} value={pat.id}>
+                  {pat.name} — ({pat.pronouns}) {pat.cipteaNumber ? `[${pat.cipteaNumber}]` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedPatient && (
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1">
+              <div className="flex items-center justify-between font-bold text-slate-200">
+                <span>{selectedPatient.name}</span>
+                <span className="text-teal-400">{selectedPatient.pronouns}</span>
+              </div>
+              <p className="text-slate-400">Diagnóstico: {diagnosisLabel}</p>
+              <p className="text-teal-300">Suporte: {supportLevelLabel} {selectedPatient.cipteaNumber ? `| Carteira: ${selectedPatient.cipteaNumber}` : ""}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal: Cadastrar Novo Paciente */}
+      {showAddPatientModal && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-teal-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-teal-300 flex items-center gap-2">
+                <Users className="w-5 h-5 text-teal-400" /> Cadastrar Paciente / Aluno
+              </h3>
+              <button onClick={() => setShowAddPatientModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleAddPatient} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Nome Completo do Paciente</label>
+                <input
+                  type="text"
+                  required
+                  value={newPatName}
+                  onChange={(e) => setNewPatName(e.target.value)}
+                  placeholder="Ex: Gabriel Santos Silva"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">Pronomes</label>
+                  <input
+                    type="text"
+                    value={newPatPronouns}
+                    onChange={(e) => setNewPatPronouns(e.target.value)}
+                    placeholder="Ex: ele/dele"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">Nº CIPTEA / BPC (Opcional)</label>
+                  <input
+                    type="text"
+                    value={newPatCiptea}
+                    onChange={(e) => setNewPatCiptea(e.target.value)}
+                    placeholder="CIPTEA-CE 2026/001"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Status do Diagnóstico</label>
+                <select
+                  value={newPatDiag}
+                  onChange={(e) => setNewPatDiag(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                >
+                  <option value="laudo_formal">Laudo Médico Formal Confirmado (TEA)</option>
+                  <option value="investigacao">Em Avaliação Multiprofissional</option>
+                  <option value="autodiagnosticado">Autodiagnosticado / Identificação</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Nível de Suporte (TEA)</label>
+                <select
+                  value={newPatSupport}
+                  onChange={(e) => setNewPatSupport(parseInt(e.target.value) as any)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                >
+                  <option value={1}>Nível 1 (Apoio leve/moderado)</option>
+                  <option value={2}>Nível 2 (Apoio substancial)</option>
+                  <option value={3}>Nível 3 (Apoio muito substancial)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Área de Maior Demanda</label>
+                <input
+                  type="text"
+                  value={newPatFocus}
+                  onChange={(e) => setNewPatFocus(e.target.value)}
+                  placeholder="Ex: Regulação Sensorial e Comunicação AAC"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPatientModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                >
+                  Salvar Paciente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Period Selection Filters (Hidden on Print) */}
       <div className="no-print flex items-center justify-between border-b border-slate-800 pb-3">
@@ -162,12 +445,12 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
           {/* Patient Profile Metadata Box */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs print:bg-slate-50 print:border-slate-300">
             <div>
-              <p className="text-slate-400 font-semibold print:text-slate-600">Nome / Identificação:</p>
-              <p className="text-sm font-bold text-slate-100 print:text-black">{userProfile.preferredName || "Não Informado"}</p>
+              <p className="text-slate-400 font-semibold print:text-slate-600">Paciente / Identificação:</p>
+              <p className="text-sm font-bold text-slate-100 print:text-black">{selectedPatient ? selectedPatient.name : userProfile.preferredName}</p>
             </div>
             <div>
               <p className="text-slate-400 font-semibold print:text-slate-600">Pronomes:</p>
-              <p className="text-sm font-bold text-slate-100 print:text-black">{userProfile.pronouns || "Não Informado"}</p>
+              <p className="text-sm font-bold text-slate-100 print:text-black">{selectedPatient ? selectedPatient.pronouns : userProfile.pronouns}</p>
             </div>
             <div>
               <p className="text-slate-400 font-semibold print:text-slate-600">Status Diagnóstico:</p>
@@ -178,12 +461,14 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
               <p className="text-sm font-bold text-slate-100 print:text-black">{supportLevelLabel}</p>
             </div>
             <div>
-              <p className="text-slate-400 font-semibold print:text-slate-600">Modo Cuidador Ativo:</p>
-              <p className="text-sm font-bold text-slate-100 print:text-black">{userProfile.caregiverMode ? "Sim (Monitorado por familiar/rede)" : "Não (Uso autônomo)"}</p>
+              <p className="text-slate-400 font-semibold print:text-slate-600">Documento / CIPTEA / BPC:</p>
+              <p className="text-sm font-bold text-slate-100 print:text-black">{selectedPatient?.cipteaNumber || "Não cadastrado"}</p>
             </div>
             <div>
-              <p className="text-slate-400 font-semibold print:text-slate-600">Área de Maior Demanda:</p>
-              <p className="text-sm font-bold text-slate-100 print:text-black capitalize">{userProfile.currentFocus.replace("_", " ")}</p>
+              <p className="text-slate-400 font-semibold print:text-slate-600">Profissional Emissor (Responsável):</p>
+              <p className="text-sm font-bold text-teal-400 print:text-black">
+                {userProfile.preferredName || "Profissional Responsável"} {userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}
+              </p>
             </div>
           </div>
         </div>
@@ -286,7 +571,7 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
 
           <div className="text-xs sm:text-sm text-slate-200 print:text-black leading-relaxed space-y-4 text-justify">
             <p>
-              O presente documento constitui o parecer diagnóstico integral e síntese de acompanhamento do neurodesenvolvimento referente ao indivíduo <strong>{userProfile.preferredName || "Paciente em Avaliação"}</strong>, fundamentado no cruzamento de dados de autorrelato, instrumentos de triagem validados internacionalmente (AQ-10, SQ-EQ, CAT-Q, Perfil Sensorial) e registros de navegação e regulação comportamental no sistema NeuroConecta.
+              O presente documento constitui o parecer diagnóstico integral e síntese de acompanhamento do neurodesenvolvimento referente ao paciente <strong>{selectedPatient ? selectedPatient.name : userProfile.preferredName}</strong> ({selectedPatient?.pronouns || "ele/dele"}), fundamentado no cruzamento de dados de autorrelato, instrumentos de triagem validados internacionalmente (AQ-10, SQ-EQ, CAT-Q, Perfil Sensorial) e registros de navegação e regulação comportamental no sistema NeuroConecta.
             </p>
 
             <p>
@@ -340,14 +625,25 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
         <div className="pt-8 border-t-2 border-slate-800 print:border-slate-400 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print:text-black">
           <div className="text-center sm:text-left space-y-1">
             <p className="font-bold text-slate-200 print:text-black">NeuroConecta — Plataforma de Apoio Neurodivergente</p>
-            <p>Documento gerado eletronicamente e validado pelo usuário autor / responsável.</p>
+            <p>Documento gerado eletronicamente e validado em ambiente seguro.</p>
             <p className="font-mono text-[10px] text-slate-500 print:text-slate-600">ID de Autenticidade: NC-REP-{Date.now().toString(36).toUpperCase()}</p>
           </div>
 
-          <div className="text-center space-y-1 min-w-[200px]">
-            <div className="border-b border-slate-700 print:border-black w-48 mx-auto mb-1"></div>
-            <p className="font-bold text-slate-200 print:text-black">{userProfile.preferredName || "Paciente em Acompanhamento"}</p>
-            <p className="text-[10px] text-slate-500 print:text-slate-600">Assinatura / Validação do Registro</p>
+          <div className="flex flex-col sm:flex-row gap-6 text-center">
+            <div className="space-y-1 min-w-[180px]">
+              <div className="border-b border-slate-700 print:border-black w-44 mx-auto mb-1"></div>
+              <p className="font-bold text-slate-200 print:text-black">{userProfile.preferredName || "Profissional Responsável"}</p>
+              <p className="text-[10px] text-teal-400 print:text-slate-600 font-semibold">
+                Emissor / {userProfile.professionalRoleType ? userProfile.professionalRoleType.toUpperCase() : "Técnico"}
+                {userProfile.professionalRegisterNumber ? ` (${userProfile.professionalRegisterNumber})` : ""}
+              </p>
+            </div>
+
+            <div className="space-y-1 min-w-[180px]">
+              <div className="border-b border-slate-700 print:border-black w-44 mx-auto mb-1"></div>
+              <p className="font-bold text-slate-200 print:text-black">{selectedPatient ? selectedPatient.name : "Paciente / Aluno"}</p>
+              <p className="text-[10px] text-slate-500 print:text-slate-600">Titular do Prontuário / Laudo</p>
+            </div>
           </div>
         </div>
 

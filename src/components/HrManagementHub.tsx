@@ -34,6 +34,17 @@ export interface HrAccommodation {
   nr1Category: "NR-1.5.4 Gerenciamento de Riscos Psicossociais" | "NR-17 Ergonomia" | "LBI Lei 13.146/2015";
 }
 
+export interface HrEmployee {
+  id: string;
+  name: string;
+  role: string;
+  cpf: string;
+  cid: string;
+  isBpc: boolean;
+  cipteaNumber?: string;
+  sector: string;
+}
+
 interface HrManagementHubProps {
   userProfile?: UserProfile;
   isDark?: boolean;
@@ -42,6 +53,90 @@ interface HrManagementHubProps {
 export const HrManagementHub: React.FC<HrManagementHubProps> = ({ userProfile, isDark }) => {
   const [activeTab, setActiveTab] = useState<"acomodacoes" | "riscos" | "bpc" | "parecer">("acomodacoes");
   const [copied, setCopied] = useState(false);
+
+  // List of employees for HR selection (does not default to logged in user)
+  const [employees, setEmployees] = useState<HrEmployee[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_hr_employees");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      {
+        id: "emp-001",
+        name: "Lucas Gabriel Costa",
+        role: "Desenvolvedor de Software Jr. (PCD)",
+        cpf: "123.456.789-00",
+        cid: "F84.0 (Transtorno do Espectro Autista)",
+        isBpc: true,
+        cipteaNumber: "CIPTEA-CE 2025/1102",
+        sector: "Tecnologia & Inovação",
+      },
+      {
+        id: "emp-002",
+        name: "Mariana Silva Santos",
+        role: "Assistente Administrativo (PCD)",
+        cpf: "987.654.321-11",
+        cid: "F90.0 (TDAH Predominantemente Desatento)",
+        isBpc: true,
+        cipteaNumber: "CIPTEA-CE 2026/089",
+        sector: "Recursos Humanos & CIPA",
+      },
+      {
+        id: "emp-003",
+        name: "Carlos Eduardo Lima",
+        role: "Analista de Marketing / Designer (PCD)",
+        cpf: "456.789.123-22",
+        cid: "F84.5 (Síndrome de Asperger / TEA Nível 1)",
+        isBpc: false,
+        cipteaNumber: "CIPTEA-SP 2025/998",
+        sector: "Comunicação Corporativa",
+      },
+    ];
+  });
+
+  const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || "emp-001");
+
+  // Save employees
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_hr_employees", JSON.stringify(employees));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [employees]);
+
+  const selectedEmployee = employees.find((e) => e.id === selectedEmpId) || employees[0];
+
+  // New Employee Modal state
+  const [showAddEmpModal, setShowAddEmpModal] = useState(false);
+  const [empName, setEmpName] = useState("");
+  const [empRole, setEmpRole] = useState("");
+  const [empCpf, setEmpCpf] = useState("");
+  const [empCid, setEmpCid] = useState("F84.0 (Transtorno do Espectro Autista)");
+  const [empIsBpc, setEmpIsBpc] = useState(true);
+  const [empSector, setEmpSector] = useState("Operacional");
+
+  const handleAddEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empName.trim()) return;
+    const newEmp: HrEmployee = {
+      id: `emp-${Date.now()}`,
+      name: empName.trim(),
+      role: empRole.trim() || "Colaborador PCD",
+      cpf: empCpf.trim() || "000.000.000-00",
+      cid: empCid,
+      isBpc: empIsBpc,
+      sector: empSector,
+    };
+    setEmployees([...employees, newEmp]);
+    setSelectedEmpId(newEmp.id);
+    setEmpName("");
+    setEmpRole("");
+    setEmpCpf("");
+    setShowAddEmpModal(false);
+  };
 
   // Storage for accommodations
   const [accommodations, setAccommodations] = useState<HrAccommodation[]>(() => {
@@ -113,9 +208,9 @@ export const HrManagementHub: React.FC<HrManagementHubProps> = ({ userProfile, i
 
     const item: HrAccommodation = {
       id: `acc-${Date.now()}`,
-      employeeName: userProfile?.preferredName || "Colaborador PCD",
-      role: "Cargo / Função Registrada",
-      isBpcBeneficiary: isBpc,
+      employeeName: selectedEmployee ? selectedEmployee.name : (userProfile?.preferredName || "Colaborador PCD"),
+      role: selectedEmployee ? selectedEmployee.role : "Cargo / Função Registrada",
+      isBpcBeneficiary: selectedEmployee ? selectedEmployee.isBpc : isBpc,
       category: newCategory,
       title: newTitle,
       description: newDesc || "Acomodação solicitada para garantia de acessibilidade no trabalho.",
@@ -135,14 +230,21 @@ export const HrManagementHub: React.FC<HrManagementHubProps> = ({ userProfile, i
   };
 
   const handleCopyHrReport = () => {
-    const name = userProfile?.preferredName || "Colaborador Neurodivergente";
-    const bpcText = accommodations.some((a) => a.isBpcBeneficiary)
+    const empName = selectedEmployee ? selectedEmployee.name : "Colaborador Neurodivergente";
+    const empRole = selectedEmployee ? selectedEmployee.role : "Cargo não especificado";
+    const empCpf = selectedEmployee ? selectedEmployee.cpf : "N/A";
+    const empCid = selectedEmployee ? selectedEmployee.cid : "F84.0";
+    const empSector = selectedEmployee ? selectedEmployee.sector : "Geral";
+    const bpcText = selectedEmployee?.isBpc
       ? "Sim (Beneficiário enquadrado na regra de transição do Auxílio-Inclusão - Art. 26-A da LOAS / Lei 14.176/2021)"
       : "Não";
 
     const reportText = `[DOSSIÊ DE RH & LAUDO DE CONFORMIDADE NR-1 / GRO - NEUROCONECTA]
 EMPRESA / INSTITUIÇÃO: Gestão de Acessibilidade Empresarial
-COLABORADOR: ${name}
+COLABORADOR SELECIONADO: ${empName}
+CARGO / SETOR: ${empRole} | Setor: ${empSector}
+CPF: ${empCpf} | ENQUADRAMENTO / CID: ${empCid}
+RESPONSÁVEL TÉCNICO EMISSOR (RH): ${userProfile?.preferredName || "Gestor de RH"} ${userProfile?.professionalRegisterNumber ? `(Registro: ${userProfile.professionalRegisterNumber})` : ""}
 VÍNCULO: Cota PCD / Trabalhador Neurodivergente (TEA/TDAH)
 CONDIÇÃO DE BPC/LOAS: ${bpcText}
 DATA DA AUDITORIA DE RH: ${new Date().toLocaleDateString("pt-BR")}
@@ -151,7 +253,7 @@ DATA DA AUDITORIA DE RH: ${new Date().toLocaleDateString("pt-BR")}
 ${accommodations
   .map(
     (a, idx) =>
-      `${idx + 1}. [${a.category.toUpperCase()}] ${a.title}\n   Status: ${a.status} | Diretriz: ${a.nr1Category}\n   Descrição: ${a.description}`
+      `${idx + 1}. [${a.category.toUpperCase()}] ${a.title}\n   Colaborador: ${a.employeeName} (${a.role})\n   Status: ${a.status} | Diretriz: ${a.nr1Category}\n   Descrição: ${a.description}`
   )
   .join("\n\n")}
 
@@ -214,10 +316,8 @@ Documento gerado pelo sistema NeuroConecta para integração ao SESMT, CIPA e Do
             <p className="text-2xl font-extrabold text-teal-300 mt-1 font-mono">{accommodations.length}</p>
           </div>
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-            <span className="text-slate-400 font-medium">Beneficiário BPC/LOAS</span>
-            <p className="text-2xl font-extrabold text-emerald-300 mt-1 font-mono">
-              {accommodations.filter((a) => a.isBpcBeneficiary).length > 0 ? "Ativo (Aux. Inclusão)" : "Não"}
-            </p>
+            <span className="text-slate-400 font-medium">Funcionários Cadastrados</span>
+            <p className="text-2xl font-extrabold text-emerald-300 mt-1 font-mono">{employees.length}</p>
           </div>
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
             <span className="text-slate-400 font-medium">Conformidade NR-1</span>
@@ -229,6 +329,168 @@ Documento gerado pelo sistema NeuroConecta para integração ao SESMT, CIPA e Do
           </div>
         </div>
       </div>
+
+      {/* Employee Selector Bar for Technical Reports & Dossier */}
+      <div className="bg-slate-900 border border-blue-800/80 rounded-2xl p-5 space-y-4 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-blue-950 text-blue-300 border border-blue-700/80 rounded-xl">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-100">
+                Seleção de Funcionário para Laudos, Dossiê &amp; NR-1
+              </h3>
+              <p className="text-xs text-slate-400">
+                Escolha qual colaborador terá os dados emitidos no parecer (evitando utilizar os dados do gestor logado).
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAddEmpModal(true)}
+            className="px-3.5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" /> Cadastrar Colaborador
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-blue-300">
+              Colaborador PCD / BPC Selecionado
+            </label>
+            <select
+              value={selectedEmpId}
+              onChange={(e) => setSelectedEmpId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-blue-700/80 rounded-xl text-slate-100 text-xs font-semibold focus:outline-none focus:border-blue-400"
+            >
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} — {emp.role} {emp.isBpc ? " (BPC/LOAS)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedEmployee && (
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1">
+              <div className="flex items-center justify-between font-bold text-slate-200">
+                <span>{selectedEmployee.name}</span>
+                <span className="text-blue-400 font-mono">{selectedEmployee.cpf}</span>
+              </div>
+              <p className="text-slate-400">Cargo: {selectedEmployee.role} | Setor: {selectedEmployee.sector}</p>
+              <p className="text-teal-400">Diagnóstico/CID: {selectedEmployee.cid} {selectedEmployee.cipteaNumber ? `(${selectedEmployee.cipteaNumber})` : ""}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal: Cadastrar Novo Colaborador */}
+      {showAddEmpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-blue-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-blue-300 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400" /> Novo Colaborador BPC / PCD
+              </h3>
+              <button onClick={() => setShowAddEmpModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleAddEmployee} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Nome Completo do Funcionário</label>
+                <input
+                  type="text"
+                  required
+                  value={empName}
+                  onChange={(e) => setEmpName(e.target.value)}
+                  placeholder="Ex: João Pedro Rodrigues"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Cargo / Função Registrada</label>
+                <input
+                  type="text"
+                  required
+                  value={empRole}
+                  onChange={(e) => setEmpRole(e.target.value)}
+                  placeholder="Ex: Auxiliar de Almoxarifado"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">CPF</label>
+                  <input
+                    type="text"
+                    value={empCpf}
+                    onChange={(e) => setEmpCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">Setor / Departamento</label>
+                  <input
+                    type="text"
+                    value={empSector}
+                    onChange={(e) => setEmpSector(e.target.value)}
+                    placeholder="Logística"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Enquadramento CID / Diagnóstico</label>
+                <select
+                  value={empCid}
+                  onChange={(e) => setEmpCid(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100"
+                >
+                  <option value="F84.0 (Transtorno do Espectro Autista)">F84.0 (Transtorno do Espectro Autista - TEA)</option>
+                  <option value="F90.0 (TDAH Predominantemente Desatento)">F90.0 (TDAH / Neurodiversidade)</option>
+                  <option value="F84.5 (Síndrome de Asperger)">F84.5 (Síndrome de Asperger / TEA Nível 1)</option>
+                  <option value="Deficiência Física / Sensorial PCD">Deficiência Física / Sensorial PCD</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="empBpcChk"
+                  checked={empIsBpc}
+                  onChange={(e) => setEmpIsBpc(e.target.checked)}
+                  className="w-4 h-4 accent-blue-500 rounded cursor-pointer"
+                />
+                <label htmlFor="empBpcChk" className="text-slate-300 font-semibold cursor-pointer">
+                  Beneficiário BPC / LOAS (Enquadrado no Auxílio-Inclusão Art. 26-A)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEmpModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
+                >
+                  Salvar Colaborador
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Sub-Tabs */}
       <div className="flex border-b border-slate-800 space-x-2 overflow-x-auto no-scrollbar pb-1 text-xs sm:text-sm">
@@ -543,16 +805,19 @@ Documento gerado pelo sistema NeuroConecta para integração ao SESMT, CIPA e Do
           <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-200 leading-relaxed font-sans whitespace-pre-line text-justify shadow-inner">
             {`[DOSSIÊ DE RH & LAUDO DE CONFORMIDADE NR-1 / GRO - NEUROCONECTA]
 EMPRESA / INSTITUIÇÃO: Gestão de Acessibilidade Empresarial
-COLABORADOR: ${userProfile?.preferredName || "Colaborador Neurodivergente"}
-VÍNCULO: Cota PCD / Trabalhador Neurodivergente (TEA/TDAH)
-CONDIÇÃO DE BPC/LOAS: Beneficiário enquadrado no Auxílio-Inclusão (Art. 26-A LOAS)
+COLABORADOR SELECIONADO: ${selectedEmployee ? selectedEmployee.name : "Colaborador Neurodivergente"}
+CARGO / FUNÇÃO: ${selectedEmployee ? selectedEmployee.role : "Geral"} | Setor: ${selectedEmployee ? selectedEmployee.sector : "Operacional"}
+CPF: ${selectedEmployee ? selectedEmployee.cpf : "N/A"} | ENQUADRAMENTO / CID: ${selectedEmployee ? selectedEmployee.cid : "F84.0"}
+RESPONSÁVEL TÉCNICO EMISSOR (RH): ${userProfile?.preferredName || "Gestor de RH"} ${userProfile?.professionalRegisterNumber ? `(Registro RH/CRA: ${userProfile.professionalRegisterNumber})` : ""}
+VÍNCULO: Cota PCD / Trabalhador Neurodivergente (TEA/TDAH / PCD)
+CONDIÇÃO DE BPC/LOAS: ${selectedEmployee?.isBpc ? "Sim - Beneficiário enquadrado na regra de transição do Auxílio-Inclusão (Art. 26-A LOAS)" : "Não aplicável / Não beneficiário"}
 DATA DA AUDITORIA DE RH: ${new Date().toLocaleDateString("pt-BR")}
 
 1. MATRIZ DE ACOMODAÇÕES RAZOÁVEIS APROVADAS (NR-1.5.4 & NR-17):
 ${accommodations
   .map(
     (a, idx) =>
-      `${idx + 1}. [${a.category.toUpperCase()}] ${a.title}\n   Status: ${a.status} | Diretriz: ${a.nr1Category}\n   Descrição: ${a.description}`
+      `${idx + 1}. [${a.category.toUpperCase()}] ${a.title}\n   Colaborador Atendido: ${a.employeeName} (${a.role})\n   Status: ${a.status} | Diretriz: ${a.nr1Category}\n   Descrição: ${a.description}`
   )
   .join("\n\n")}
 

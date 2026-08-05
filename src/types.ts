@@ -16,7 +16,9 @@ export type FocusArea =
 
 export type SupportLevel = 1 | 2 | 3 | "nao_especificado";
 
-export type UserRole = "pcd" | "cuidador_educador" | "saude_caps" | "superadmin";
+export type UserRole = "pcd" | "cuidador_educador" | "saude_caps" | "rh_gestor" | "superadmin";
+
+export type ProfessionalRoleType = "medico" | "enfermeiro" | "perito" | "rh" | "educador" | "pcd";
 
 export interface UserProfile {
   id?: string;
@@ -24,6 +26,8 @@ export interface UserProfile {
   preferredName: string;
   pronouns: string;
   userRole?: UserRole;
+  professionalRoleType?: ProfessionalRoleType;
+  professionalRegisterNumber?: string; // e.g. CRM/SP 123456, COREN/RJ 654321, CRA/BR 98765, MEC/PE 45678, CIPTEA 001/2026
   diagnosisStatus: DiagnosisStatus;
   supportLevel?: SupportLevel;
   currentFocus: FocusArea;
