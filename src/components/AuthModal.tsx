@@ -277,33 +277,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-md animate-fadeIn transition-colors ${
-      isDark ? "bg-slate-950/80" : "bg-slate-900/50"
-    }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn transition-colors">
       <div className={`border rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden transition ${
         isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
       }`}>
         
-        {/* Header */}
+        {/* Header with White Logo Box */}
         <div className={`flex-shrink-0 p-4 sm:p-5 border-b flex items-center justify-between backdrop-blur transition ${
           isDark ? "bg-slate-900/95 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-200 text-slate-900"
         }`}>
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 sm:p-2.5 rounded-2xl border ${
-              isDark ? "bg-teal-950 border-teal-800 text-teal-400" : "bg-teal-50 border-teal-200 text-teal-600"
-            }`}>
-              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-white border border-teal-200 rounded-2xl shadow-sm shrink-0">
+              <img 
+                src="/neuroconecta_logo.svg" 
+                alt="Logo NeuroConecta" 
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+              />
             </div>
             <div>
-              <h2 className={`text-base sm:text-lg font-bold leading-tight ${
+              <h2 className={`text-base sm:text-lg font-extrabold leading-tight ${
                 isDark ? "text-slate-100" : "text-slate-900"
               }`}>
                 Acesso Individual & LGPD
               </h2>
-              <p className={`text-[11px] sm:text-xs ${
+              <p className={`text-[11px] sm:text-xs font-medium ${
                 isDark ? "text-slate-400" : "text-slate-600"
               }`}>
-                Cada usuário tem seus dados 100% isolados
+                NeuroConecta • Conexões que acolhem e transformam
               </p>
             </div>
           </div>
