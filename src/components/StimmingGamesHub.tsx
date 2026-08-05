@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import neuroconectaLogo from "../assets/logo";
 import { 
   Gamepad2, 
   Sparkles, 
@@ -1504,7 +1505,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
             <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2 text-center">
               <p className="text-xs font-semibold text-slate-300">Imagem de Referência:</p>
               <div className="p-2 bg-white rounded-xl border border-teal-200 inline-block mx-auto">
-                <img src="/neuroconecta_exact.png" alt="NeuroConecta" className="w-36 h-36 object-contain mx-auto" />
+                <img src={neuroconectaLogo} alt="NeuroConecta" className="w-36 h-36 object-contain aspect-square mx-auto" />
               </div>
               <p className="text-[11px] text-teal-400">Troque as peças do painel ao lado para recriar este símbolo.</p>
             </div>

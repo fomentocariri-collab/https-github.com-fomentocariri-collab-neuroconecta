@@ -1,4 +1,5 @@
 import React from "react";
+import neuroconectaLogo from "../assets/logo";
 import { 
   Bot, 
   ClipboardCheck, 
@@ -159,9 +160,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("chat")}>
             <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0">
               <img 
-                src="/neuroconecta_exact.png" 
+                src={neuroconectaLogo} 
                 alt="NeuroConecta Logo" 
-                className="w-9 h-9 object-contain"
+                className="w-9 h-9 object-contain aspect-square"
               />
             </div>
             <div className="flex flex-col">

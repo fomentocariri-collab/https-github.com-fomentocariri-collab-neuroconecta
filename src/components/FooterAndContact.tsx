@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import neuroconectaLogo from "../assets/logo";
 import { 
   MapPin, 
   Phone, 
@@ -82,9 +83,9 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
             <div className="flex items-center gap-3">
               <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0">
                 <img 
-                  src="/neuroconecta_exact.png" 
+                  src={neuroconectaLogo} 
                   alt="NeuroConecta Logo" 
-                  className="w-10 h-10 object-contain" 
+                  className="w-10 h-10 object-contain aspect-square" 
                 />
               </div>
               <div>

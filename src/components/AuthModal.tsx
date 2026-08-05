@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X, Calendar } from "lucide-react";
 import { UserProfile, getAgeCategory, calculateAge } from "../types";
 import { supabase } from "../lib/supabase";
+import neuroconectaLogo from "../assets/logo";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -289,9 +290,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-white border border-teal-200 rounded-2xl shadow-sm shrink-0">
               <img 
-                src="/neuroconecta_exact.png" 
+                src={neuroconectaLogo} 
                 alt="Logo NeuroConecta" 
-                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain aspect-square"
               />
             </div>
             <div>

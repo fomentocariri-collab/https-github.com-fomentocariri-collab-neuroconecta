@@ -1,5 +1,6 @@
 import React from "react";
 import { Lock, LogIn, UserPlus, Heart, Shield, Sparkles, Brain, Stethoscope, Building2, GraduationCap, Users } from "lucide-react";
+import neuroconectaLogo from "../assets/logo";
 
 interface LandingCoverScreenProps {
   onOpenAuth: () => void;
@@ -15,9 +16,9 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-white border border-teal-200 rounded-2xl shadow-md">
             <img 
-              src="/neuroconecta_exact.png" 
+              src={neuroconectaLogo} 
               alt="NeuroConecta Logo" 
-              className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+              className="w-10 h-10 sm:w-12 sm:h-12 object-contain aspect-square"
             />
           </div>
           <div>
@@ -48,9 +49,9 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
           <div className="relative p-6 sm:p-8 bg-white border-2 border-teal-200/90 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-4 max-w-lg mx-auto">
             <div className="p-4 bg-white border border-slate-100 rounded-2xl w-full flex items-center justify-center">
               <img 
-                src="/neuroconecta_exact.png" 
+                src={neuroconectaLogo} 
                 alt="NeuroConecta Logo Oficial" 
-                className="w-64 h-64 sm:w-80 sm:h-80 object-contain"
+                className="w-64 h-64 sm:w-80 sm:h-80 object-contain aspect-square"
               />
             </div>
             <div className="space-y-1.5 text-center">
