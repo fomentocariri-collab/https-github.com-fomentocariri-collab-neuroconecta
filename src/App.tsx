@@ -14,6 +14,7 @@ import { SupabaseHub } from "./components/SupabaseHub";
 import { CaregiverHub } from "./components/CaregiverHub";
 import { EducationHub } from "./components/EducationHub";
 import { CapsHealthHub } from "./components/CapsHealthHub";
+import { HrManagementHub } from "./components/HrManagementHub";
 import { CrisisModal } from "./components/CrisisModal";
 import { UserProfileModal } from "./components/UserProfileModal";
 import { AuthModal } from "./components/AuthModal";
@@ -141,7 +142,7 @@ export default function App() {
         )}
 
         {activeTab === "testes" && (
-          <TestCenter onNavigateToChat={() => setActiveTab("chat")} />
+          <TestCenter onNavigateToChat={() => setActiveTab("chat")} userProfile={userProfile} />
         )}
 
         {activeTab === "rotina" && <RoutinePlanner />}
@@ -155,6 +156,10 @@ export default function App() {
         {activeTab === "comunicacao" && <CommunicationHub />}
 
         {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
+
+        {activeTab === "rh" && (
+          <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
+        )}
 
         {activeTab === "supabase" && (
           isSuperAdmin ? (

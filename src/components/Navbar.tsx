@@ -20,10 +20,11 @@ import {
   GraduationCap,
   Stethoscope,
   Pill,
+  Building2,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "rh" | "supabase";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -60,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
     { id: "caps", label: "Saúde CAPS & Prontuário", icon: Stethoscope, roles: ["saude_caps", "superadmin"] },
     { id: "relatorio", label: "Relatórios & Laudo", icon: FileText, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
+    { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
   ] as const;

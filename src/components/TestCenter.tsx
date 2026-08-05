@@ -18,17 +18,19 @@ import {
   Stethoscope,
   GraduationCap,
   HeartPulse,
-  Eye
+  Eye,
+  Trash2
 } from "lucide-react";
-import { TestDefinition, SavedTestResult } from "../types";
+import { TestDefinition, SavedTestResult, UserProfile } from "../types";
 import { TESTS_LIST } from "../data/tests";
-import { getGlobalTestHistory, saveTestResultToStore } from "../data/testHistory";
+import { getGlobalTestHistory, saveTestResultToStore, clearAllTestHistory } from "../data/testHistory";
 
 interface TestCenterProps {
   onNavigateToChat: () => void;
+  userProfile?: UserProfile;
 }
 
-export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
+export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat, userProfile }) => {
   const [selectedTest, setSelectedTest] = useState<TestDefinition | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -55,6 +57,14 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
     const history = getGlobalTestHistory();
     setSavedHistory(history);
   }, []);
+
+  const handleClearHistory = () => {
+    if (window.confirm("Deseja apagar todo o histórico de autoavaliações salvas?")) {
+      clearAllTestHistory();
+      setSavedHistory([]);
+      setViewingHistoryDetail(null);
+    }
+  };
 
   const handleStartTest = (test: TestDefinition) => {
     setSelectedTest(test);
@@ -137,12 +147,16 @@ export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat }) => {
       console.error(e);
     }
 
-    // Save history item to global store
+    // Save history item to global store with actual user's registered profile name
+    const activeUserName = userProfile?.preferredName && userProfile?.preferredName !== "Visitante"
+      ? userProfile.preferredName 
+      : (userProfile?.email || "Usuário Cadastrado");
+
     const historyItem: SavedTestResult = {
       id: `res-${Date.now()}`,
-      userId: "usr-paciente-atual",
-      userName: "Usuário do NeuroConecta",
-      userRole: "pcd",
+      userId: userProfile?.id || `usr-${Date.now()}`,
+      userName: activeUserName,
+      userRole: userProfile?.userRole || "pcd",
       testId: selectedTest.id,
       testTitle: selectedTest.title,
       score: totalScore,
@@ -382,30 +396,43 @@ Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de tri
                 </p>
               </div>
 
-              {/* Role filter buttons */}
-              <div className="flex flex-wrap gap-1.5 text-xs">
-                {[
-                  { id: "todos", label: "Todos", icon: UserCheck },
-                  { id: "medicina", label: "Medicina", icon: Stethoscope },
-                  { id: "enfermagem", label: "Enfermagem", icon: HeartPulse },
-                  { id: "escola", label: "Escola / PEI", icon: GraduationCap },
-                ].map((rf) => {
-                  const Icon = rf.icon;
-                  return (
-                    <button
-                      key={rf.id}
-                      onClick={() => setHistoryRoleFilter(rf.id)}
-                      className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
-                        historyRoleFilter === rf.id
-                          ? "bg-teal-950 text-teal-200 border-teal-700 shadow-sm"
-                          : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{rf.label}</span>
-                    </button>
-                  );
-                })}
+              <div className="flex flex-wrap items-center gap-2">
+                {savedHistory.length > 0 && (
+                  <button
+                    onClick={handleClearHistory}
+                    className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs font-medium flex items-center gap-1.5 transition"
+                    title="Apagar todo o histórico de testes antigos"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Zerar Histórico</span>
+                  </button>
+                )}
+
+                {/* Role filter buttons */}
+                <div className="flex flex-wrap gap-1.5 text-xs">
+                  {[
+                    { id: "todos", label: "Todos", icon: UserCheck },
+                    { id: "medicina", label: "Medicina", icon: Stethoscope },
+                    { id: "enfermagem", label: "Enfermagem", icon: HeartPulse },
+                    { id: "escola", label: "Escola / PEI", icon: GraduationCap },
+                  ].map((rf) => {
+                    const Icon = rf.icon;
+                    return (
+                      <button
+                        key={rf.id}
+                        onClick={() => setHistoryRoleFilter(rf.id)}
+                        className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
+                          historyRoleFilter === rf.id
+                            ? "bg-teal-950 text-teal-200 border-teal-700 shadow-sm"
+                            : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{rf.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

@@ -231,10 +231,10 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-125px)] max-w-5xl mx-auto p-3 sm:p-4 space-y-3">
+    <div className="flex flex-col h-[calc(100vh-80px)] w-full max-w-7xl mx-auto p-2 sm:p-4 space-y-3 flex-1">
       
       {/* Role Selection Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-sm flex-shrink-0">
         <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 pl-1">
           <Sparkles className="w-4 h-4 text-teal-400" />
           Nível de Interação da IA:
@@ -254,13 +254,13 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
               <button
                 key={role.id}
                 onClick={() => setInteractionRole(role.id as InteractionRole)}
-                className={`px-2.5 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
+                className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
                   isSelected
                     ? role.color + " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold"
                     : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4" />
                 <span>{role.label}</span>
               </button>
             );
@@ -373,7 +373,7 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
       )}
 
       {/* Main Chat Conversation Container */}
-      <div className={`flex-1 rounded-2xl p-4 sm:p-5 overflow-y-auto space-y-4 shadow-sm border ${
+      <div className={`flex-1 rounded-2xl p-4 sm:p-6 overflow-y-auto space-y-4 shadow-inner border text-slate-100 ${
         isDark
           ? "bg-slate-900/90 border-slate-800 text-slate-100"
           : "bg-slate-50 border-slate-200 text-slate-900"
@@ -385,26 +385,26 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
           >
             {/* Avatar */}
             <div
-              className={`p-2 rounded-xl text-white flex-shrink-0 shadow-sm ${
+              className={`p-2.5 rounded-xl text-white flex-shrink-0 shadow-sm ${
                 msg.role === "user" ? "bg-teal-600" : "bg-emerald-700 dark:bg-emerald-800"
               }`}
             >
-              {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
             </div>
 
             {/* Message Bubble */}
             <div
-              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed space-y-2 relative group shadow-sm border ${
+              className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-4 sm:p-5 text-sm sm:text-base leading-relaxed space-y-2 relative group shadow-sm border ${
                 msg.role === "user"
                   ? isDark
                     ? "bg-teal-950/90 text-teal-100 border-teal-800/80 rounded-tr-none"
                     : "bg-teal-600 text-white font-medium border-teal-700 rounded-tr-none"
                   : isDark
-                    ? "bg-slate-800/90 text-slate-100 border-slate-700 rounded-tl-none"
+                    ? "bg-slate-800/95 text-slate-100 border-slate-700 rounded-tl-none"
                     : "bg-white text-slate-900 border-slate-200 rounded-tl-none"
               }`}
             >
-              <div className="whitespace-pre-wrap font-sans leading-relaxed">
+              <div className="whitespace-pre-wrap font-sans leading-relaxed text-sm sm:text-base">
                 {msg.content}
               </div>
 
