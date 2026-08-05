@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Printer, Calendar, BarChart3, ShieldCheck, HeartPulse, ClipboardCheck, Clock, User, Award, CheckCircle2, Users, Plus } from "lucide-react";
-import { UserProfile, SavedTestResult, RoutineTask } from "../types";
+import { UserProfile, SavedTestResult, RoutineTask, calculateAge, getAgeCategory } from "../types";
 
 export interface PatientRecord {
   id: string;
@@ -28,67 +28,39 @@ type PeriodFilter = "diario" | "semanal" | "mensal";
 export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
   const [period, setPeriod] = useState<PeriodFilter>("semanal");
 
-  // Patient database for reports (does not default to logged in user)
+  // Patient database for reports (does not default to fake data)
   const [patients, setPatients] = useState<PatientRecord[]>(() => {
     try {
       const stored = localStorage.getItem("neuroconecta_report_patients");
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      // If empty in report, load from global registry
+      const globalRaw = localStorage.getItem("neuroconecta_global_patients");
+      if (globalRaw) {
+        const globalList = JSON.parse(globalRaw);
+        if (Array.isArray(globalList) && globalList.length > 0) {
+          return globalList.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            pronouns: p.pronouns || "ele/dele",
+            diagnosisStatus: p.diagnosisStatus || "laudo_formal",
+            supportLevel: p.supportLevel || 2,
+            cipteaNumber: p.cipteaNumber || "CIPTEA-REG-2026",
+            birthDate: p.birthDate,
+            focusArea: "Acompanhamento Neuroafirmativo Geral",
+            caregiverMode: true
+          }));
+        }
+      }
     } catch (e) {
       console.error(e);
     }
-    return [
-      {
-        id: "pat-001",
-        name: "Ana Maria Souza",
-        pronouns: "ela/dela",
-        diagnosisStatus: "laudo_formal",
-        supportLevel: 1,
-        cipteaNumber: "CIPTEA-CE 2025/0881",
-        birthDate: "15/04/2012",
-        focusArea: "Regulação Sensorial & Acomodações Escolare",
-        caregiverMode: true,
-        aq10Score: 8,
-        sqeqScore: 32,
-        sensoryScore: 28,
-        burnoutScore: 24,
-        catqScore: 110,
-      },
-      {
-        id: "pat-002",
-        name: "Gabriel Santos Oliveira",
-        pronouns: "ele/dele",
-        diagnosisStatus: "investigacao",
-        supportLevel: 2,
-        cipteaNumber: "CIPTEA-CE 2026/0142",
-        birthDate: "20/09/2015",
-        focusArea: "Comunicação AAC & Rotina Visual",
-        caregiverMode: true,
-        aq10Score: 9,
-        sqeqScore: 35,
-        sensoryScore: 31,
-        burnoutScore: 18,
-        catqScore: 95,
-      },
-      {
-        id: "pat-003",
-        name: "Lucas Silva Ferreira",
-        pronouns: "ele/dele",
-        diagnosisStatus: "laudo_formal",
-        supportLevel: 1,
-        cipteaNumber: "CIPTEA-SP 2024/7741",
-        birthDate: "03/11/1998",
-        focusArea: "Acomodações Laborais & Burnout Autista",
-        caregiverMode: false,
-        aq10Score: 7,
-        sqeqScore: 30,
-        sensoryScore: 22,
-        burnoutScore: 29,
-        catqScore: 125,
-      },
-    ];
+    return [];
   });
 
-  const [selectedPatId, setSelectedPatId] = useState<string>(patients[0]?.id || "pat-001");
+  const [selectedPatId, setSelectedPatId] = useState<string>(patients[0]?.id || "");
 
   // Save patients list
   useEffect(() => {

@@ -19,6 +19,9 @@ import { CrisisModal } from "./components/CrisisModal";
 import { UserProfileModal } from "./components/UserProfileModal";
 import { AuthModal } from "./components/AuthModal";
 import { FooterAndContact } from "./components/FooterAndContact";
+import { SuperAdminModuleModal } from "./components/SuperAdminModuleModal";
+import { LandingCoverScreen } from "./components/LandingCoverScreen";
+import { EyeOff } from "lucide-react";
 import { UserProfile } from "./types";
 
 export default function App() {
@@ -26,6 +29,39 @@ export default function App() {
   const [isCrisisOpen, setIsCrisisOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isModuleAdminOpen, setIsModuleAdminOpen] = useState(false);
+
+  // Hidden modules state for Superadmin control
+  const [hiddenModules, setHiddenModules] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_hidden_modules");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  const handleToggleModule = (tabId: string) => {
+    setHiddenModules((prev) => {
+      const updated = prev.includes(tabId) ? prev.filter((id) => id !== tabId) : [...prev, tabId];
+      try {
+        localStorage.setItem("neuroconecta_hidden_modules", JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
+  const handleResetHiddenModules = () => {
+    setHiddenModules([]);
+    try {
+      localStorage.setItem("neuroconecta_hidden_modules", JSON.stringify([]));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Auto-open login/registration modal on initial load if user has not logged in yet
   useEffect(() => {
@@ -117,6 +153,30 @@ export default function App() {
   };
 
   const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com";
+  const activeUserId = typeof window !== "undefined" ? localStorage.getItem("neuroconecta_active_user_id") : null;
+  const isAuthenticated = !userProfile.isGuest && Boolean(activeUserId);
+
+  // If user is logged out or guest, display the clean Cover Screen with the logo & AuthModal
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LandingCoverScreen
+          onOpenAuth={() => setIsAuthOpen(true)}
+          isDark={userProfile.lowStimulationMode}
+        />
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          currentUser={userProfile}
+          onLoginSuccess={handleLoginSuccess}
+          onLogout={handleLogout}
+          isDark={userProfile.lowStimulationMode}
+        />
+      </>
+    );
+  }
+
+  const isCurrentTabHidden = !isSuperAdmin && hiddenModules.includes(activeTab);
 
   return (
     <div
@@ -135,107 +195,129 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         toggleLowStimMode={toggleLowStimMode}
+        hiddenModules={hiddenModules}
+        onOpenModuleAdmin={() => setIsModuleAdminOpen(true)}
       />
 
       {/* Main Content Body */}
       <main className="flex-1 pb-10">
-        {activeTab === "chat" && (
-          <ChatAssistant
-            userProfile={userProfile}
-            onUpdateProfile={handleSaveProfile}
-            onNavigateToTab={setActiveTab}
-            onOpenCrisis={() => setIsCrisisOpen(true)}
-          />
-        )}
-
-        {activeTab === "musicoterapia" && (
-          <MusicotherapyHub isDark={userProfile.lowStimulationMode} />
-        )}
-
-        {activeTab === "jogos" && (
-          <StimmingGamesHub isDark={userProfile.lowStimulationMode} />
-        )}
-
-        {activeTab === "testes" && (
-          <TestCenter onNavigateToChat={() => setActiveTab("chat")} userProfile={userProfile} />
-        )}
-
-        {activeTab === "rotina" && <RoutinePlanner />}
-
-        {activeTab === "agenda" && <AgendaAndMeds isDark={userProfile.lowStimulationMode} />}
-
-        {activeTab === "sensorial" && <SensoryHub />}
-
-        {activeTab === "humor" && <MoodTracker />}
-
-        {activeTab === "comunicacao" && <CommunicationHub />}
-
-        {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
-
-        {activeTab === "rh" && (
-          (isSuperAdmin || userProfile.userRole === "rh_gestor" || userProfile.professionalRoleType === "perito") ? (
-            <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
-          ) : (
-            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo RH Corporativo</h3>
-              <p className="text-xs">Este módulo é exclusivo para Gestores de RH, Peritos Técnicos e Superadmin.</p>
-              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">
-                Voltar ao Assistente IA
-              </button>
+        {isCurrentTabHidden ? (
+          <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 text-slate-300 shadow-xl">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-400">
+              <EyeOff className="w-6 h-6" />
             </div>
-          )
-        )}
+            <h3 className="text-xl font-bold text-white">Módulo Temporariamente Oculto</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Este módulo foi pausado ou ocultado pelo Administrador do Sistema. Entre em contato com a gestão técnica para mais informações.
+            </p>
+            <button
+              onClick={() => setActiveTab("chat")}
+              className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition"
+            >
+              Voltar ao Assistente IA
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === "chat" && (
+              <ChatAssistant
+                userProfile={userProfile}
+                onUpdateProfile={handleSaveProfile}
+                onNavigateToTab={setActiveTab}
+                onOpenCrisis={() => setIsCrisisOpen(true)}
+              />
+            )}
 
-        {activeTab === "supabase" && (
-          isSuperAdmin ? (
-            <SupabaseHub />
-          ) : (
-            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Superadmin</h3>
-              <p className="text-xs">O módulo do Banco de Dados Supabase está invisível e restrito para o administrador técnico.</p>
-              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition">
-                Voltar ao Assistente IA
-              </button>
-            </div>
-          )
-        )}
+            {activeTab === "musicoterapia" && (
+              <MusicotherapyHub isDark={userProfile.lowStimulationMode} />
+            )}
 
-        {activeTab === "cuidador" && (
-          <CaregiverHub
-            currentSupportLevel={userProfile.supportLevel}
-            userName={userProfile.preferredName || "Visitante"}
-          />
-        )}
+            {activeTab === "jogos" && (
+              <StimmingGamesHub isDark={userProfile.lowStimulationMode} />
+            )}
 
-        {activeTab === "caps" && (
-          (isSuperAdmin || userProfile.userRole === "medico" || userProfile.userRole === "caps_tecnico" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
-            <CapsHealthHub
-              isDark={userProfile.lowStimulationMode}
-              patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
-            />
-          ) : (
-            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo Clínico / CAPS</h3>
-              <p className="text-xs">Módulo reservado a Profissionais da Saúde, Médicos, Enfermeiros e Gestores CAPS.</p>
-              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">
-                Voltar ao Assistente IA
-              </button>
-            </div>
-          )
-        )}
+            {activeTab === "testes" && (
+              <TestCenter onNavigateToChat={() => setActiveTab("chat")} userProfile={userProfile} />
+            )}
 
-        {activeTab === "educacao" && (
-          (isSuperAdmin || userProfile.userRole === "professor" || userProfile.professionalRoleType === "professor") ? (
-            <EducationHub />
-          ) : (
-            <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-              <h3 className="text-lg font-bold text-slate-100">Acesso Restrito à Educação Inclusiva</h3>
-              <p className="text-xs">Módulo reservado a Educadores, Professores e Equipe Pedagógica Inclusiva.</p>
-              <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition">
-                Voltar ao Assistente IA
-              </button>
-            </div>
-          )
+            {activeTab === "rotina" && <RoutinePlanner />}
+
+            {activeTab === "agenda" && <AgendaAndMeds isDark={userProfile.lowStimulationMode} />}
+
+            {activeTab === "sensorial" && <SensoryHub />}
+
+            {activeTab === "humor" && <MoodTracker />}
+
+            {activeTab === "comunicacao" && <CommunicationHub />}
+
+            {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
+
+            {activeTab === "rh" && (
+              (isSuperAdmin || userProfile.userRole === "rh_gestor" || userProfile.professionalRoleType === "perito") ? (
+                <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
+              ) : (
+                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo RH Corporativo</h3>
+                  <p className="text-xs">Este módulo é exclusivo para Gestores de RH, Peritos Técnicos e Superadmin.</p>
+                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">
+                    Voltar ao Assistente IA
+                  </button>
+                </div>
+              )
+            )}
+
+            {activeTab === "supabase" && (
+              isSuperAdmin ? (
+                <SupabaseHub />
+              ) : (
+                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Superadmin</h3>
+                  <p className="text-xs">O módulo do Banco de Dados Supabase está invisível e restrito para o administrador técnico.</p>
+                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition">
+                    Voltar ao Assistente IA
+                  </button>
+                </div>
+              )
+            )}
+
+            {activeTab === "cuidador" && (
+              <CaregiverHub
+                currentSupportLevel={userProfile.supportLevel}
+                userName={userProfile.preferredName || "Visitante"}
+              />
+            )}
+
+            {activeTab === "caps" && (
+              (isSuperAdmin || userProfile.userRole === "medico" || userProfile.userRole === "caps_tecnico" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
+                <CapsHealthHub
+                  isDark={userProfile.lowStimulationMode}
+                  patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
+                />
+              ) : (
+                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo Clínico / CAPS</h3>
+                  <p className="text-xs">Módulo reservado a Profissionais da Saúde, Médicos, Enfermeiros e Gestores CAPS.</p>
+                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">
+                    Voltar ao Assistente IA
+                  </button>
+                </div>
+              )
+            )}
+
+            {activeTab === "educacao" && (
+              (isSuperAdmin || userProfile.userRole === "professor" || userProfile.professionalRoleType === "professor") ? (
+                <EducationHub />
+              ) : (
+                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito à Educação Inclusiva</h3>
+                  <p className="text-xs">Módulo reservado a Educadores, Professores e Equipe Pedagógica Inclusiva.</p>
+                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl transition">
+                    Voltar ao Assistente IA
+                  </button>
+                </div>
+              )
+            )}
+          </>
         )}
       </main>
 
@@ -266,6 +348,15 @@ export default function App() {
         onLoginSuccess={handleLoginSuccess}
         onLogout={handleLogout}
         isDark={userProfile.lowStimulationMode}
+      />
+
+      {/* Superadmin Module Visibility Modal */}
+      <SuperAdminModuleModal
+        isOpen={isModuleAdminOpen}
+        onClose={() => setIsModuleAdminOpen(false)}
+        hiddenModules={hiddenModules}
+        onToggleModule={handleToggleModule}
+        onResetAll={handleResetHiddenModules}
       />
     </div>
   );

@@ -1,10 +1,25 @@
-import React, { useState } from "react";
-import { BookOpen, Search, Sparkles, CheckCircle2, HelpCircle, Printer, Building2, Phone, Mail, MapPin, FileText, Download } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { BookOpen, Search, Sparkles, CheckCircle2, HelpCircle, Printer, Building2, Phone, Mail, MapPin, FileText, Download, Users, Calendar, GraduationCap } from "lucide-react";
 import { EDUCATION_ARTICLES, MYTHS_AND_FACTS } from "../data/education";
+import { calculateAge, getAgeCategory } from "../types";
 
 export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
+
+  // Global patients list for educators
+  const [globalStudents, setGlobalStudents] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_global_patients");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(globalStudents[0]?.id || "");
+  const selectedStudent = globalStudents.find(s => s.id === selectedStudentId) || globalStudents[0];
 
   const categories = [
     { id: "todos", label: "Todos os Artigos" },
@@ -160,6 +175,46 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
               }`}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Pescar Aluno / Cadastro Geral para Acomodações Escolares e PEI */}
+      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-amber-950 text-amber-400 rounded-xl border border-amber-800">
+            <GraduationCap className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <span>Pescar Aluno / Cadastrado para PEI</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
+                {globalStudents.length} aluno(s)
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">Importe dados do aluno cadastrado no sistema para emitir diretrizes de acomodação escolar.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={selectedStudentId}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
+            className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 transition ${
+              isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+            }`}
+          >
+            {globalStudents.length === 0 ? (
+              <option value="">Nenhum aluno cadastrado no momento</option>
+            ) : (
+              globalStudents.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} • {getAgeCategory(s.birthDate)} ({calculateAge(s.birthDate) !== null ? `${calculateAge(s.birthDate)} anos` : "Idade N/A"})
+                </option>
+              ))
+            )}
+          </select>
         </div>
       </div>
 

@@ -25,6 +25,7 @@ export interface UserProfile {
   email?: string;
   preferredName: string;
   pronouns: string;
+  birthDate?: string; // YYYY-MM-DD
   userRole?: UserRole;
   professionalRoleType?: ProfessionalRoleType;
   professionalRegisterNumber?: string; // e.g. CRM/SP 123456, COREN/RJ 654321, CRA/BR 98765, MEC/PE 45678, CIPTEA 001/2026
@@ -43,6 +44,26 @@ export interface UserProfile {
   createdAt?: string;
   isGuest?: boolean;
   isSuperAdmin?: boolean;
+  hiddenModules?: string[];
+}
+
+export function calculateAge(birthDateString?: string): number | null {
+  if (!birthDateString) return null;
+  const birth = new Date(birthDateString);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age < 0 ? 0 : age;
+}
+
+export function getAgeCategory(birthDateString?: string): "Criança / Adolescente (Menor de 18 anos)" | "Adulto (18+ anos)" | "Idade Não Informada" {
+  const age = calculateAge(birthDateString);
+  if (age === null) return "Idade Não Informada";
+  return age < 18 ? "Criança / Adolescente (Menor de 18 anos)" : "Adulto (18+ anos)";
 }
 
 export interface ChatMessage {

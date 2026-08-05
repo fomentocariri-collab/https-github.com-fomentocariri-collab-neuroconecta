@@ -21,6 +21,8 @@ import {
   Stethoscope,
   Pill,
   Building2,
+  EyeOff,
+  Settings,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -34,6 +36,8 @@ interface NavbarProps {
   onOpenProfile: () => void;
   onOpenAuth: () => void;
   toggleLowStimMode: () => void;
+  hiddenModules?: string[];
+  onOpenModuleAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -44,6 +48,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenAuth,
   toggleLowStimMode,
+  hiddenModules = [],
+  onOpenModuleAdmin,
 }) => {
   const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.userRole === "superadmin";
   const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
@@ -125,9 +131,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
-  // Filter tabs by role unless superadmin or if user wants full view
+  // Filter tabs by role and hiddenModules setting (superadmin sees all, with EyeOff indicator if hidden)
   const tabs = allTabs.filter(tab => {
     if ('adminOnly' in tab && tab.adminOnly) return isSuperAdmin;
+    if (!isSuperAdmin && hiddenModules.includes(tab.id)) return false;
     if (isSuperAdmin) return true;
     return (tab.roles as readonly string[]).includes(userRole);
   });
@@ -222,6 +229,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Lock className="w-3.5 h-3.5 text-teal-400" />
               <span className="hidden sm:inline">Acesso / Conta</span>
             </button>
+
+            {/* Superadmin Module Visibility Manager Button */}
+            {isSuperAdmin && onOpenModuleAdmin && (
+              <button
+                onClick={onOpenModuleAdmin}
+                className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition shadow-sm"
+                title="Superadmin: Invisibilizar / Exibir Módulos para Usuários"
+              >
+                <Settings className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Módulos</span>
+                {hiddenModules.length > 0 && (
+                  <span className="px-1.5 py-0.2 text-[10px] bg-rose-950 text-rose-300 border border-rose-800 rounded-full font-black">
+                    {hiddenModules.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
         </div>
@@ -231,6 +255,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const isHiddenFromUsers = hiddenModules.includes(tab.id);
+
             return (
               <button
                 key={tab.id}
@@ -243,6 +269,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
                 <span>{tab.label}</span>
+                {isSuperAdmin && isHiddenFromUsers && (
+                  <EyeOff className="w-3.5 h-3.5 text-rose-400 ml-0.5" title="Módulo atualmente invisível para usuários comuns" />
+                )}
               </button>
             );
           })}

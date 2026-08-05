@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X } from "lucide-react";
-import { UserProfile } from "../types";
+import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X, Calendar } from "lucide-react";
+import { UserProfile, getAgeCategory, calculateAge } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface AuthModalProps {
@@ -27,6 +27,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("2012-05-15");
   const [userRole, setUserRole] = useState<"pcd" | "cuidador_educador" | "saude_caps" | "rh_gestor" | "superadmin">("pcd");
   const [professionalRoleType, setProfessionalRoleType] = useState<"medico" | "enfermeiro" | "perito" | "rh" | "educador" | "pcd">("pcd");
   const [professionalRegisterNumber, setProfessionalRegisterNumber] = useState("");
@@ -96,6 +97,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: email.trim().toLowerCase(),
         preferredName: name.trim() || (isSuperAdminEmail ? "Programador Admin" : "Usuário"),
         pronouns: "não informado",
+        birthDate: birthDate,
         userRole: isSuperAdminEmail ? "superadmin" : userRole,
         professionalRoleType: isSuperAdminEmail ? "medico" : professionalRoleType,
         professionalRegisterNumber: professionalRegisterNumber.trim() || undefined,
@@ -120,6 +122,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         accounts.push({ email: newUser.email, password, user: newUser });
       }
       localStorage.setItem("neuroconecta_registered_accounts", JSON.stringify(accounts));
+
+      // Sync into Global Shared Patient Registry
+      try {
+        const globalRaw = localStorage.getItem("neuroconecta_global_patients") || "[]";
+        const globalList = JSON.parse(globalRaw);
+        const gIdx = globalList.findIndex((p: any) => p.id === newUser.id || p.email === newUser.email);
+        const ageCategory = getAgeCategory(newUser.birthDate);
+        const globalItem = {
+          id: newUser.id || `pat-${Date.now()}`,
+          name: newUser.preferredName,
+          email: newUser.email,
+          birthDate: newUser.birthDate,
+          ageCategory: ageCategory,
+          age: calculateAge(newUser.birthDate),
+          pronouns: newUser.pronouns,
+          diagnosisStatus: newUser.diagnosisStatus,
+          userRole: newUser.userRole,
+          supportLevel: newUser.supportLevel,
+          professionalRegisterNumber: newUser.professionalRegisterNumber,
+          registeredAt: new Date().toISOString()
+        };
+        if (gIdx >= 0) {
+          globalList[gIdx] = globalItem;
+        } else {
+          globalList.unshift(globalItem);
+        }
+        localStorage.setItem("neuroconecta_global_patients", JSON.stringify(globalList));
+      } catch (e) {
+        console.error("Global patient list sync error:", e);
+      }
 
       // Also attempt sync to Supabase table
       try {
@@ -423,6 +455,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="Como prefere ser chamado(a)"
                     className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
                       isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className={`text-xs font-semibold flex items-center justify-between ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-teal-500" /> Data de Nascimento
+                    </span>
+                    <span className="text-[10px] font-bold text-teal-400 bg-teal-950/80 px-1.5 py-0.5 rounded border border-teal-800">
+                      {getAgeCategory(birthDate)} ({calculateAge(birthDate) !== null ? `${calculateAge(birthDate)} anos` : "N/A"})
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
                     }`}
                   />
                 </div>

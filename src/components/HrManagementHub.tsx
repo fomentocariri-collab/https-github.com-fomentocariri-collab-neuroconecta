@@ -19,7 +19,7 @@ import {
   BookOpen,
   Briefcase
 } from "lucide-react";
-import { UserProfile } from "../types";
+import { UserProfile, calculateAge, getAgeCategory } from "../types";
 
 export interface HrAccommodation {
   id: string;
@@ -37,6 +37,7 @@ export interface HrAccommodation {
 export interface HrEmployee {
   id: string;
   name: string;
+  birthDate?: string;
   role: string;
   cpf: string;
   cid: string;
@@ -54,46 +55,36 @@ export const HrManagementHub: React.FC<HrManagementHubProps> = ({ userProfile, i
   const [activeTab, setActiveTab] = useState<"acomodacoes" | "riscos" | "bpc" | "parecer">("acomodacoes");
   const [copied, setCopied] = useState(false);
 
-  // List of employees for HR selection (does not default to logged in user)
+  // List of employees for HR selection (does not default to fake data)
   const [employees, setEmployees] = useState<HrEmployee[]>(() => {
     try {
       const stored = localStorage.getItem("neuroconecta_hr_employees");
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      // If none in hr, check global patients list
+      const globalRaw = localStorage.getItem("neuroconecta_global_patients");
+      if (globalRaw) {
+        const globalList = JSON.parse(globalRaw);
+        if (Array.isArray(globalList) && globalList.length > 0) {
+          return globalList.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            birthDate: p.birthDate,
+            role: "Trabalhador PCD / Neurodivergente",
+            cpf: p.cpf || "000.000.000-00",
+            cid: p.diagnosisStatus === "laudo_formal" ? "F84.0 (TEA) / F90 (TDAH)" : "Em Investigação",
+            isBpc: false,
+            cipteaNumber: p.cipteaNumber || "CIPTEA-REG-2026",
+            sector: "Acessibilidade & Inclusão"
+          }));
+        }
+      }
     } catch (e) {
       console.error(e);
     }
-    return [
-      {
-        id: "emp-001",
-        name: "Lucas Gabriel Costa",
-        role: "Desenvolvedor de Software Jr. (PCD)",
-        cpf: "123.456.789-00",
-        cid: "F84.0 (Transtorno do Espectro Autista)",
-        isBpc: true,
-        cipteaNumber: "CIPTEA-CE 2025/1102",
-        sector: "Tecnologia & Inovação",
-      },
-      {
-        id: "emp-002",
-        name: "Mariana Silva Santos",
-        role: "Assistente Administrativo (PCD)",
-        cpf: "987.654.321-11",
-        cid: "F90.0 (TDAH Predominantemente Desatento)",
-        isBpc: true,
-        cipteaNumber: "CIPTEA-CE 2026/089",
-        sector: "Recursos Humanos & CIPA",
-      },
-      {
-        id: "emp-003",
-        name: "Carlos Eduardo Lima",
-        role: "Analista de Marketing / Designer (PCD)",
-        cpf: "456.789.123-22",
-        cid: "F84.5 (Síndrome de Asperger / TEA Nível 1)",
-        isBpc: false,
-        cipteaNumber: "CIPTEA-SP 2025/998",
-        sector: "Comunicação Corporativa",
-      },
-    ];
+    return [];
   });
 
   const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || "emp-001");

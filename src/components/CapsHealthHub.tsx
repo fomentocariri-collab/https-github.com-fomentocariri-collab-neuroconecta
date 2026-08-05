@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Stethoscope, 
   FileText, 
@@ -15,8 +15,24 @@ import {
   ClipboardList,
   AlertTriangle,
   Brain,
-  FileCheck
+  FileCheck,
+  Users,
+  Calendar
 } from "lucide-react";
+import { calculateAge, getAgeCategory } from "../types";
+
+interface PatientGlobal {
+  id: string;
+  name: string;
+  email?: string;
+  birthDate?: string;
+  ageCategory?: string;
+  pronouns?: string;
+  diagnosisStatus?: string;
+  supportLevel?: number | string;
+  cpf?: string;
+  cipteaNumber?: string;
+}
 
 interface CapsHealthHubProps {
   isDark?: boolean;
@@ -29,29 +45,54 @@ export const CapsHealthHub: React.FC<CapsHealthHubProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"prontuario" | "escalas" | "protocolo_crise" | "receituario">("prontuario");
 
+  // Global patients list
+  const [globalPatients, setGlobalPatients] = useState<PatientGlobal[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_global_patients");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  const [selectedPatId, setSelectedPatId] = useState<string>(globalPatients[0]?.id || "");
+  const selectedPatient = globalPatients.find(p => p.id === selectedPatId) || globalPatients[0];
+
   // --- PRONTUÁRIO & EVOLUÇÃO STATE ---
-  const [patientId, setPatientId] = useState("CAPS-ND-8942");
-  const [patientAge, setPatientAge] = useState("26 anos");
-  const [patientCpf, setPatientCpf] = useState("000.000.000-00");
+  const [patientId, setPatientId] = useState(selectedPatient?.id || "CAPS-ND-001");
+  const [patientDisplayName, setPatientDisplayName] = useState(selectedPatient?.name || patientName);
+  const [patientBirthDate, setPatientBirthDate] = useState(selectedPatient?.birthDate || "2000-01-01");
+  const [patientCpf, setPatientCpf] = useState(selectedPatient?.cpf || "000.000.000-00");
   const [professionalName, setProfessionalName] = useState("Dr(a). Médico(a) / Enf. CAPS");
   const [professionalCrm, setProfessionalCrm] = useState("CRM/COREN 123456-CE");
 
-  const [evolutions, setEvolutions] = useState<{ id: string; date: string; type: string; notes: string; professional: string }[]>([
-    {
-      id: "ev-1",
-      date: new Date().toLocaleDateString("pt-BR"),
-      type: "Evolução Médica",
-      notes: "Paciente neurodivergente apresentou estabilidade de humor nas últimas 2 semanas. Mantida dosagem de medicação base. Orientada higiene do sono e pausa sensorial diária.",
-      professional: "Dr. Roberto Silva (Psiquiatra)",
-    },
-    {
-      id: "ev-2",
-      date: "01/08/2026",
-      type: "Evolução Enfermagem",
-      notes: "Acolhimento em sala de pouca estimulação luminosa após episódio de fadiga social. Sinais vitais: PA 120x80 mmHg, FC 74 bpm. Boa resposta a abafador de ruído.",
-      professional: "Enfª. Marina Rocha (Saúde Mental)",
+  useEffect(() => {
+    if (selectedPatient) {
+      setPatientDisplayName(selectedPatient.name);
+      setPatientId(selectedPatient.id);
+      if (selectedPatient.birthDate) setPatientBirthDate(selectedPatient.birthDate);
+      if (selectedPatient.cpf) setPatientCpf(selectedPatient.cpf);
     }
-  ]);
+  }, [selectedPatId, selectedPatient]);
+
+  const [evolutions, setEvolutions] = useState<{ id: string; date: string; type: string; notes: string; professional: string }[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_caps_evolutions");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_caps_evolutions", JSON.stringify(evolutions));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [evolutions]);
 
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState("Evolução Médica");
@@ -80,10 +121,23 @@ export const CapsHealthHub: React.FC<CapsHealthHubProps> = ({
   const [copiedReport, setCopiedReport] = useState(false);
 
   // --- MEDICAMENTOS ATIVOS ---
-  const [medications, setMedications] = useState<{ id: string; name: string; dosage: string; schedule: string; purpose: string }[]>([
-    { id: "m1", name: "Metilfenidato / Lisdexanfetamina", dosage: "30mg", schedule: "Manhã (após o café)", purpose: "Suporte de Foco e Atenção (TDAH)" },
-    { id: "m2", name: "Risperidona / Aripiprazol", dosage: "1mg", schedule: "Noite", purpose: "Modulação de Irritabilidade e Ansiedade Sensorial" },
-  ]);
+  const [medications, setMedications] = useState<{ id: string; name: string; dosage: string; schedule: string; purpose: string }[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_caps_medications");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_caps_medications", JSON.stringify(medications));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [medications]);
   const [newMedName, setNewMedName] = useState("");
   const [newMedDosage, setNewMedDosage] = useState("");
   const [newMedSchedule, setNewMedSchedule] = useState("");
@@ -187,9 +241,53 @@ Emitido em ${new Date().toLocaleDateString("pt-BR")} via NeuroConecta Saúde Men
             <p className="text-cyan-300 font-bold flex items-center gap-1">
               <UserCheck className="w-4 h-4" /> Paciente Ativo:
             </p>
-            <p className="font-extrabold text-white text-sm">{patientName}</p>
+            <p className="font-extrabold text-white text-sm">{patientDisplayName}</p>
+            <p className="text-slate-300 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{getAgeCategory(patientBirthDate)} ({calculateAge(patientBirthDate) !== null ? `${calculateAge(patientBirthDate)} anos` : "Sem data"})</span>
+            </p>
             <p className="text-slate-300">Prontuário: <span className="font-mono text-cyan-300">{patientId}</span></p>
           </div>
+        </div>
+      </div>
+
+      {/* Selector / Pescar Paciente Cadastrado */}
+      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-cyan-950 text-cyan-400 rounded-xl border border-cyan-800">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <span>Pescar Paciente / Cadastro Geral</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
+                {globalPatients.length} cadastrado(s)
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">Selecione o paciente cadastrado no início para trazer seus dados automaticamente para o CAPS.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={selectedPatId}
+            onChange={(e) => setSelectedPatId(e.target.value)}
+            className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500 transition ${
+              isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
+            }`}
+          >
+            {globalPatients.length === 0 ? (
+              <option value="">Nenhum paciente cadastrado no momento</option>
+            ) : (
+              globalPatients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} • {getAgeCategory(p.birthDate)} ({calculateAge(p.birthDate) !== null ? `${calculateAge(p.birthDate)} anos` : "Idade N/A"})
+                </option>
+              ))
+            )}
+          </select>
         </div>
       </div>
 

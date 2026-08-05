@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { User, X, Plus, Trash2, Save, Shield, Users, Bell, Sparkles, Download, Upload, Database } from "lucide-react";
-import { UserProfile, DiagnosisStatus, FocusArea, SupportLevel, UserRole } from "../types";
+import { User, X, Plus, Trash2, Save, Shield, Users, Bell, Sparkles, Download, Upload, Database, Calendar } from "lucide-react";
+import { UserProfile, DiagnosisStatus, FocusArea, SupportLevel, UserRole, getAgeCategory, calculateAge } from "../types";
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -17,6 +17,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   const [name, setName] = useState(userProfile.preferredName);
   const [pronouns, setPronouns] = useState(userProfile.pronouns);
+  const [birthDate, setBirthDate] = useState(userProfile.birthDate || "2000-01-01");
   const [role, setRole] = useState<UserRole>(userProfile.userRole || (userProfile.isSuperAdmin ? "superadmin" : "pcd"));
   const [profRoleType, setProfRoleType] = useState(userProfile.professionalRoleType || "pcd");
   const [profRegisterNum, setProfRegisterNum] = useState(userProfile.professionalRegisterNumber || "");
@@ -106,6 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       ...userProfile,
       preferredName: name,
       pronouns,
+      birthDate,
       userRole: role,
       professionalRoleType: profRoleType as any,
       professionalRegisterNumber: profRegisterNum.trim() || undefined,
@@ -166,6 +168,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               value={pronouns}
               onChange={(e) => setPronouns(e.target.value)}
               placeholder="Ex: ela/dela, ele/dele, elu/delu..."
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          {/* Birth Date & Age Category */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-teal-400" /> Data de Nascimento
+              </label>
+              <span className="text-xs font-bold text-teal-300 bg-teal-950 px-2 py-0.5 rounded-lg border border-teal-800">
+                {getAgeCategory(birthDate)} ({calculateAge(birthDate) !== null ? `${calculateAge(birthDate)} anos` : "N/A"})
+              </span>
+            </div>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-teal-500"
             />
           </div>
