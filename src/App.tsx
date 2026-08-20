@@ -11,6 +11,7 @@ import { MoodTracker } from "./components/MoodTracker";
 import { CommunicationHub } from "./components/CommunicationHub";
 import { ReportHub } from "./components/ReportHub";
 import { SupabaseHub } from "./components/SupabaseHub";
+import { ScriptsHub } from "./components/ScriptsHub";
 import { CaregiverHub } from "./components/CaregiverHub";
 import { EducationHub } from "./components/EducationHub";
 import { CapsHealthHub } from "./components/CapsHealthHub";
@@ -112,16 +113,14 @@ export default function App() {
     setIsAuthOpen(false);
 
     // Intuitively route user to their specific module upon login
-    if (user.isSuperAdmin || user.email?.toLowerCase() === "sistemastop@gmail.com") {
+    if (user.isSuperAdmin || user.email?.toLowerCase() === "sistemastop@gmail.com" || user.userRole === "superadmin") {
       setActiveTab("rh");
-    } else if (user.professionalRoleType === "medico" || user.userRole === "medico" || user.professionalRoleType === "enfermeiro" || user.userRole === "caps_tecnico") {
+    } else if (user.professionalRoleType === "medico" || user.professionalRoleType === "enfermeiro" || user.userRole === "saude_caps") {
       setActiveTab("caps");
-    } else if (user.professionalRoleType === "professor" || user.userRole === "professor") {
+    } else if (user.professionalRoleType === "educador" || user.userRole === "cuidador_educador") {
       setActiveTab("educacao");
-    } else if (user.professionalRoleType === "perito" || user.userRole === "rh_gestor") {
+    } else if (user.professionalRoleType === "perito" || user.professionalRoleType === "rh" || user.userRole === "rh_gestor") {
       setActiveTab("rh");
-    } else if (user.userRole === "cuidador") {
-      setActiveTab("cuidador");
     } else {
       setActiveTab("chat");
     }
@@ -150,7 +149,7 @@ export default function App() {
     handleSaveProfile(updated);
   };
 
-  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com";
+  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.userRole === "superadmin" || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.email?.toLowerCase() === "fomentocariri@gmail.com";
   const activeUserId = typeof window !== "undefined" ? localStorage.getItem("neuroconecta_active_user_id") : null;
   const isAuthenticated = !userProfile.isGuest && Boolean(activeUserId);
 
@@ -278,6 +277,20 @@ export default function App() {
               )
             )}
 
+            {activeTab === "scripts" && (
+              isSuperAdmin ? (
+                <ScriptsHub />
+              ) : (
+                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
+                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Superadmin</h3>
+                  <p className="text-xs">A Central de Scripts e Automação de Deploy é restrita para administradores e equipe técnica.</p>
+                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition">
+                    Voltar ao Assistente IA
+                  </button>
+                </div>
+              )
+            )}
+
             {activeTab === "cuidador" && (
               <CaregiverHub
                 currentSupportLevel={userProfile.supportLevel}
@@ -286,7 +299,7 @@ export default function App() {
             )}
 
             {activeTab === "caps" && (
-              (isSuperAdmin || userProfile.userRole === "medico" || userProfile.userRole === "caps_tecnico" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
+              (isSuperAdmin || userProfile.userRole === "saude_caps" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
                 <CapsHealthHub
                   isDark={userProfile.lowStimulationMode}
                   patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
@@ -303,7 +316,7 @@ export default function App() {
             )}
 
             {activeTab === "educacao" && (
-              (isSuperAdmin || userProfile.userRole === "professor" || userProfile.professionalRoleType === "professor") ? (
+              (isSuperAdmin || userProfile.userRole === "cuidador_educador" || userProfile.professionalRoleType === "educador") ? (
                 <EducationHub />
               ) : (
                 <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">

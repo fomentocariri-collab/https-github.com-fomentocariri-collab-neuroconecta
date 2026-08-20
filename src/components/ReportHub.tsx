@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Printer, Calendar, BarChart3, ShieldCheck, HeartPulse, ClipboardCheck, Clock, User, Award, CheckCircle2, Users, Plus } from "lucide-react";
+import { FileText, Printer, Calendar, BarChart3, ShieldCheck, HeartPulse, ClipboardCheck, Clock, User, Award, CheckCircle2, Users, Plus, BookOpen } from "lucide-react";
 import { UserProfile, SavedTestResult, RoutineTask, calculateAge, getAgeCategory } from "../types";
+import { AcademicReviewModal } from "./AcademicReviewModal";
 
 export interface PatientRecord {
   id: string;
@@ -27,6 +28,7 @@ type PeriodFilter = "diario" | "semanal" | "mensal";
 
 export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
   const [period, setPeriod] = useState<PeriodFilter>("semanal");
+  const [showAcademicModal, setShowAcademicModal] = useState(false);
 
   // Patient database for reports (does not default to fake data)
   const [patients, setPatients] = useState<PatientRecord[]>(() => {
@@ -191,14 +193,24 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
           </p>
         </div>
 
-        {/* Action Button for PDF Print */}
-        <button
-          onClick={handlePrint}
-          className="px-5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 flex-shrink-0"
-        >
-          <Printer className="w-4 h-4" />
-          <span>Imprimir / Salvar PDF</span>
-        </button>
+        {/* Action Buttons for PDF Print and Academic Review */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setShowAcademicModal(true)}
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-teal-700/80 text-teal-200 font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition active:scale-95 flex-shrink-0"
+          >
+            <BookOpen className="w-4 h-4 text-teal-400" />
+            <span>Resenha Acadêmica (PDF)</span>
+          </button>
+
+          <button
+            onClick={handlePrint}
+            className="px-5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 flex-shrink-0"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Imprimir / Salvar PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Patient Selector Card (Hidden on Print) */}
@@ -620,6 +632,12 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile }) => {
         </div>
 
       </div>
+
+      {/* Academic Review Case Study Modal & PDF Export */}
+      <AcademicReviewModal
+        isOpen={showAcademicModal}
+        onClose={() => setShowAcademicModal(false)}
+      />
 
     </div>
   );

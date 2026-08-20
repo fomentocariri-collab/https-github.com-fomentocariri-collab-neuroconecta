@@ -168,9 +168,9 @@ MINISTÉRIO DA SAÚDE / REDE DE ATENÇÃO PSICOSSOCIAL
 =====================================================
 
 DADOS DO PACIENTE:
-• Nome do Paciente: ${patientName}
+• Nome do Paciente: ${patientDisplayName || patientName}
 • Prontuário CAPS: ${patientId}
-• Idade: ${patientAge}
+• Data de Nascimento: ${patientBirthDate} (${calculateAge(patientBirthDate) !== null ? `${calculateAge(patientBirthDate)} anos` : "Não informada"})
 • CPF: ${patientCpf}
 
 EQUIPE RESPONSÁVEL:

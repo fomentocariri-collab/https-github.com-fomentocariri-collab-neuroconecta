@@ -26,6 +26,7 @@ export const MODULE_DEFINITIONS: { id: NavTab; label: string; desc: string; cate
   { id: "rh", label: "Gestão de RH & Cota PCD (NR-1)", desc: "Mapeamento de riscos psicossociais e vaga PCD", category: "Corporativo" },
   { id: "educacao", label: "Biblioteca & Educação Inclusiva", desc: "Guias escolares e plano de ensino", category: "Educação" },
   { id: "supabase", label: "Banco de Dados Supabase", desc: "Sincronização em nuvem para administrador", category: "Técnico" },
+  { id: "scripts", label: "Central de Scripts & Deploy", desc: "Gerenciador de scripts de imagens, SQL e Vercel", category: "Técnico" },
 ];
 
 export const SuperAdminModuleModal: React.FC<SuperAdminModuleModalProps> = ({

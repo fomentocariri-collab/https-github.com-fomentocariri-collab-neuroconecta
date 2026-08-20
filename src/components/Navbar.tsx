@@ -24,10 +24,11 @@ import {
   Building2,
   EyeOff,
   Settings,
+  Terminal,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
-export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "rh" | "supabase";
+export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "rh" | "supabase" | "scripts";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -52,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   hiddenModules = [],
   onOpenModuleAdmin,
 }) => {
-  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.userRole === "superadmin";
+  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.email?.toLowerCase() === "fomentocariri@gmail.com" || userProfile.userRole === "superadmin";
   const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
   const profRoleType = userProfile.professionalRoleType;
 
@@ -130,6 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["rh_gestor", "superadmin"] },
     { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
+    { id: "scripts", label: "Central de Scripts (Admin)", icon: Terminal, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
   // Filter tabs by role and hiddenModules setting (superadmin sees all, with EyeOff indicator if hidden)
