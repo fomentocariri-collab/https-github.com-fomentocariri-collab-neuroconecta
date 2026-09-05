@@ -24,13 +24,16 @@ import {
 import { TestDefinition, SavedTestResult, UserProfile } from "../types";
 import { TESTS_LIST } from "../data/tests";
 import { getGlobalTestHistory, saveTestResultToStore, clearAllTestHistory } from "../data/testHistory";
+import { MomentAssessment } from "./MomentAssessment";
 
 interface TestCenterProps {
-  onNavigateToChat: () => void;
+  onNavigateToChat: (prompt?: string, role?: string) => void;
+  onNavigateToSounds?: () => void;
   userProfile?: UserProfile;
 }
 
-export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat, userProfile }) => {
+export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat, onNavigateToSounds, userProfile }) => {
+  const [activeSection, setActiveSection] = useState<"momento" | "triagem" | "historico">("momento");
   const [selectedTest, setSelectedTest] = useState<TestDefinition | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -251,8 +254,71 @@ Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de tri
       {!selectedTest ? (
         <div className="space-y-8">
           
-          {/* Scientific Context Comparison Table */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+          {/* Sub-Navigation Tabs */}
+          <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm">
+            <button
+              type="button"
+              onClick={() => setActiveSection("momento")}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                activeSection === "momento"
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-teal-300" />
+              <span>Autoavaliação do Momento</span>
+              <span className="text-[10px] bg-teal-900/80 px-2 py-0.5 rounded text-teal-200 border border-teal-700/60">
+                100% Funcional / Sem Rótulos
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSection("triagem")}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                activeSection === "triagem"
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              <ClipboardCheck className="w-4 h-4 text-teal-300" />
+              <span>Instrumentos de Triagem Clínica</span>
+              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">
+                RAADS-R, CAT-Q, AQ-10
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSection("historico")}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                activeSection === "historico"
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              <Clock className="w-4 h-4 text-teal-300" />
+              <span>Histórico Consolidado</span>
+              {savedHistory.length > 0 && (
+                <span className="text-[10px] bg-teal-900 px-2 py-0.5 rounded text-teal-200 font-mono">
+                  {savedHistory.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeSection === "momento" && (
+            <MomentAssessment
+              onNavigateToChat={onNavigateToChat}
+              onNavigateToSounds={onNavigateToSounds}
+              isDark={true}
+            />
+          )}
+
+          {activeSection === "triagem" && (
+            <div className="space-y-8">
+              {/* Scientific Context Comparison Table */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-teal-400" />
               <h2 className="text-base font-bold text-slate-100">
@@ -382,9 +448,12 @@ Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de tri
               </div>
             ))}
           </div>
+        </div>
+      )}
 
-          {/* Test Result History Section - Accessible to Users, Doctors, Nurses, Teachers & Super Admin */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg">
+      {/* Test Result History Section - Accessible to Users, Doctors, Nurses, Teachers & Super Admin */}
+      {activeSection === "historico" && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -495,6 +564,7 @@ Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de tri
               )}
             </div>
           </div>
+        )}
 
         </div>
       ) : (

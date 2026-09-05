@@ -42,6 +42,14 @@ export default function App() {
   const [isModuleAdminOpen, setIsModuleAdminOpen] = useState(false);
   const [isShareManagerOpen, setIsShareManagerOpen] = useState(false);
   const [isFunctionalPlanOpen, setIsFunctionalPlanOpen] = useState(false);
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<{ prompt: string; role?: any } | null>(null);
+
+  const handleNavigateToChat = (prompt?: string, role?: any) => {
+    if (prompt) {
+      setChatInitialPrompt({ prompt, role });
+    }
+    setActiveTab("chat");
+  };
 
   // Hidden modules state for Superadmin control
   const [hiddenModules, setHiddenModules] = useState<string[]>(() => {
@@ -235,6 +243,8 @@ export default function App() {
                 onUpdateProfile={handleSaveProfile}
                 onNavigateToTab={setActiveTab}
                 onOpenCrisis={() => setIsCrisisOpen(true)}
+                initialPrompt={chatInitialPrompt}
+                onClearInitialPrompt={() => setChatInitialPrompt(null)}
               />
             )}
 
@@ -247,7 +257,11 @@ export default function App() {
             )}
 
             {activeTab === "testes" && (
-              <TestCenter onNavigateToChat={() => setActiveTab("chat")} userProfile={userProfile} />
+              <TestCenter
+                onNavigateToChat={handleNavigateToChat}
+                onNavigateToSounds={() => setActiveTab("musicoterapia")}
+                userProfile={userProfile}
+              />
             )}
 
             {activeTab === "rotina" && <RoutinePlanner />}

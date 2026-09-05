@@ -11,6 +11,8 @@ interface ChatAssistantProps {
   onUpdateProfile: (profile: UserProfile) => void;
   onNavigateToTab: (tab: any) => void;
   onOpenCrisis: () => void;
+  initialPrompt?: { prompt: string; role?: InteractionRole } | null;
+  onClearInitialPrompt?: () => void;
 }
 
 export type InteractionRole = 
@@ -23,96 +25,10 @@ export type InteractionRole =
   | "trabalho";
 
 const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "meu_apoio"): string => {
-  const text = userMessage.toLowerCase();
+  const text = (userMessage || "").toLowerCase().trim();
   const name = profile.preferredName && profile.preferredName !== "Visitante" ? `, ${profile.preferredName}` : "";
 
-  // 1. SAÚDE - Organização e Preparação
-  if (role === "saude") {
-    return `[Apoio para Organização & Preparação em Saúde]
-Olá${name}.
-
-⚠️ **Aviso de Segurança:** A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
-
-Posso te ajudar a preparar sua consulta com os seguintes passos práticos:
-1. **Organização cronológica de sintomas:** Registrar o que você sentiu, datas aproximadas e o que atenua ou agrava o desconforto.
-2. **Lista de perguntas prioritárias:** Estruturar 3 a 5 perguntas objetivas para você tirar dúvidas com seu médico ou terapeuta.
-3. **Registro de efeitos de rotina:** Estruturar um diário simples para acompanhar sono, alimentação e efeitos percebidos ao longo dos dias.
-
-O que você gostaria de estruturar para a sua próxima consulta?`;
-  }
-
-  // 2. TRABALHO - Acessibilidade & Organização
-  if (role === "trabalho") {
-    return `[Apoio para Acessibilidade & Organização no Trabalho]
-Olá${name}.
-
-ℹ️ **Aviso:** A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
-
-Posso te apoiar com:
-1. **Redação de pedidos de acomodação funcional:** Modelos educados e objetivos para solicitar uso de fones abafadores com cancelamento de ruído, instruções de tarefas por escrito ou assento em área com menor circulação.
-2. **Organização e priorização de tarefas:** Ajudar a organizar demandas acumuladas e sugerir uma mensagem para alinhar prioridades com seu gestor.
-3. **Comunicação profissional assíncrona:** Estruturar emails ou mensagens para evitar sobrecarga de reuniões desnecessárias.
-
-Qual pedido ou alinhamento de trabalho você gostaria de redigir?`;
-  }
-
-  // 3. EDUCAÇÃO - Inclusão Escolar & DUA
-  if (role === "educacao") {
-    return `[Apoio Pedagógico & Inclusão Escolar]
-Olá${name}! No contexto educacional inclusivo, nosso foco é remover barreiras pedagógicas e reduzir sobrecargas sensoriais e cognitivas.
-
-**O que você precisa ensinar ou tornar mais acessível hoje?**
-
-Posso te apoiar com:
-- **Adaptação de atividades:** Dividir enunciados extensos em etapas menores mantendo intacto o objetivo pedagógico.
-- **Desenho Universal para Aprendizagem (DUA):** Sugerir múltiplas formas de participação (visual, oral, escrita) para acolher diferentes ritmos.
-- **Apoios visuais e previsibilidade:** Quadros visuais para antecipar a rotina da aula e transições suaves entre disciplinas.
-- **Minuta de PEI / PDI:** Ajudar a registrar as acomodações necessárias e estratégias de acessibilidade.
-- **Comunicação respeitosa Escola-Família:** Redigir registros pedagógicos descritivos, neutros e acolhedores.`;
-  }
-
-  // 4. FAMÍLIA & CUIDADO - Rotina e Rede de Apoio
-  if (role === "familia_cuidado") {
-    return `[Apoio à Família & Rede de Cuidados]
-Olá${name}! O papel da rede de apoio é construir um ambiente seguro, com previsibilidade e acolhimento mútuo.
-
-Como posso apoiar a rotina familiar hoje?
-- **Previsibilidade doméstica:** Organizar horários estáveis para as refeições, descanso e momentos de silêncio.
-- **Antecipação de mudanças:** Planejar como conversar antes sobre alterações de horários, visitas ou consultas.
-- **Divisão de tarefas colaborativas:** Estruturar afazeres com a participação da pessoa apoiada respeitando seu ritmo.
-- **Comunicação com a escola/terapeutas:** Preparar mensagens informando sobre a semana sem cobranças ou julgamentos.
-- **Ajustes ambientais:** Reduzir excesso de estímulos luminosos, sonoros ou desorganização física nos espaços de descanso.`;
-  }
-
-  // 5. COMUNICAÇÃO & ACESSIBILIDADE - Expressão e Scripts
-  if (role === "comunicacao_acessibilidade") {
-    return `[Comunicação & Acessibilidade]
-Olá${name}! Uma comunicação autêntica e clara reduz a ansiedade e garante que suas necessidades sejam compreendidas.
-
-Posso te apoiar a:
-- **Criar scripts sociais:** Textos prontos para dizer 'não' educadamente, pedir um tempo para pensar ou recusar um convite sem constrangimento.
-- **Solicitar instruções por escrito:** Frases diretas para garantir que detalhes de conversas orais fiquem registrados.
-- **Tradução para linguagem literal:** Ajudar a interpretar metáforas ou expressões implícitas que pareçam confusas.
-- **Apoio a CAA (Comunicação Aumentativa e Alternativa):** Elaborar frases curtas com vocabulário direto para painéis ou cartões.
-
-Qual situação comunicativa você gostaria de praticar ou preparar?`;
-  }
-
-  // 6. ORGANIZAÇÃO & ROTINA - Funções Executivas
-  if (role === "organizacao_rotina") {
-    return `[Organização & Rotina Funcional]
-Olá${name}! Estruturar a rotina com clareza visual alivia a fadiga mental e facilita o início das tarefas.
-
-Posso te apoiar com:
-- **Estruturação do dia:** Dividir o dia em blocos realistas (Manhã, Tarde e Noite) com margem para pausas.
-- **Dividir uma tarefa grande em etapas:** Transformar uma demanda complexa em passos de 10 a 15 minutos.
-- **Rotina para dias de baixa energia:** Identificar o que é estritamente essencial e o que pode esperar quando a energia está baixa.
-- **Checklist de saída de casa:** Listar itens essenciais para não esquecer nada ao sair (chaves, documentos, fones, água).
-
-Qual atividade você gostaria de organizar agora?`;
-  }
-
-  // 7. MEU APOIO (padrão)
+  // 1. Crise e Sobrecarga Aguda
   if (
     text.includes("crise") ||
     text.includes("meltdown") ||
@@ -130,26 +46,315 @@ Sua segurança e bem-estar vêm em primeiro lugar.
 
 💙 **Estratégia Imediata de Descompressão:**
 1. **Reduza Estímulos:** Vá para um local silencioso, diminua as luzes ou use fones de ouvido.
-2. **Exercício de Apoio Sensorial (5-4-3-2-1):**
+2. **Exercício de Apoio Sensorial (5-4-3-2-1 Adaptado):**
    - 👁️ Olhe para 5 objetos seguros ao seu redor.
    - 🖐️ Toque em 4 texturas que tragam conforto.
-   - 👂 Ouça 3 sons suaves no ambiente.
-   - 👃 Sinta 2 aromas agradáveis.
-   - 👅 Beba um gole de água fresca devagar.
+   - 👂 Ouça 3 sons suaves no ambiente (ou teste o Ruído Marrom na aba Som).
+   - 👃 Sinta aromas suaves ou respire devagar.
+   - 💧 Beba um gole de água fresca devagar.
 3. Não tente resolver decisões difíceis agora. Apenas respire no seu próprio ritmo.
 
 ⚠️ *Se precisar de acolhimento emergencial humano, use o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
   }
 
-  return `Olá${name}! Sou o copiloto de apoio do **NeuroConecta**.
+  // 2. Organizar o Dia e Rotina
+  if (
+    text.includes("organizar") ||
+    text.includes("meu dia") ||
+    text.includes("rotina") ||
+    text.includes("planejar") ||
+    text.includes("agenda")
+  ) {
+    return `[Apoio à Função Executiva: Estrutura do Dia]
+Olá${name}! Ter uma previsão clara do dia reduz a ansiedade e evita a sobrecarga cognitiva.
+
+Aqui está uma proposta de **Estrutura Visual em 4 Blocos Flexíveis**:
+
+🌅 **1. Bloco Manhã (Ativação e Foco Principal):**
+• *Ativação Suave (15 min):* Hidratação, luz natural e conferir o que é estritamente essencial.
+• *Foco Único do Dia:* Escolha **apenas 1 prioridade central**. Fazer essa única coisa já torna o dia produtivo.
+• *Pausa Sensorial (10 min):* Alongamento leve ou silêncio com fones.
+
+☀️ **2. Bloco Tarde (Manutenção e Demandas Práticas):**
+• Tarefas mecânicas ou mensagens curtas.
+• Intervalo de descompressão antes de mudar de ambiente ou atividade.
+
+🌆 **3. Bloco Fim de Tarde (Fechamento sem Culpa):**
+• Registrar o que foi concluído (mesmo as pequenas coisas).
+• Deixar pendências anotadas por escrito para esvaziar a mente.
+
+🌙 **4. Bloco Noite (Regulação do Sono):**
+• Reduzir luzes brancas 1 hora antes de dormir.
+• Som contínuo (ruído marrom ou sons da natureza na aba *Som & Autorregulação*).
+
+💡 **Dica neuroafirmativa:** Se a sua energia estiver baixa hoje, faça a *Regra do 1 Item*: escolha só uma coisa e comemore ao finalizar!`;
+  }
+
+  // 3. Dividir Tarefa em Etapas / Paralisia de Início
+  if (
+    text.includes("dividir") ||
+    text.includes("tarefa") ||
+    text.includes("etapa") ||
+    text.includes("bloqueio") ||
+    text.includes("começar") ||
+    text.includes("procrastina") ||
+    text.includes("paralisia")
+  ) {
+    return `[Protocolo de Desbloqueio Executivo & Micro-Passos]
+Olá${name}! A paralisia de início não é falta de vontade — é sobrecarga do cérebro ao tentar processar o todo de uma vez.
+
+Vamos transformar essa tarefa grande em **micro-ações fáceis de começar**:
+
+1️⃣ **Micro-Ação Zero (Menos de 2 minutos):**
+• *Apenas prepare o cenário, sem compromisso de fazer tudo.*
+• Exemplo: Se for escrever um texto, abra o documento em branco e digite apenas o título. Se for estudar, abra o livro na página.
+
+2️⃣ **Bloco dos 10 Minutos (Sem Cobrança de Perfeição):**
+• Coloque um cronômetro de 10 minutos.
+• Faça o que for possível, sabendo que você tem permissão total para parar quando o alarme tocar.
+
+3️⃣ **Pausa de Recompensa (3 a 5 minutos):**
+• Levante-se, beba água ou faça um estímulo que te acalme.
+
+4️⃣ **Decisão Consciente:**
+• Sente que o fluxo engrenou? Faça mais um bloco de 10 a 15 min.
+• Sente que atingiu o limite? Respeite seu ritmo e pause sem culpa.
+
+Qual é a tarefa que você precisa começar hoje? Me diga em poucas palavras e eu divido ela em passos simples para você!`;
+  }
+
+  // 4. Pedir Instruções por Escrito
+  if (
+    text.includes("instruções por escrito") ||
+    text.includes("por escrito") ||
+    text.includes("pedir instrução") ||
+    text.includes("mensagem por escrito")
+  ) {
+    return `[Modelo de Comunicação: Solicitação por Escrito]
+Olá${name}! Pedir orientações por escrito garante clareza, previsibilidade e evita lapsos de memória de trabalho.
+
+Aqui está um modelo pronto, educado e assertivo para você enviar por email ou mensagem:
+
+---
+*"Olá [Nome do colega, gestor ou professor], tudo bem?*
+
+*Para que eu possa organizar as etapas com precisão e garantir que nenhum detalhe importante se perca, você poderia me enviar por escrito o resumo dessa demanda com os pontos principais e o prazo de entrega esperado?*
+
+*Isso me ajuda a alinhar expectativas e planejar a execução com qualidade.*
+
+*Muito obrigado(a) pela colaboração!"*
+---
+
+💡 **Variação curta para WhatsApp ou chat interno:**
+*"Olá! Pode me mandar esses pontos por escrito por aqui rapidinho? Fica bem mais fácil para eu acompanhar e checar cada etapa sem esquecer nada. Obrigado!"*`;
+  }
+
+  // 5. Pedir Uso de Fones com Cancelamento de Ruído / Acomodação
+  if (
+    text.includes("fone") ||
+    text.includes("abafador") ||
+    text.includes("ruído") ||
+    text.includes("acomodação") ||
+    text.includes("cancelamento")
+  ) {
+    return `[Modelo de Comunicação: Acomodação Sensorial & Fones]
+Olá${name}! O uso de fones abafadores ou com cancelamento ativo de ruído é uma adaptação de acessibilidade essencial para atenuar ruídos concorrentes e proteger o foco e bem-estar.
+
+Aqui está um modelo assertivo para solicitar essa acomodação no trabalho ou estudo:
+
+---
+*"Prezada equipe / [Nome do gestor ou coordenação],*
+
+*Gostaria de formalizar o pedido para utilizar fones com cancelamento de ruído durante as minhas atividades de foco individual.*
+
+*Essa adaptação acústica me permite atenuar os estímulos sonoros concorrentes do ambiente, preservando minha atenção sustentada, conforto sensorial e a qualidade contínua das minhas entregas.*
+
+*Fico à disposição para qualquer alinhamento e agradeço o acolhimento dessa necessidade de acessibilidade.*
+
+*Atenciosamente,*
+*[Seu Nome]"*
+---
+
+💡 **Dica prática:** Conforme a Lei Brasileira de Inclusão (LBI), adaptações razoáveis de ambiente são direitos que viabilizam a autonomia e produtividade.`;
+  }
+
+  // 6. Adaptação Pedagógica & Estudo Escolar
+  if (
+    text.includes("adaptar atividade") ||
+    text.includes("estudo") ||
+    text.includes("escola") ||
+    text.includes("aula") ||
+    text.includes("aluno") ||
+    text.includes("pedagógico") ||
+    role === "educacao"
+  ) {
+    return `[Apoio Pedagógico & Desenho Universal para a Aprendizagem (DUA)]
+Olá${name}! No contexto educacional, adaptar atividades significa remover barreiras desnecessárias mantendo os objetivos de aprendizado.
+
+Aqui estão 4 estratégias práticas de acessibilidade pedagógica:
+
+1. **Fracionamento de Enunciados Extensos:**
+   • Dividir instruções longas em passos numerados e destacados.
+   • Usar verbos de comando claros (*Identifique*, *Organize*, *Resolva*).
+
+2. **Apoios Visuais & Previsibilidade:**
+   • Quadros visuais e roteiros da aula para antecipar transições de matéria.
+
+3. **Múltiplas Formas de Expressão:**
+   • Permitir respostas em tópicos, desenhos explicativos ou áudio quando o foco for a assimilação do conteúdo.
+
+4. **Pausa Sensorial Programada:**
+   • Intervalos regulares de 2 minutos para hidratação e autorregulação.`;
+  }
+
+  // 7. Script para Conversa Difícil e Limites
+  if (
+    text.includes("conversa difícil") ||
+    text.includes("limite") ||
+    text.includes("dizer não") ||
+    text.includes("recusar") ||
+    text.includes("limites")
+  ) {
+    return `[Script Social Assertivo: Estabelecendo Limites Saudáveis]
+Olá${name}! Dizer "não" de forma educada é um ato de preservação da sua saúde mental e funcionalidade.
+
+Aqui estão roteiros prontos:
+
+1️⃣ **Recusar uma tarefa extra quando você já está no limite:**
+*"Agradeço pela confiança. No momento, para manter a qualidade e o prazo das demandas já em andamento, não poderei assumir essa nova tarefa sem sobrecarga. O que podemos priorizar juntos?"*
+
+2️⃣ **Recusar um convite social sem culpa:**
+*"Muito obrigado pelo convite! Hoje preciso de um tempo para descansar e recarregar a bateria social, então não poderei comparecer. Espero que se divirtam bastante!"*
+
+3️⃣ **Pedir tempo para pensar:**
+*"Recebi sua solicitação. Vou analisar com calma e te respondo até [horário/dia]. Obrigado pela compreensão!"*`;
+  }
+
+  // 8. Autorregulação & Pausa Sensorial
+  if (
+    text.includes("autorregulação") ||
+    text.includes("pausa") ||
+    text.includes("estresse") ||
+    text.includes("ansiedade") ||
+    text.includes("respiração")
+  ) {
+    return `[Guia Rápido de Autorregulação & Pausa Restauradora]
+Olá${name}. Reserve estes próximos 3 minutos para cuidar do seu equilíbrio sensorial:
+
+🌬️ **1. Respiração no Ritmo 4-4-6:**
+• Inspire suavemente pelo nariz contando até 4.
+• Segure o ar com calma contando até 4.
+• Solte o ar pela boca bem devagar contando até 6.
+*(Repita por 3 ciclos).*
+
+🎧 **2. Conforto Acústico:**
+• Na aba **Som & Autorregulação**, teste a *Pausa de 2 minutos* com Ruído Marrom ou Faixa 432 Hz para atenuar ruídos imprevisíveis.
+
+🧘 **3. Alívio de Tensão Muscular:**
+• Solte a mandíbula (desencoste os dentes).
+• Abaixe os ombros afastando-os das orelhas.
+• Solte o peso das mãos sobre o colo.
+
+Você merece esse momento de pausa. Como você está se sentindo agora?`;
+  }
+
+  // 9. Autoavaliação do Momento / Discussão
+  if (
+    text.includes("autoavaliação") ||
+    text.includes("autoavaliacao") ||
+    text.includes("momento") ||
+    text.includes("energia") ||
+    text.includes("resultado")
+  ) {
+    return `[Apoio à Autoavaliação Funcional do Momento]
+Olá${name}! Mapear o seu estado atual de energia e sobrecarga sensorial é o primeiro passo para agir com respeito ao seu ritmo.
+
+💡 **Recomendações Práticas:**
+• **Se a energia estiver baixa ou houver sobrecarga:** Reduza estímulos imediatamente, proteja-se contra interações sociais exaustivas e adote a *Regra da Única Coisa*.
+• **Se a energia estiver estável:** Mantenha blocos curtos de trabalho (15 a 25 min) com pausas obrigatórias para não exaurir sua bateria tardiamente.
+• **Se houver paralisia de início:** Escolha uma micro-tarefa de 2 minutos apenas para destravar o movimento.
+
+Como posso te apoiar com o seu próximo passo prático?`;
+  }
+
+  // 10. Contextos Específicos
+  if (role === "saude") {
+    return `[Apoio para Organização & Preparação em Saúde]
+Olá${name}.
+
+⚠️ **Aviso de Segurança:** A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
+
+Posso te ajudar a preparar sua consulta com os seguintes passos práticos:
+1. **Organização cronológica de sintomas:** Registrar o que você sentiu, datas aproximadas e o que atenua ou agrava o desconforto.
+2. **Lista de perguntas prioritárias:** Estruturar 3 a 5 perguntas objetivas para você tirar dúvidas com seu médico ou terapeuta.
+3. **Registro de efeitos de rotina:** Estruturar um diário simples para acompanhar sono, alimentação e efeitos percebidos ao longo dos dias.
+
+O que você gostaria de estruturar para a sua próxima consulta?`;
+  }
+
+  if (role === "trabalho") {
+    return `[Apoio para Acessibilidade & Organização no Trabalho]
+Olá${name}.
+
+ℹ️ **Aviso:** A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
+
+Posso te apoiar com:
+1. **Redação de pedidos de acomodação funcional:** Modelos educados e objetivos para solicitar uso de fones abafadores com cancelamento de ruído, instruções de tarefas por escrito ou assento em área com menor circulação.
+2. **Organização e priorização de tarefas:** Ajudar a organizar demandas acumuladas e sugerir uma mensagem para alinhar prioridades com seu gestor.
+3. **Comunicação profissional assíncrona:** Estruturar emails ou mensagens para evitar sobrecarga de reuniões desnecessárias.
+
+Qual pedido ou alinhamento de trabalho você gostaria de redigir?`;
+  }
+
+  if (role === "familia_cuidado") {
+    return `[Apoio à Família & Rede de Cuidados]
+Olá${name}! O papel da rede de apoio é construir um ambiente seguro, com previsibilidade e acolhimento mútuo.
+
+Como posso apoiar a rotina familiar hoje?
+• **Previsibilidade doméstica:** Organizar horários estáveis para as refeições, descanso e momentos de silêncio.
+• **Antecipação de mudanças:** Planejar como conversar antes sobre alterações de horários, visitas ou consultas.
+• **Divisão de tarefas colaborativas:** Estruturar afazeres com a participação da pessoa apoiada respeitando seu ritmo.
+• **Comunicação com a escola/terapeutas:** Preparar mensagens informando sobre a semana sem cobranças ou julgamentos.
+• **Ajustes ambientais:** Reduzir excesso de estímulos luminosos, sonoros ou desorganização física nos espaços de descanso.`;
+  }
+
+  if (role === "comunicacao_acessibilidade") {
+    return `[Comunicação & Acessibilidade]
+Olá${name}! Uma comunicação autêntica e clara reduz a ansiedade e garante que suas necessidades sejam compreendidas.
 
 Posso te apoiar a:
+• **Criar scripts sociais:** Textos prontos para dizer 'não' educadamente, pedir um tempo para pensar ou recusar um convite sem constrangimento.
+• **Solicitar instruções por escrito:** Frases diretas para garantir que detalhes de conversas orais fiquem registrados.
+• **Tradução para linguagem literal:** Ajudar a interpretar metáforas ou expressões implícitas que pareçam confusas.
+• **Apoio a CAA (Comunicação Aumentativa e Alternativa):** Elaborar frases curtas com vocabulário direto para painéis ou cartões.
+
+Qual situação comunicativa você gostaria de praticar ou preparar?`;
+  }
+
+  if (role === "organizacao_rotina") {
+    return `[Organização & Rotina Funcional]
+Olá${name}! Estruturar a rotina com clareza visual alivia a fadiga mental e facilita o início das tarefas.
+
+Posso te apoiar com:
+• **Estruturação do dia:** Dividir o dia em blocos realistas (Manhã, Tarde e Noite) com margem para pausas.
+• **Dividir uma tarefa grande em etapas:** Transformar uma demanda complexa em passos de 10 a 15 minutos.
+• **Rotina para dias de baixa energia:** Identificar o que é estritamente essencial e o que pode esperar quando a energia está baixa.
+• **Checklist de saída de casa:** Listar itens essenciais para não esquecer nada ao sair (chaves, documentos, fones, água).
+
+Qual atividade você gostaria de organizar agora?`;
+  }
+
+  return `Olá${name}! Sou o copiloto de apoio do **NeuroConecta**.
+
+Recebi sua mensagem sobre "${userMessage.substring(0, 80)}".
+
+Como posso te apoiar agora?
 1. 🗓️ **Organizar o seu dia:** Dividir tarefas grandes em passos simples e fáceis de começar.
 2. ✍️ **Preparar mensagens:** Redigir pedidos de apoio, acomodação ou instruções por escrito.
 3. 🧘 **Autorregulação:** Encontrar momentos de pausa e estratégias de descompressão sensorial.
 4. 🧭 **Recursos do NeuroConecta:** Indicar sons relaxantes, scripts sociais prontos ou rotinas visuais.
 
-Selecione o **Contexto do Apoio** acima para focar no que você mais precisa neste momento!`;
+Selecione o **Contexto do Apoio** acima ou escolha uma das ações rápidas!`;
 };
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
@@ -157,6 +362,8 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   onUpdateProfile,
   onNavigateToTab,
   onOpenCrisis,
+  initialPrompt,
+  onClearInitialPrompt,
 }) => {
   const isDark = userProfile.lowStimulationMode;
 
@@ -212,6 +419,17 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
       setMessages([initialGreeting]);
     }
   }, [onboardingStep, userProfile.preferredName]);
+
+  // Auto-trigger message if navigated with initialPrompt
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.prompt) {
+      if (initialPrompt.role) {
+        setInteractionRole(initialPrompt.role);
+      }
+      handleSendMessage(initialPrompt.prompt);
+      onClearInitialPrompt?.();
+    }
+  }, [initialPrompt]);
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputText;

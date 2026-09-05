@@ -12,10 +12,18 @@ import {
   Moon, 
   Zap, 
   Wind, 
-  Feather,
-  Info,
-  RotateCcw
+  Feather, 
+  Info, 
+  RotateCcw,
+  Star,
+  StarOff,
+  Activity,
+  Smile
 } from "lucide-react";
+import { TwoMinutePause } from "./sound/TwoMinutePause";
+import { ExploreSounds } from "./sound/ExploreSounds";
+import { SoundEnvironment } from "./sound/SoundEnvironment";
+import { GuidedSoundExperiences } from "./sound/GuidedSoundExperiences";
 
 interface MusicotherapyHubProps {
   isDark?: boolean;
@@ -108,6 +116,34 @@ const SOUND_PRESETS: SoundPreset[] = [
 ];
 
 export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = false }) => {
+  const [activeMode, setActiveMode] = useState<
+    "player" | "pausa_2min" | "explorar" | "ambiente" | "preparar_tarefa" | "descompressao" | "som_movimento" | "favoritos"
+  >("player");
+
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("neuroconecta_sound_favorites");
+      return stored ? JSON.parse(stored) : ["preset-brown", "preset-rain"];
+    } catch {
+      return ["preset-brown", "preset-rain"];
+    }
+  });
+
+  const toggleFavorite = (presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const updated = prev.includes(presetId)
+        ? prev.filter((id) => id !== presetId)
+        : [...prev, presetId];
+      try {
+        localStorage.setItem("neuroconecta_sound_favorites", JSON.stringify(updated));
+      } catch (err) {
+        console.warn(err);
+      }
+      return updated;
+    });
+  };
+
   const [activePreset, setActivePreset] = useState<SoundPreset>(SOUND_PRESETS[0]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -379,8 +415,108 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         </div>
       </div>
 
-      {/* Main Player & Visualizer Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Som & Autorregulação: Experiences & Activities Mode Switcher */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-sm">
+        {[
+          { id: "player", label: "Biblioteca & Player", icon: Sliders },
+          { id: "pausa_2min", label: "Pausa de 2 Minutos", icon: Clock },
+          { id: "explorar", label: "Explorar Sons", icon: Headphones },
+          { id: "ambiente", label: "Meu Ambiente Sonoro", icon: Volume2 },
+          { id: "preparar_tarefa", label: "Preparar Tarefa", icon: Zap },
+          { id: "descompressao", label: "Descompressão", icon: Wind },
+          { id: "som_movimento", label: "Som & Movimento", icon: Activity },
+          { id: "favoritos", label: `Favoritos (${favorites.length})`, icon: Star },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeMode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveMode(tab.id as any)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                isActive
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 text-teal-300" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 1. Pausa de 2 Minutos Mode */}
+      {activeMode === "pausa_2min" && (
+        <TwoMinutePause
+          presets={SOUND_PRESETS}
+          activePreset={activePreset}
+          isPlaying={isPlaying}
+          onSelectPreset={handleSelectPreset}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 2. Explorar Sons & Sensibilidade Mode */}
+      {activeMode === "explorar" && (
+        <ExploreSounds
+          presets={SOUND_PRESETS}
+          activePreset={activePreset}
+          isPlaying={isPlaying}
+          onSelectPreset={handleSelectPreset}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 3. Meu Ambiente Sonoro Mode */}
+      {activeMode === "ambiente" && (
+        <SoundEnvironment isDark={isDark} />
+      )}
+
+      {/* 4. Guided Experiences: Preparar para uma Tarefa */}
+      {activeMode === "preparar_tarefa" && (
+        <GuidedSoundExperiences
+          mode="preparar_tarefa"
+          presets={SOUND_PRESETS}
+          isPlaying={isPlaying}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 5. Guided Experiences: Descompressão Pós-Atividade */}
+      {activeMode === "descompressao" && (
+        <GuidedSoundExperiences
+          mode="descompressao"
+          presets={SOUND_PRESETS}
+          isPlaying={isPlaying}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 6. Guided Experiences: Som e Movimento */}
+      {activeMode === "som_movimento" && (
+        <GuidedSoundExperiences
+          mode="som_movimento"
+          presets={SOUND_PRESETS}
+          isPlaying={isPlaying}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 7 & 8: Main Player & Visualizer Grid (For 'player' and 'favoritos' modes) */}
+      {(activeMode === "player" || activeMode === "favoritos") && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Column: Visual Stimming Orb & Controls */}
         <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl border flex flex-col justify-between space-y-6 shadow-sm ${
@@ -532,15 +668,23 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Sliders className="w-5 h-5 text-teal-500" />
-              <span>Biblioteca de Frequências</span>
+              <span>{activeMode === "favoritos" ? "Meus Sons Favoritos" : "Biblioteca de Frequências"}</span>
             </h2>
-            <span className="text-xs text-slate-500">6 opções otimizadas</span>
+            <span className="text-xs text-slate-500">
+              {activeMode === "favoritos"
+                ? `${SOUND_PRESETS.filter((p) => favorites.includes(p.id)).length} favoritados`
+                : "6 opções otimizadas"}
+            </span>
           </div>
 
           <div className="space-y-3">
-            {SOUND_PRESETS.map((preset) => {
+            {(activeMode === "favoritos"
+              ? SOUND_PRESETS.filter((p) => favorites.includes(p.id))
+              : SOUND_PRESETS
+            ).map((preset) => {
               const Icon = preset.icon;
               const isSelected = activePreset.id === preset.id;
+              const isFav = favorites.includes(preset.id);
 
               return (
                 <div
@@ -564,12 +708,24 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold">{preset.title}</h3>
-                        {isSelected && isPlaying && (
-                          <span className="flex h-2.5 w-2.5 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isSelected && isPlaying && (
+                            <span className="flex h-2.5 w-2.5 relative">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(preset.id, e)}
+                            className={`p-1 rounded-lg transition ${
+                              isFav ? "text-amber-400 hover:text-amber-300" : "text-slate-500 hover:text-slate-300"
+                            }`}
+                            title={isFav ? "Remover dos favoritos" : "Marcar como favorito"}
+                          >
+                            <Star className={`w-4 h-4 ${isFav ? "fill-amber-400" : ""}`} />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-xs opacity-90 leading-relaxed font-sans">
                         {preset.description}
@@ -584,11 +740,22 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
                 </div>
               );
             })}
+
+            {activeMode === "favoritos" && SOUND_PRESETS.filter((p) => favorites.includes(p.id)).length === 0 && (
+              <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-2xl space-y-2">
+                <Star className="w-8 h-8 text-amber-400/50 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-200">Nenhum som favoritado ainda</h4>
+                <p className="text-xs text-slate-400">
+                  Clique na estrela ao lado de qualquer frequência na Biblioteca para acessá-la rapidamente aqui!
+                </p>
+              </div>
+            )}
           </div>
 
         </div>
 
       </div>
+      )}
 
       {/* Educational Footer Banner */}
       <div className={`p-5 rounded-2xl border text-xs leading-relaxed space-y-2 ${

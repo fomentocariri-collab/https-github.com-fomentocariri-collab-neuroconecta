@@ -316,22 +316,273 @@ Você ajusta o direcionamento prático conforme o CONTEXTO DO APOIO selecionado:
 Estilo de resposta: Claro, empático, direto, em Português do Brasil, sem jargões artificiais nem promessas de cura.`;
 
 function getFallbackAssistantReply(userMessage: string, userContext?: any, rawRole: string = "meu_apoio"): string {
-  const text = userMessage.toLowerCase();
+  const text = (userMessage || "").toLowerCase().trim();
   const name = userContext?.preferredName && userContext.preferredName !== "Visitante" ? `, ${userContext.preferredName}` : "";
   const role = normalizeSupportContext(rawRole);
 
+  // 1. Detecção de Crise e Sobrecarga Aguda (Prioridade Máxima)
+  if (
+    text.includes("crise") ||
+    text.includes("meltdown") ||
+    text.includes("shutdown") ||
+    text.includes("panico") ||
+    text.includes("pânico") ||
+    text.includes("desespero") ||
+    text.includes("socorro") ||
+    text.includes("sobrecarga extrema")
+  ) {
+    return `Olá${name}. Estou aqui com você. Se estiver passando por um momento de sobrecarga sensorial ou emocional intensa:
+
+💙 **Estratégia Imediata de Descompressão e Acolhimento:**
+1. **Reduza Estímulos Imediatamente:** Vá para um local menos iluminado, abaixe o volume ambiente, coloque fones com cancelamento ou feche os olhos por alguns minutos.
+2. **Ancoragem Sensorial Suave (Técnica 5-4-3-2-1 Adaptada):**
+   - 👁️ Identifique 5 coisas visuais com cores neutras ao seu redor.
+   - 🖐️ Sinta o toque de 4 superfícies confortáveis (como sua roupa ou uma almofada).
+   - 👂 Foque em 3 sons previsíveis ou coloque ruído marrom/ondas suaves.
+   - 👃 Respire no seu ritmo, sem forçar.
+   - 💧 Beba um gole de água fria devagar.
+3. Não tente resolver tarefas difíceis ou tomar decisões agora. Permita que seu sistema nervoso desacelere no seu tempo.
+
+⚠️ *Se você estiver em risco ou necessitar de apoio humano especializado imediato, use o botão **SOS Crise** no topo da tela ou ligue para o CVV (188) ou SAMU (192).*`;
+  }
+
+  // 2. Organizar o Dia e Rotina
+  if (
+    text.includes("organizar") ||
+    text.includes("meu dia") ||
+    text.includes("rotina") ||
+    text.includes("planejar") ||
+    text.includes("agenda")
+  ) {
+    return `[Apoio à Função Executiva: Estrutura do Dia]
+Olá${name}! Ter uma previsão clara do dia reduz a ansiedade e evita a sobrecarga cognitiva.
+
+Aqui está uma proposta de **Estrutura Visual em 4 Blocos Flexíveis**:
+
+🌅 **1. Bloco Manhã (Ativação e Foco Principal):**
+• *Ativação Suave (15 min):* Hidratação, luz natural e conferir o que é estritamente essencial.
+• *Foco Único do Dia:* Escolha **apenas 1 prioridade central**. Fazer essa única coisa já torna o dia produtivo.
+• *Pausa Sensorial (10 min):* Alongamento leve ou silêncio com fones.
+
+☀️ **2. Bloco Tarde (Manutenção e Demandas Práticas):**
+• Tarefas mecânicas ou mensagens curtas.
+• Intervalo de descompressão antes de mudar de ambiente ou atividade.
+
+🌆 **3. Bloco Fim de Tarde (Fechamento sem Culpa):**
+• Registrar o que foi concluído (mesmo as pequenas coisas).
+• Deixar pendências anotadas por escrito para esvaziar a mente.
+
+🌙 **4. Bloco Noite (Regulação do Sono):**
+• Reduzir luzes brancas 1 hora antes de dormir.
+• Som contínuo (ruído marrom ou sons da natureza na aba *Som & Autorregulação*).
+
+💡 **Dica neuroafirmativa:** Se a sua energia estiver baixa hoje, faça a *Regra do 1 Item*: escolha só uma coisa e comemore ao finalizar!`;
+  }
+
+  // 3. Dividir Tarefa em Etapas / Paralisia de Início
+  if (
+    text.includes("dividir") ||
+    text.includes("tarefa") ||
+    text.includes("etapa") ||
+    text.includes("bloqueio") ||
+    text.includes("começar") ||
+    text.includes("procrastina") ||
+    text.includes("paralisia")
+  ) {
+    return `[Protocolo de Desbloqueio Executivo & Micro-Passos]
+Olá${name}! A paralisia de início não é preguiça — é sobrecarga do cérebro ao tentar processar o todo de uma vez.
+
+Vamos transformar essa tarefa grande em **micro-ações fáceis de começar**:
+
+1️⃣ **Micro-Ação Zero (Menos de 2 minutos):**
+• *Apenas prepare o cenário, sem compromisso de fazer tudo.*
+• Exemplo: Se for escrever um texto, abra o documento em branco e digite apenas o título. Se for estudar, abra o livro na página.
+
+2️⃣ **Bloco dos 10 Minutos (Sem Cobrança de Perfeição):**
+• Coloque um cronômetro de 10 minutos.
+• Faça o que for possível, sabendo que você tem permissão total para parar quando o alarme tocar.
+
+3️⃣ **Pausa de Recompensa (3 a 5 minutos):**
+• Levante-se, beba água ou faça um estímulo que te acalme.
+
+4️⃣ **Decisão Consciente:**
+• Sente que o fluxo engrenou? Faça mais um bloco de 10 a 15 min.
+• Sente que atingiu o limite? Respeite seu ritmo e pause sem culpa.
+
+Qual é a tarefa que você precisa começar hoje? Se quiser, me diga em poucas palavras e eu divido ela em passos numerados para você!`;
+  }
+
+  // 4. Pedir Instruções por Escrito
+  if (
+    text.includes("instruções por escrito") ||
+    text.includes("por escrito") ||
+    text.includes("pedir instrução") ||
+    text.includes("mensagem por escrito")
+  ) {
+    return `[Modelo de Comunicação: Solicitação por Escrito]
+Olá${name}! Pedir orientações por escrito garante clareza, previsibilidade e evita lapsos de memória de trabalho.
+
+Aqui está um modelo pronto, educado e assertivo para você enviar por email ou mensagem:
+
+---
+*"Olá [Nome do colega, gestor ou professor], tudo bem?*
+
+*Para que eu possa organizar as etapas com precisão e garantir que nenhum detalhe importante se perca, você poderia me enviar por escrito o resumo dessa demanda com os pontos principais e o prazo de entrega esperado?*
+
+*Isso me ajuda a alinhar expectativas e planejar a execução com qualidade.*
+
+*Muito obrigado(a) pela colaboração!"*
+---
+
+💡 **Variação curta para WhatsApp ou chat interno:**
+*"Olá! Pode me mandar esses pontos por escrito por aqui rapidinho? Fica bem mais fácil para eu acompanhar e checar cada etapa sem esquecer nada. Obrigado!"*`;
+  }
+
+  // 5. Pedir Uso de Fones com Cancelamento de Ruído / Acomodação
+  if (
+    text.includes("fone") ||
+    text.includes("abafador") ||
+    text.includes("ruído") ||
+    text.includes("acomodação") ||
+    text.includes("cancelamento")
+  ) {
+    return `[Modelo de Comunicação: Acomodação Sensorial & Fones]
+Olá${name}! O uso de fones abafadores ou com cancelamento ativo de ruído é uma adaptação de acessibilidade essencial e comprovada para reduzir a sobrecarga sensorial e fadiga cognitiva.
+
+Aqui está um modelo assertivo para solicitar essa acomodação no trabalho ou estudo:
+
+---
+*"Prezada equipe / [Nome do gestor ou coordenação],*
+
+*Gostaria de formalizar o pedido para utilizar fones com cancelamento de ruído durante as minhas atividades de foco individual.*
+
+*Essa adaptação acústica me permite atenuar os estímulos sonoros concorrentes do ambiente, preservando minha atenção sustentada, conforto sensorial e a qualidade contínua das minhas entregas.*
+
+*Fico à disposição para qualquer alinhamento e agradeço o acolhimento dessa necessidade de acessibilidade.*
+
+*Atenciosamente,*
+*[Seu Nome]"*
+---
+
+💡 **Dica de aplicação:** Você tem direito a um ambiente com acessibilidade funcional (conforme previsto na LBI e diretrizes de inclusão). O fone não é distração; é ferramenta de trabalho e estudo!`;
+  }
+
+  // 6. Adaptação Pedagógica & Estudo Escolar
+  if (
+    text.includes("adaptar atividade") ||
+    text.includes("estudo") ||
+    text.includes("escola") ||
+    text.includes("aula") ||
+    text.includes("aluno") ||
+    text.includes("pedagógico") ||
+    role === "educacao"
+  ) {
+    return `[Apoio Pedagógico & Desenho Universal para a Aprendizagem (DUA)]
+Olá${name}! Adaptar atividades não significa empobrecer o conteúdo, mas sim remover barreiras para que o aprendizado aconteça.
+
+Aqui estão 4 estratégias práticas de acessibilidade pedagógica:
+
+1. **Fracionamento de Enunciados Extensos:**
+   • Dividir perguntas complexas em passos numerados (1, 2, 3).
+   • Destacar em **negrito** os verbos de comando (ex: *Identifique*, *Calcule*, *Compare*).
+
+2. **Apoio Visual e Previsibilidade:**
+   • Usar quadros visuais simples, tabelas ou fluxogramas para ilustrar conceitos abstratos.
+   • Antecipar o tempo estimado para cada atividade.
+
+3. **Múltiplas Vias de Participação:**
+   • Permitir respostas por escrito em tópicos, mapas mentais ou áudio, quando o objetivo principal for a demonstração do conhecimento e não a caligrafia.
+
+4. **Pausa Sensorial Programada:**
+   • Prever um intervalo de 2 a 3 minutos para hidratação e descompressão entre blocos intensos de conteúdo.
+
+Deseja adaptar uma atividade específica agora? Cole o enunciado ou tema que dividiremos juntos!`;
+  }
+
+  // 7. Script para Conversa Difícil e Limites
+  if (
+    text.includes("conversa difícil") ||
+    text.includes("limite") ||
+    text.includes("dizer não") ||
+    text.includes("recusar") ||
+    text.includes("limites")
+  ) {
+    return `[Script Social Assertivo: Estabelecendo Limites Saudáveis]
+Olá${name}! Dizer "não" de forma educada é um ato de preservação do seu bem-estar e da sua energia vital.
+
+Aqui estão scripts prontos para situações comuns:
+
+1️⃣ **Para recusar uma nova tarefa quando você já está sobrecarregado(a):**
+*"Agradeço muito pela confiança. Olhando minhas prioridades atuais, percebo que se eu assumir mais essa entrega, comprometo o prazo e a qualidade do que já estou executando. O que sugerem que despriorizemos para acomodar isso?"*
+
+2️⃣ **Para recusar um evento social ou convite sem culpa:**
+*"Muito obrigado(a) pelo convite! Fico feliz por ter lembrado de mim. No momento, preciso desse período para descansar e recarregar as energias, então não poderei ir. Espero que aproveitem bastante!"*
+
+3️⃣ **Para pedir um tempo antes de responder a uma cobrança rápida:**
+*"Recebi sua mensagem. Vou analisar os pontos com calma e te dou um retorno completo até [horário ou dia]. Obrigado pela compreensão!"*`;
+  }
+
+  // 8. Autorregulação & Pausa Sensorial
+  if (
+    text.includes("autorregulação") ||
+    text.includes("pausa") ||
+    text.includes("estresse") ||
+    text.includes("ansiedade") ||
+    text.includes("respiração")
+  ) {
+    return `[Guia Rápido de Autorregulação & Pausa Restauradora]
+Olá${name}. Reserve estes próximos 3 minutos para cuidar do seu equilíbrio sensorial:
+
+🌬️ **1. Respiração no Ritmo 4-4-6:**
+• Inspire pelo nariz contando até 4.
+• Segure o ar suavemente contando até 4.
+• Solte o ar pela boca bem devagar contando até 6.
+*(Repita por 3 ciclos).*
+
+🎧 **2. Conforto Acústico:**
+• Se puder, abra a aba **Som & Autorregulação** no menu superior do NeuroConecta.
+• Experimente o **Ruído Marrom** ou **Faixa Suave 432 Hz** para criar uma camada contínua e previsível.
+
+🧘 **3. Alívio de Tensão Muscular:**
+• Solte a mandíbula (desencoste os dentes).
+• Abaixe os ombros afastando-os das orelhas.
+• Solte o peso das mãos no colo.
+
+Você merece esse momento de pausa. Como seu corpo está se sentindo agora?`;
+  }
+
+  // 9. Autoavaliação / Momento
+  if (
+    text.includes("autoavaliação") ||
+    text.includes("autoavaliacao") ||
+    text.includes("momento") ||
+    text.includes("resultado") ||
+    text.includes("energia")
+  ) {
+    return `[Apoio à Autoavaliação Funcional do Momento]
+Olá${name}! Acompanhar como estão a sua energia, estímulos e foco é a base da autorregulação diária.
+
+💡 **Recomendações Práticas:**
+• Se sua energia estiver **baixa** ou houver **sobrecarga sensorial**: ative a proteção executiva — diminua luzes, coloque fones e foque apenas no que for indispensável.
+• Se sua energia estiver **estável**: aproveite para estruturar sua principal demanda em blocos de 20 minutos com pausas planejadas.
+• Você pode registrar sua autoavaliação completa no menu **Autoavaliação** na aba superior para acompanhar seus padrões ao longo do tempo.
+
+Como está sua energia e o ambiente sonoro ao seu redor agora? Posso te apoiar a planejar o próximo passo!`;
+  }
+
+  // Contextos Específicos
   if (role === "saude") {
     return `[Apoio para Organização & Preparação em Saúde]
 Olá${name}. 
 
-⚠️ **Aviso Importante:** Esta ferramenta oferece apoio exclusivamente para organizar suas anotações, histórico e dúvidas para consultas. Não realiza diagnóstico, não prescreve medicamentos e não substitui avaliação médica ou profissional.
+⚠️ **Aviso Importante:** Esta ferramenta oferece apoio exclusivamente para organizar suas anotações, histórico e dúvidas para consultas. Não realiza diagnóstico, não prescreve medicamentos e não substitui avaliação médica ou multiprofissional.
 
 Como posso te apoiar a se preparar?
-1. **Organizar lista de sintomas:** Registrar o que você vem sentindo, quando começou e em quais momentos costuma piorar ou melhorar.
+1. **Organizar lista de sintomas:** Registrar o que você vem sentindo, quando começou e o que atenua ou agrava o desconforto.
 2. **Preparar perguntas para a consulta:** Estruturar as 3 a 5 dúvidas principais para você não esquecer de perguntar durante o atendimento.
 3. **Organizar histórico de exames/laudos:** Montar um resumo cronológico simples para apresentar ao seu médico ou terapeuta.
 
-O que você gostaria de organizar primeiro?`;
+O que você gostaria de organizar para a sua próxima consulta?`;
   }
 
   if (role === "trabalho") {
@@ -348,28 +599,15 @@ Posso te apoiar a:
 Qual demanda de trabalho você gostaria de estruturar agora?`;
   }
 
-  if (role === "educacao") {
-    return `[Apoio Pedagógico & Inclusão Escolar]
-Olá${name}! No contexto pedagógico, nosso foco é tornar o aprendizado acessível e reduzir sobrecargas cognitivas e sensoriais.
-
-**O que você precisa ensinar ou tornar mais acessível hoje?**
-
-Posso te apoiar com:
-- **Adaptação de atividades:** Dividir enunciados longos em etapas curtas e objetivas mantendo o objetivo pedagógico.
-- **Apoios visuais e transições:** Criar quadros visuais para antecipar mudanças de aula ou matéria.
-- **Minuta de PEI / PDI:** Estruturar propostas de acomodações curriculares e ambientais baseadas em Desenho Universal para a Aprendizagem (DUA).
-- **Comunicação Escola-Família:** Redigir registros neutros e colaborativos sobre o progresso do estudante.`;
-  }
-
   if (role === "familia_cuidado") {
     return `[Apoio à Família & Rede de Cuidados]
 Olá${name}! O papel da rede de apoio é promover acolhimento, previsibilidade e redução de barreiras no cotidiano.
 
 Como posso apoiar a rotina da sua família hoje?
-- **Planejamento da semana:** Montar uma rotina doméstica equilibrada com tempo previsto para descompressão.
-- **Antecipação de mudanças:** Preparar a pessoa com antecedência para viagens, consultas ou novos compromissos.
-- **Comunicação com escola ou terapeutas:** Escrever mensagens claras relatando como foram os últimos dias.
-- **Ajustes no ambiente:** Dicas simples para reduzir sobrecarga de iluminação, ruídos e desorganização visual em casa.`;
+• **Planejamento da semana:** Montar uma rotina doméstica equilibrada com tempo previsto para descompressão.
+• **Antecipação de mudanças:** Preparar a pessoa com antecedência para viagens, consultas ou novos compromissos.
+• **Comunicação com escola ou terapeutas:** Escrever mensagens claras relatando como foram os últimos dias.
+• **Ajustes no ambiente:** Dicas simples para reduzir sobrecarga de iluminação, ruídos e desorganização visual em casa.`;
   }
 
   if (role === "comunicacao_acessibilidade") {
@@ -377,10 +615,10 @@ Como posso apoiar a rotina da sua família hoje?
 Olá${name}! A comunicação clara e autêntica reduz a ansiedade e evita mal-entendidos.
 
 Posso te apoiar a:
-- **Criar scripts sociais:** Textos prontos para conversas delicadas, convites ou recusas educadas.
-- **Solicitar instruções por escrito:** Frases diretas para garantir que detalhes e prazos não se percam.
-- **Linguagem literal e direta:** Esclarecer expressões figuradas ou redigir mensagens sem ambiguidade.
-- **Apoio a CAA:** Estruturar frases curtas e objetivas para painéis ou cartões de comunicação.
+• **Criar scripts sociais:** Textos prontos para conversas delicadas, convites ou recusas educadas.
+• **Solicitar instruções por escrito:** Frases diretas para garantir que detalhes e prazos não se percam.
+• **Linguagem literal e direta:** Esclarecer expressões figuradas ou redigir mensagens sem ambiguidade.
+• **Apoio a CAA:** Estruturar frases curtas e objetivas para painéis ou cartões de comunicação.
 
 Qual mensagem ou conversa você gostaria de preparar?`;
   }
@@ -390,48 +628,26 @@ Qual mensagem ou conversa você gostaria de preparar?`;
 Olá${name}! Ter uma rotina visual e previsível alivia a sobrecarga executiva.
 
 Posso te apoiar a:
-- **Estruturar seu dia:** Montar uma lista visual de tarefas dividida em Manhã, Tarde e Noite.
-- **Dividir uma tarefa grande:** Transformar um projeto assustador em 3 a 5 passos pequenos e fáceis de começar.
-- **Rotina de baixa energia:** Ajustar as atividades para dias em que você precisa descansar mais.
-- **Lembretes essenciais:** Incluir pausas sensoriais, hidratação e refeições regulares.
+• **Estruturar seu dia:** Montar uma lista visual de tarefas dividida em Manhã, Tarde e Noite.
+• **Dividir uma tarefa grande:** Transformar um projeto assustador em 3 a 5 passos pequenos e fáceis de começar.
+• **Rotina de baixa energia:** Ajustar as atividades para dias em que você precisa descansar mais.
+• **Lembretes essenciais:** Incluir pausas sensoriais, hidratação e refeições regulares.
 
 Qual atividade ou período do dia você gostaria de organizar?`;
   }
 
-  // Meu Apoio (padrão)
-  if (
-    text.includes("crise") ||
-    text.includes("meltdown") ||
-    text.includes("shutdown") ||
-    text.includes("panico") ||
-    text.includes("pânico") ||
-    text.includes("desespero") ||
-    text.includes("socorro") ||
-    text.includes("sobrecarga")
-  ) {
-    return `Olá${name}. Estou aqui com você. Se estiver passando por um momento de sobrecarga sensorial ou emocional intensa:
-
-💙 **Estratégia Imediata de Descompressão:**
-1. **Reduza Estímulos:** Vá para um espaço mais calmo, diminua as luzes ou coloque fones de ouvido.
-2. **Apoio no corpo (Técnica 5-4-3-2-1):**
-   - 👁️ Olhe para 5 objetos ao seu redor.
-   - 🖐️ Toque em 4 coisas com texturas conhecidas.
-   - 👂 Foque em 3 sons suaves no ambiente.
-   - 👃 Respire calmamente soltando o ar devagar.
-3. Não se cobre resolver tarefas complexas agora. Permita-se desacelerar.
-
-⚠️ *Se você estiver em risco ou precisar de acolhimento emocional humano imediato, use o botão **SOS Crise** no topo do app ou ligue para o CVV (188) ou SAMU (192).*`;
-  }
-
+  // Resposta padrão geral acolhedora e neuroafirmativa
   return `Olá${name}! Sou o copiloto de apoio do **NeuroConecta**.
 
-Como posso apoiar você hoje? Posso ajudar a:
-1. 🗓️ **Organizar o seu dia:** Dividir tarefas grandes em passos simples e executáveis.
-2. ✍️ **Preparar mensagens:** Redigir pedidos claros de apoio, acomodação ou instruções por escrito.
-3. 🧘 **Autorregulação:** Encontrar estratégias de pausa sensorial e descompressão.
-4. 🧭 **Navegar pelo app:** Indicar onde encontrar sons relaxantes, planos de apoio ou scripts de comunicação.
+Recebi sua mensagem sobre "${userMessage.substring(0, 80)}".
 
-Você também pode selecionar o **Contexto do Apoio** no topo do chat (Meu Apoio, Educação, Família, Comunicação, Rotina, Saúde ou Trabalho).`;
+Como posso apoiar você neste momento? Posso ajudar com:
+1. 🗓️ **Organizar o seu dia:** Dividir demandas em blocos realistas com margem para pausas.
+2. ✍️ **Preparar mensagens:** Redigir pedidos claros de apoio, acomodação ou instruções por escrito.
+3. 🧘 **Autorregulação sensorial:** Sugerir exercícios de respiração e faixas acústicas relaxantes.
+4. 🧭 **Navegar pelo app:** Indicar testes funcionais, rotinas visuais ou estratégias de descompressão.
+
+Digite o que você gostaria de estruturar ou clique em uma das sugestões rápidas acima!`;
 }
 
 app.post("/api/chat", async (req, res) => {
@@ -461,8 +677,8 @@ app.post("/api/chat", async (req, res) => {
 
       const fullPrompt = `${contextPrompt}${formattedHistory}\n\nNeuroConecta:`;
 
-      // Try gemini models
-      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+      // Supported Gemini models per SDK guidelines
+      const modelsToTry = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
       for (const modelName of modelsToTry) {
         try {
           const response = await ai.models.generateContent({
