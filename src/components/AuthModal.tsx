@@ -73,18 +73,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       // Create user unique ID based on email or supabase auth
       const userId = `usr_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
 
-      // Try Supabase Auth sign up or store user profile
+      // Try Supabase Auth sign up or store user profile with fast timeout fallback
       let authUserId = userId;
       try {
-        const { data: authData, error: authErr } = await supabase.auth.signUp({
+        const authPromise = supabase.auth.signUp({
           email: email.trim(),
           password: password,
           options: {
             data: { preferred_name: name.trim() }
           }
         });
-        if (authData?.user?.id) {
-          authUserId = authData.user.id;
+        const raceResult: any = await Promise.race([
+          authPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase auth timeout")), 2500))
+        ]);
+        if (raceResult?.data?.user?.id) {
+          authUserId = raceResult.data.user.id;
         }
       } catch (sbErr) {
         console.warn("Supabase auth fallback to local account:", sbErr);
@@ -238,12 +242,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return;
       }
 
-      // Try Supabase auth if not found locally
+      // Try Supabase auth if not found locally with fast timeout fallback
       try {
-        const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        const signPromise = supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: password,
         });
+        const raceResult: any = await Promise.race([
+          signPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase auth timeout")), 2500))
+        ]);
+        const authData = raceResult?.data;
 
         if (authData?.user) {
           const loadedUser: UserProfile = {
@@ -264,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
       } catch (sErr) {
-        console.warn("Supabase login check:", sErr);
+        console.warn("Supabase login check fallback:", sErr);
       }
 
       setErrorMessage("E-mail ou senha incorretos. Se é sua primeira vez, clique na aba 'Criar Conta'.");

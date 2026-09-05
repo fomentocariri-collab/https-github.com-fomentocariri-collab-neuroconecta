@@ -88,15 +88,18 @@ export const SuperAdminModuleModal: React.FC<SuperAdminModuleModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {MODULE_DEFINITIONS.map((m) => {
-              const isHidden = hiddenModules.includes(m.id);
+              const isFrozen = m.id === "caps" || m.id === "rh";
+              const isHidden = hiddenModules.includes(m.id) || isFrozen;
               return (
                 <div
                   key={m.id}
-                  onClick={() => onToggleModule(m.id)}
-                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start justify-between gap-3 ${
-                    isHidden
-                      ? "bg-slate-950/90 border-slate-800/90 opacity-70 hover:opacity-100"
-                      : "bg-slate-800/50 border-cyan-900/50 hover:border-cyan-700"
+                  onClick={() => !isFrozen && onToggleModule(m.id)}
+                  className={`p-3.5 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                    isFrozen
+                      ? "bg-slate-950 border-slate-800 opacity-60 cursor-not-allowed"
+                      : isHidden
+                      ? "bg-slate-950/90 border-slate-800/90 opacity-70 hover:opacity-100 cursor-pointer"
+                      : "bg-slate-800/50 border-cyan-900/50 hover:border-cyan-700 cursor-pointer"
                   }`}
                 >
                   <div className="space-y-1">
@@ -105,19 +108,34 @@ export const SuperAdminModuleModal: React.FC<SuperAdminModuleModalProps> = ({
                       <span className="text-[9px] px-2 py-0.2 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
                         {m.category}
                       </span>
+                      {isFrozen && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800 flex items-center gap-1 font-bold">
+                          <Lock className="w-2.5 h-2.5" /> Congelado
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-tight">{m.desc}</p>
+                    <p className="text-[11px] text-slate-400 leading-tight">
+                      {isFrozen ? "Módulo congelado e invisível conforme diretriz de administração." : m.desc}
+                    </p>
                   </div>
 
                   <button
                     type="button"
+                    disabled={isFrozen}
                     className={`p-2 rounded-xl border text-xs font-bold transition flex items-center gap-1 shrink-0 ${
-                      isHidden
+                      isFrozen
+                        ? "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed"
+                        : isHidden
                         ? "bg-rose-950/80 border-rose-800 text-rose-300"
                         : "bg-emerald-950/80 border-emerald-800 text-emerald-300"
                     }`}
                   >
-                    {isHidden ? (
+                    {isFrozen ? (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span className="text-[10px]">Congelado</span>
+                      </>
+                    ) : isHidden ? (
                       <>
                         <EyeOff className="w-4 h-4" />
                         <span className="text-[10px]">Oculto</span>

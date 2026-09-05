@@ -139,8 +139,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "scripts", label: "Central de Scripts (Admin)", icon: Terminal, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
-  // Filter tabs by role and hiddenModules setting (superadmin sees all, with EyeOff indicator if hidden)
+  // Modules frozen and made invisible by administration request
+  const FROZEN_TAB_IDS = new Set(["caps", "rh"]);
+
+  // Filter tabs by role and hiddenModules setting (frozen modules are kept strictly invisible)
   const tabs = allTabs.filter(tab => {
+    if (FROZEN_TAB_IDS.has(tab.id)) return false;
     if ('adminOnly' in tab && tab.adminOnly) return isSuperAdmin;
     if (!isSuperAdmin && hiddenModules.includes(tab.id)) return false;
     if (isSuperAdmin) return true;

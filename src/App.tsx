@@ -24,11 +24,18 @@ import { SuperAdminModuleModal } from "./components/SuperAdminModuleModal";
 import { LandingCoverScreen } from "./components/LandingCoverScreen";
 import { ShareManagerModal } from "./components/ShareManagerModal";
 import { FunctionalPlanModal } from "./components/FunctionalPlanModal";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Lock } from "lucide-react";
 import { UserProfile } from "./types";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>("chat");
+
+  // Protect against access to frozen modules (Caps and RH)
+  useEffect(() => {
+    if (activeTab === "rh" || activeTab === "caps") {
+      setActiveTab("chat");
+    }
+  }, [activeTab]);
   const [isCrisisOpen, setIsCrisisOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -116,15 +123,15 @@ export default function App() {
     handleSaveProfile(user);
     setIsAuthOpen(false);
 
-    // Intuitively route user to their specific module upon login
+    // Intuitively route user upon login (caps and rh modules are frozen)
     if (user.isSuperAdmin || user.email?.toLowerCase() === "sistemastop@gmail.com" || user.userRole === "superadmin") {
-      setActiveTab("rh");
+      setActiveTab("chat");
     } else if (user.professionalRoleType === "medico" || user.professionalRoleType === "enfermeiro" || user.userRole === "saude_caps") {
-      setActiveTab("caps");
+      setActiveTab("chat");
     } else if (user.professionalRoleType === "educador" || user.userRole === "cuidador_educador") {
       setActiveTab("educacao");
     } else if (user.professionalRoleType === "perito" || user.professionalRoleType === "rh" || user.userRole === "rh_gestor") {
-      setActiveTab("rh");
+      setActiveTab("chat");
     } else {
       setActiveTab("chat");
     }
@@ -267,17 +274,20 @@ export default function App() {
             {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
 
             {activeTab === "rh" && (
-              (isSuperAdmin || userProfile.userRole === "rh_gestor" || userProfile.professionalRoleType === "perito") ? (
-                <HrManagementHub userProfile={userProfile} isDark={userProfile.lowStimulationMode} />
-              ) : (
-                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo RH Corporativo</h3>
-                  <p className="text-xs">Este módulo é exclusivo para Gestores de RH, Peritos Técnicos e Superadmin.</p>
-                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition">
-                    Voltar ao Assistente IA
-                  </button>
+              <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 shadow-xl">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                  <Lock className="w-6 h-6" />
                 </div>
-              )
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-slate-100">Módulo RH & NR-1 Congelado</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Este módulo corporativo foi congelado e tornado invisível pela administração do sistema para priorizar apoio funcional, rotina e acessibilidade.
+                  </p>
+                </div>
+                <button onClick={() => setActiveTab("chat")} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition shadow-md">
+                  Ir para o Copiloto IA
+                </button>
+              </div>
             )}
 
             {activeTab === "supabase" && (
@@ -318,20 +328,20 @@ export default function App() {
             )}
 
             {activeTab === "caps" && (
-              (isSuperAdmin || userProfile.userRole === "saude_caps" || userProfile.professionalRoleType === "medico" || userProfile.professionalRoleType === "enfermeiro") ? (
-                <CapsHealthHub
-                  isDark={userProfile.lowStimulationMode}
-                  patientName={userProfile.preferredName || "Paciente em Acompanhamento"}
-                />
-              ) : (
-                <div className="max-w-md mx-auto my-12 p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3 text-slate-300">
-                  <h3 className="text-lg font-bold text-slate-100">Acesso Restrito ao Módulo Clínico / CAPS</h3>
-                  <p className="text-xs">Módulo reservado a Profissionais da Saúde, Médicos, Enfermeiros e Gestores CAPS.</p>
-                  <button onClick={() => setActiveTab("chat")} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">
-                    Voltar ao Assistente IA
-                  </button>
+              <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 shadow-xl">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                  <Lock className="w-6 h-6" />
                 </div>
-              )
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-slate-100">Módulo Saúde CAPS & Prontuário Congelado</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Este módulo clínico foi congelado e tornado invisível pela administração do sistema para priorizar autonomia, regulação sensorial e bem-estar do usuário.
+                  </p>
+                </div>
+                <button onClick={() => setActiveTab("chat")} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition shadow-md">
+                  Ir para o Copiloto IA
+                </button>
+              </div>
             )}
 
             {activeTab === "educacao" && (
