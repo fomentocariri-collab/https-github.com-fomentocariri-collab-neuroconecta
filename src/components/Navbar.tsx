@@ -132,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
     { id: "caps", label: "Saúde CAPS & Prontuário", icon: Stethoscope, roles: ["saude_caps", "superadmin"] },
-    { id: "relatorio", label: "Relatórios & Laudo", icon: FileText, roles: ["cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
+    { id: "relatorio", label: "Relatórios Funcionais", icon: FileText, roles: ["cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["rh_gestor", "superadmin"] },
     { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
