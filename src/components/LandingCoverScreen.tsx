@@ -56,10 +56,10 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
             </div>
             <div className="space-y-1.5 text-center">
               <span className="text-[10px] uppercase font-black tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
-                Acesso Seguro & Proteção LGPD
+                Privacidade & Autonomia
               </span>
               <h2 className="text-xl font-black text-slate-900">
-                Plataforma Neuroafirmativa
+                Tecnologia Assistiva & Acessibilidade
               </h2>
             </div>
           </div>
@@ -71,8 +71,11 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
             Seja bem-vindo ao NeuroConecta
           </h2>
           <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
-            Plataforma integrada de suporte a pessoas neurodivergentes (TEA, TDAH, AH/SD), equipes de saúde CAPS, professores, gestores de RH e cuidadores.
+            Tecnologia assistiva, acessibilidade e comunicação para autonomia, inclusão e apoio em diferentes contextos da vida. Recursos para pessoas, famílias, cuidadores e educadores.
           </p>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
+            <span>✨ Não é necessário laudo formal para utilizar os recursos de rotina, comunicação alternativa e autorregulação.</span>
+          </div>
         </div>
 
         {/* Quick Action Button */}
@@ -92,32 +95,32 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
             <div className="text-teal-700 p-2 bg-teal-50 rounded-xl w-fit border border-teal-200">
               <Brain className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-extrabold text-slate-900">Assistente IA</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Escuta empática e triagem neurodivergente.</p>
+            <h3 className="text-xs font-extrabold text-slate-900">Copiloto IA</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Organização, comunicação e apoio à autonomia.</p>
           </div>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-1.5 shadow-sm hover:shadow-md transition">
             <div className="text-emerald-700 p-2 bg-emerald-50 rounded-xl w-fit border border-emerald-200">
               <Stethoscope className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-extrabold text-slate-900">Saúde CAPS</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Prontuário multiprofissional e laudos.</p>
+            <h3 className="text-xs font-extrabold text-slate-900">Saúde & Cuidados</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Prontuário com consentimento e rotinas de apoio.</p>
           </div>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-1.5 shadow-sm hover:shadow-md transition">
             <div className="text-amber-700 p-2 bg-amber-50 rounded-xl w-fit border border-amber-200">
               <GraduationCap className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-extrabold text-slate-900">Educação</h3>
-            <p className="text-[11px] text-slate-500 font-medium">PEI e acomodações inclusivas escolares.</p>
+            <h3 className="text-xs font-extrabold text-slate-900">Educação & PEI</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Minutas de PEI e inclusão escolar DUA.</p>
           </div>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-1.5 shadow-sm hover:shadow-md transition">
             <div className="text-cyan-700 p-2 bg-cyan-50 rounded-xl w-fit border border-cyan-200">
               <Building2 className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-extrabold text-slate-900">Gestão RH</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Pareceres corporativos e NR-1 PCD.</p>
+            <h3 className="text-xs font-extrabold text-slate-900">Acessibilidade</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Acomodações funcionais e comunicação assertiva.</p>
           </div>
         </div>
 
@@ -125,7 +128,7 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
 
       {/* Footer Copyright */}
       <div className="max-w-6xl mx-auto w-full text-center py-4 border-t border-slate-200 text-xs text-slate-500 font-medium">
-        <p>© 2026 NeuroConecta • SISTEMASTOP. Todos os direitos reservados. Em conformidade com a LGPD e Lei Berenice Piana.</p>
+        <p>© 2026 NeuroConecta • SISTEMASTOP. Todos os direitos reservados. Arquitetura orientada à privacidade e respeito à neurodiversidade.</p>
       </div>
 
     </div>

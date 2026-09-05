@@ -286,18 +286,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           {/* Diagnosis & Support Level */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block font-semibold text-slate-200">Status do Diagnóstico</label>
+              <label className="block font-semibold text-slate-200">Identificação & Apoio</label>
               <select
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value as DiagnosisStatus)}
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-teal-500"
               >
-                <option value="autodiagnosticado">Autodiagnosticado / Identificação autista</option>
-                <option value="investigacao">Em avaliação / Investigação</option>
-                <option value="laudo_formal">Laudo formal (Diagnóstico confirmed)</option>
+                <option value="autodiagnosticado">Autodiagnosticado / Identificação neurodivergente</option>
+                <option value="investigacao">Em processo de avaliação / Investigação</option>
+                <option value="laudo_formal">Laudo formal / Diagnóstico confirmado</option>
+                <option value="necessidades_sensoriais_comunicacao">Necessidades sensoriais ou de comunicação</option>
+                <option value="sem_diagnostico">Sem diagnóstico / Uso de apoio à rotina e regulação</option>
                 <option value="familiar_apoiador">Familiar ou cuidador(a)</option>
                 <option value="nao_informado">Prefiro não informar</option>
               </select>
+              <p className="text-[10px] text-slate-400 leading-tight mt-1">
+                Acolhemos pessoas diagnosticadas, em investigação, com necessidades específicas ou que se beneficiem das ferramentas de organização e autorregulação. Não é exigido laudo para utilizar o NeuroConecta.
+              </p>
             </div>
 
             <div className="space-y-1.5">

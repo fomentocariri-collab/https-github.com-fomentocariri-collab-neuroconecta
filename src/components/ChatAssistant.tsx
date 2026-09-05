@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Copy, Check, Stethoscope, HeartPulse, Brain, GraduationCap, UserCheck, Building2 } from "lucide-react";
+import { 
+  Send, Bot, User, Sparkles, Copy, Check, 
+  UserCheck, GraduationCap, Users, MessageSquare, 
+  Clock, HeartPulse, Building2, AlertTriangle, Info
+} from "lucide-react";
 import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
 
 interface ChatAssistantProps {
@@ -9,71 +13,106 @@ interface ChatAssistantProps {
   onOpenCrisis: () => void;
 }
 
-export type InteractionRole = "usuario" | "medico" | "enfermeiro" | "psiquiatra" | "educador" | "rh";
+export type InteractionRole = 
+  | "meu_apoio" 
+  | "educacao" 
+  | "familia_cuidado" 
+  | "comunicacao_acessibilidade" 
+  | "organizacao_rotina" 
+  | "saude" 
+  | "trabalho";
 
-const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "usuario"): string => {
+const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "meu_apoio"): string => {
   const text = userMessage.toLowerCase();
-  const name = profile.preferredName ? `, ${profile.preferredName}` : "";
+  const name = profile.preferredName && profile.preferredName !== "Visitante" ? `, ${profile.preferredName}` : "";
 
-  if (role === "rh") {
-    return `[PARECER DE RECURSOS HUMANOS & GESTÃO DE PESSOAS / NR-1 GRO]
-Acolhendo sua solicitação no Módulo de Recursos Humanos e Acessibilidade Corporativa${name}:
+  // 1. SAÚDE - Organização e Preparação
+  if (role === "saude") {
+    return `[Apoio para Organização & Preparação em Saúde]
+Olá${name}.
 
-1. **Acomodações Razoáveis no Trabalho (Art. 3º LBI Lei 13.146/2015):**
-   - Garantia de isolamento acústico/fones ANC em escritórios open-space.
-   - Pauta prévia por escrito para reuniões e priorização de comunicação assíncrona.
-   - Flexibilização de jornada e pausas sensoriais regulares.
+⚠️ **Aviso de Segurança:** A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
 
-2. **Garantia da Regra de Transição do BPC / Auxílio-Inclusão (Lei 14.176/2021):**
-   - Ao ser contratado via CLT (Cotas PCD - Lei 8.213/91), o trabalhador recebe o Auxílio-Inclusão pago pelo INSS (50% do salário mínimo) acumulado com seu salário.
-   - Caso ocorra desligamento, o BPC integral é reativado imediatamente junto ao INSS sem perda de direitos.
+Posso te ajudar a preparar sua consulta com os seguintes passos práticos:
+1. **Organização cronológica de sintomas:** Registrar o que você sentiu, datas aproximadas e o que atenua ou agrava o desconforto.
+2. **Lista de perguntas prioritárias:** Estruturar 3 a 5 perguntas objetivas para você tirar dúvidas com seu médico ou terapeuta.
+3. **Registro de efeitos de rotina:** Estruturar um diário simples para acompanhar sono, alimentação e efeitos percebidos ao longo dos dias.
 
-3. **Matriz de Riscos Psicossociais (NR-1.5.4 GRO):**
-   - Mapeamento e mitigação de estressores ambientais e prevenção do Burnout Autista e mascaramento social excessivo no ambiente de trabalho.`;
+O que você gostaria de estruturar para a sua próxima consulta?`;
   }
 
-  if (role === "medico") {
-    return `[PARECER TÉCNICO-CLÍNICO / NEUROLOGIA E DIAGNÓSTICO]
-Prezado(a) paciente/profissional${name}. No acompanhamento de adultos neurodivergentes e investigação de Transtorno do Espectro Autista (TEA Nível 1 de suporte / Perfil Camuflado), a avaliação nosológica deve integrar os critérios diagnósticos do DSM-5-TR e CID-11 (Código 6A02).
+  // 2. TRABALHO - Acessibilidade & Organização
+  if (role === "trabalho") {
+    return `[Apoio para Acessibilidade & Organização no Trabalho]
+Olá${name}.
 
-Pontos chave na investigação clínica:
-1. **Instrumentos de Rastreio:** O RAADS-R (Ritvo Autism Asperger Diagnostic Scale-Revised) possui sensibilidade de 97% e corte clínico aos 65 pontos. O CAT-Q (Camouflaging Autistic Traits Questionnaire) mede a compensação cognitiva e máscara social.
-2. **Diagnósticos Diferenciais:** Investigar Transtorno de Deficit de Atenção com Hiperatividade (TDAH), Transtorno de Personalidade Evitativa, Síndrome de Burnout Autista e Transtornos de Processamento Sensorial isolados.
-3. **Encaminhamento Recomendado:** Solicitar avaliação neuropsicológica focada em funções executivas, coerência central, cognição social e perfil psicométrico de QI (WAIS-IV).`;
+ℹ️ **Aviso:** A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
+
+Posso te apoiar com:
+1. **Redação de pedidos de acomodação funcional:** Modelos educados e objetivos para solicitar uso de fones abafadores com cancelamento de ruído, instruções de tarefas por escrito ou assento em área com menor circulação.
+2. **Organização e priorização de tarefas:** Ajudar a organizar demandas acumuladas e sugerir uma mensagem para alinhar prioridades com seu gestor.
+3. **Comunicação profissional assíncrona:** Estruturar emails ou mensagens para evitar sobrecarga de reuniões desnecessárias.
+
+Qual pedido ou alinhamento de trabalho você gostaria de redigir?`;
   }
 
-  if (role === "enfermeiro") {
-    return `[PLANO DE CUIDADOS E ENFERMAGEM / SISTEMATIZAÇÃO SAE]
-Acolhendo sua solicitação na perspectiva da Enfermagem Neuroafirmativa${name}:
+  // 3. EDUCAÇÃO - Inclusão Escolar & DUA
+  if (role === "educacao") {
+    return `[Apoio Pedagógico & Inclusão Escolar]
+Olá${name}! No contexto educacional inclusivo, nosso foco é remover barreiras pedagógicas e reduzir sobrecargas sensoriais e cognitivas.
 
-1. **Avaliando Sinais de Crise Sensorial:** Monitoramento de hiperventilação, sudorese, rigidez muscular e fadiga pelo esforço de interação social prolongada.
-2. **Prescrição de Cuidados:**
-   - **Ambiente de Descompressão:** Diminuir luminosidade (<200 lux), disponibilizar abafadores auditivos e manta proprioceptiva.
-   - **Protocolo de Hidratação e Nutrição:** Respeitar seletividade alimentar extrema sem julgamentos morais durante a internação ou consulta.
-   - **Comunicação Adaptada:** Fornecer fichas de comunicação visual e aguardar o tempo de latência de resposta de 10 a 15 segundos sem interrupção.`;
+**O que você precisa ensinar ou tornar mais acessível hoje?**
+
+Posso te apoiar com:
+- **Adaptação de atividades:** Dividir enunciados extensos em etapas menores mantendo intacto o objetivo pedagógico.
+- **Desenho Universal para Aprendizagem (DUA):** Sugerir múltiplas formas de participação (visual, oral, escrita) para acolher diferentes ritmos.
+- **Apoios visuais e previsibilidade:** Quadros visuais para antecipar a rotina da aula e transições suaves entre disciplinas.
+- **Minuta de PEI / PDI:** Ajudar a registrar as acomodações necessárias e estratégias de acessibilidade.
+- **Comunicação respeitosa Escola-Família:** Redigir registros pedagógicos descritivos, neutros e acolhedores.`;
   }
 
-  if (role === "psiquiatra") {
-    return `[PARECER PSIQUIÁTRICO & SAÚDE MENTAL]
-Prezado(a)${name}. Na psiquiatria da neurodivergência, é fundamental distinguir entre quadros depressivos primários e o Burnout Autista Decorrente de Sobrecarga Executiva e Camuflagem Social (Hull et al., 2019).
+  // 4. FAMÍLIA & CUIDADO - Rotina e Rede de Apoio
+  if (role === "familia_cuidado") {
+    return `[Apoio à Família & Rede de Cuidados]
+Olá${name}! O papel da rede de apoio é construir um ambiente seguro, com previsibilidade e acolhimento mútuo.
 
-Análise Psicopatológica e Manejo:
-- **Burnout Autista:** Apresenta perda temporária de habilidades adaptativas previamente adquiridas, aumento da hiper-reatividade a estímulos sensoriais e apatia profunda por exaustão do sistema de recompensa dopaminérgico.
-- **Transtornos Comórbidos de Humor e Ansiedade:** A prevalência de Ansiedade Generalizada e Rejeição Sensível a Disforia (RSD) em autistas é elevada.
-- **Diretriz de Suporte:** Priorizar a redução de estressores ambientais e acomodações no trabalho/estudo antes de polifarmácia reativa.`;
+Como posso apoiar a rotina familiar hoje?
+- **Previsibilidade doméstica:** Organizar horários estáveis para as refeições, descanso e momentos de silêncio.
+- **Antecipação de mudanças:** Planejar como conversar antes sobre alterações de horários, visitas ou consultas.
+- **Divisão de tarefas colaborativas:** Estruturar afazeres com a participação da pessoa apoiada respeitando seu ritmo.
+- **Comunicação com a escola/terapeutas:** Preparar mensagens informando sobre a semana sem cobranças ou julgamentos.
+- **Ajustes ambientais:** Reduzir excesso de estímulos luminosos, sonoros ou desorganização física nos espaços de descanso.`;
   }
 
-  if (role === "educador") {
-    return `[PARECER PEDAGÓGICO & INCLUSÃO ESCOLAR]
-Olá${name}! Sob a perspectiva do Direito à Educação (LBI nº 13.146/2015) e Desenho Universal para a Aprendizagem (DUA):
+  // 5. COMUNICAÇÃO & ACESSIBILIDADE - Expressão e Scripts
+  if (role === "comunicacao_acessibilidade") {
+    return `[Comunicação & Acessibilidade]
+Olá${name}! Uma comunicação autêntica e clara reduz a ansiedade e garante que suas necessidades sejam compreendidas.
 
-1. **Elaboração do PEI (Plano de Ensino Individualizado):** Mapear potencialidades e necessidades de acessibilidade pedagógica do estudante.
-2. **Acomodações em Sala de Aula:**
-   - Permissão de fones de ruído e objetos de stimming para auto-regulação.
-   - Flexibilização de provas (tempo adicional de 50%, sala silenciosa reservada, enunciado fracionado).
-   - Apoio de Acompanhante Terapêutico (AT) ou Mediador Escolar para suporte na organização executiva.`;
+Posso te apoiar a:
+- **Criar scripts sociais:** Textos prontos para dizer 'não' educadamente, pedir um tempo para pensar ou recusar um convite sem constrangimento.
+- **Solicitar instruções por escrito:** Frases diretas para garantir que detalhes de conversas orais fiquem registrados.
+- **Tradução para linguagem literal:** Ajudar a interpretar metáforas ou expressões implícitas que pareçam confusas.
+- **Apoio a CAA (Comunicação Aumentativa e Alternativa):** Elaborar frases curtas com vocabulário direto para painéis ou cartões.
+
+Qual situação comunicativa você gostaria de praticar ou preparar?`;
   }
 
+  // 6. ORGANIZAÇÃO & ROTINA - Funções Executivas
+  if (role === "organizacao_rotina") {
+    return `[Organização & Rotina Funcional]
+Olá${name}! Estruturar a rotina com clareza visual alivia a fadiga mental e facilita o início das tarefas.
+
+Posso te apoiar com:
+- **Estruturação do dia:** Dividir o dia em blocos realistas (Manhã, Tarde e Noite) com margem para pausas.
+- **Dividir uma tarefa grande em etapas:** Transformar uma demanda complexa em passos de 10 a 15 minutos.
+- **Rotina para dias de baixa energia:** Identificar o que é estritamente essencial e o que pode esperar quando a energia está baixa.
+- **Checklist de saída de casa:** Listar itens essenciais para não esquecer nada ao sair (chaves, documentos, fones, água).
+
+Qual atividade você gostaria de organizar agora?`;
+  }
+
+  // 7. MEU APOIO (padrão)
   if (
     text.includes("crise") ||
     text.includes("meltdown") ||
@@ -85,31 +124,32 @@ Olá${name}! Sob a perspectiva do Direito à Educação (LBI nº 13.146/2015) e 
     text.includes("sobrecarga") ||
     text.includes("ansiedade")
   ) {
-    return `Olá${name}. Estou aqui com você. Percebo que você pode estar passando por um momento de sobrecarga ou crise.
+    return `Olá${name}. Estou aqui com você. Se estiver sentindo sobrecarga sensorial ou emocional:
 
-Sua segurança e acolhimento são a nossa prioridade.
+Sua segurança e bem-estar vêm em primeiro lugar.
 
-💙 **Passos Práticos de Regulação Imediata:**
-1. **Reduza Estímulos:** Vá para um local seguro, diminua a iluminação ou use fones de ouvido.
-2. **Exercício de Grounding (5-4-3-2-1):**
-   - 👁️ Identifique 5 objetos ao seu redor.
-   - 🖐️ Sinta 4 texturas conhecidas.
-   - 👂 Ouça 3 sons distantes.
-   - 👃 Note 2 aromas sutis.
-   - 👅 Respire fundo focando na expansão do seu tórax.
+💙 **Estratégia Imediata de Descompressão:**
+1. **Reduza Estímulos:** Vá para um local silencioso, diminua as luzes ou use fones de ouvido.
+2. **Exercício de Apoio Sensorial (5-4-3-2-1):**
+   - 👁️ Olhe para 5 objetos seguros ao seu redor.
+   - 🖐️ Toque em 4 texturas que tragam conforto.
+   - 👂 Ouça 3 sons suaves no ambiente.
+   - 👃 Sinta 2 aromas agradáveis.
+   - 👅 Beba um gole de água fresca devagar.
+3. Não tente resolver decisões difíceis agora. Apenas respire no seu próprio ritmo.
 
-⚠️ *Se precisar de suporte emocional imediato ou atendimento de emergência, utilize o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
+⚠️ *Se precisar de acolhimento emergencial humano, use o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
   }
 
-  return `Olá${name}! Sou o assistente neuroafirmativo do **NeuroConecta**. Como posso te apoiar neste momento?
+  return `Olá${name}! Sou o copiloto de apoio do **NeuroConecta**.
 
-Possuo conhecimento para te orientar em:
-1. 🗓️ **Organização da Rotina:** Técnicas contra fadiga executiva.
-2. 🧘 **Regulação Sensorial:** Exercícios de grounding e estratégias de descompressão.
-3. 💬 **Comunicação & Scripts:** Frases para impor limites e solicitar acomodações.
-4. 📋 **Testes & Relatórios:** Informações sobre as ferramentas de triagem do app.
+Posso te apoiar a:
+1. 🗓️ **Organizar o seu dia:** Dividir tarefas grandes em passos simples e fáceis de começar.
+2. ✍️ **Preparar mensagens:** Redigir pedidos de apoio, acomodação ou instruções por escrito.
+3. 🧘 **Autorregulação:** Encontrar momentos de pausa e estratégias de descompressão sensorial.
+4. 🧭 **Recursos do NeuroConecta:** Indicar sons relaxantes, scripts sociais prontos ou rotinas visuais.
 
-Sinta-se à vontade para enviar sua dúvida ou selecionar o Nível Médico, Enfermagem, Psiquiatria ou Educação no topo do chat!`;
+Selecione o **Contexto do Apoio** acima para focar no que você mais precisa neste momento!`;
 };
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
@@ -120,7 +160,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 }) => {
   const isDark = userProfile.lowStimulationMode;
 
-  const [interactionRole, setInteractionRole] = useState<InteractionRole>("usuario");
+  const [interactionRole, setInteractionRole] = useState<InteractionRole>("meu_apoio");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -158,11 +198,15 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const initialGreeting: ChatMessage = {
         id: "msg-welcome",
         role: "assistant",
-        content: `Olá${realName}! Sou o assistente virtual do **NeuroConecta**.
+        content: `Olá${realName}! Sou o copiloto de apoio do **NeuroConecta**.
 
-Você pode selecionar o nível de profundidade e perspectiva técnica no topo do chat (Médico, Enfermagem, Psiquiatria, Educação ou Usuário).
+Como posso apoiar você hoje? Posso ajudar a:
+• Organizar o seu dia ou dividir uma tarefa difícil em etapas
+• Redigir uma mensagem objetiva ou pedir uma acomodação funcional
+• Adaptar uma atividade de estudo ou apoiar a rotina familiar
+• Guiar estratégias simples de pausa e autorregulação
 
-**Como posso te ajudar hoje?** Digite sua dúvida ou escolha um dos atalhos abaixo:`,
+Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento ou digite sua mensagem abaixo.`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages([initialGreeting]);
@@ -250,41 +294,62 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] w-full max-w-7xl mx-auto p-2 sm:p-4 space-y-3 flex-1">
       
-      {/* Role Selection Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-sm flex-shrink-0">
-        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 pl-1">
-          <Sparkles className="w-4 h-4 text-teal-400" />
-          Nível de Interação da IA:
-        </span>
+      {/* Support Context Selector */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-2 pl-1">
+          <Sparkles className="w-4 h-4 text-teal-400 shrink-0" />
+          <span className="text-xs font-bold text-slate-200">Contexto do Apoio:</span>
+          <span className="text-[11px] text-slate-400 hidden lg:inline">• Copiloto de organização, comunicação e acessibilidade</span>
+        </div>
 
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[
-            { id: "usuario", label: "Usuário / Acolhimento", icon: UserCheck, color: "text-teal-400 bg-teal-950/80 border-teal-800" },
-            { id: "medico", label: "Médico / Neurologia", icon: Stethoscope, color: "text-blue-400 bg-blue-950/80 border-blue-800" },
-            { id: "enfermeiro", label: "Enfermagem / Cuidado", icon: HeartPulse, color: "text-rose-400 bg-rose-950/80 border-rose-800" },
-            { id: "psiquiatra", label: "Psiquiatria / Saúde Mental", icon: Brain, color: "text-purple-400 bg-purple-950/80 border-purple-800" },
-            { id: "educador", label: "Educador / PEI Escola", icon: GraduationCap, color: "text-amber-400 bg-amber-950/80 border-amber-800" },
-            { id: "rh", label: "IA Recursos Humanos & Gestão", icon: Building2, color: "text-cyan-400 bg-cyan-950/80 border-cyan-800" },
-          ].map((role) => {
-            const Icon = role.icon;
-            const isSelected = interactionRole === role.id;
+            { id: "meu_apoio", label: "Meu Apoio", icon: UserCheck, color: "text-teal-300 bg-teal-950/80 border-teal-700" },
+            { id: "educacao", label: "Educação", icon: GraduationCap, color: "text-amber-300 bg-amber-950/80 border-amber-700" },
+            { id: "familia_cuidado", label: "Família & Cuidado", icon: Users, color: "text-emerald-300 bg-emerald-950/80 border-emerald-700" },
+            { id: "comunicacao_acessibilidade", label: "Comunicação & Acessibilidade", icon: MessageSquare, color: "text-sky-300 bg-sky-950/80 border-sky-700" },
+            { id: "organizacao_rotina", label: "Organização & Rotina", icon: Clock, color: "text-indigo-300 bg-indigo-950/80 border-indigo-700" },
+            { id: "saude", label: "Saúde (Organização)", icon: HeartPulse, color: "text-rose-300 bg-rose-950/80 border-rose-700" },
+            { id: "trabalho", label: "Trabalho (Acessibilidade)", icon: Building2, color: "text-cyan-300 bg-cyan-950/80 border-cyan-700" },
+          ].map((ctx) => {
+            const Icon = ctx.icon;
+            const isSelected = interactionRole === ctx.id;
             return (
               <button
-                key={role.id}
-                onClick={() => setInteractionRole(role.id as InteractionRole)}
-                className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition ${
+                key={ctx.id}
+                onClick={() => setInteractionRole(ctx.id as InteractionRole)}
+                className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition text-xs ${
                   isSelected
-                    ? role.color + " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold"
+                    ? ctx.color + " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold"
                     : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{role.label}</span>
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span>{ctx.label}</span>
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* Context Specific Safety Notice Banner */}
+      {interactionRole === "saude" && (
+        <div className="bg-amber-950/60 border border-amber-800/80 text-amber-200 px-3.5 py-2 rounded-xl text-xs flex items-start gap-2 shadow-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <p className="leading-snug">
+            <strong>Aviso de Apoio em Saúde:</strong> A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
+          </p>
+        </div>
+      )}
+
+      {interactionRole === "trabalho" && (
+        <div className="bg-cyan-950/60 border border-cyan-800/80 text-cyan-200 px-3.5 py-2 rounded-xl text-xs flex items-start gap-2 shadow-sm">
+          <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <p className="leading-snug">
+            <strong>Aviso de Apoio no Trabalho:</strong> A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
+          </p>
+        </div>
+      )}
 
       {/* Onboarding Box if not completed */}
       {onboardingStep !== "done" && (
@@ -451,7 +516,7 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
         {isLoading && (
           <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs italic p-2">
             <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-spin" />
-            <span>O assistente NeuroConecta ({interactionRole}) está formulando a resposta...</span>
+            <span>O copiloto NeuroConecta está formulando a resposta...</span>
           </div>
         )}
 
@@ -461,11 +526,13 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
       {/* Quick Action Chips */}
       <div className="py-1 overflow-x-auto no-scrollbar flex items-center gap-2 text-xs">
         {[
-          { label: "🩺 Discutir RAADS-R / AQ-10", prompt: "Gostaria de discutir a validade psicométrica e hipóteses dos testes RAADS-R e AQ-10 para triagem de adultos." },
-          { label: "🧠 Analisar Burnout Autista x Depressão", prompt: "Pode fazer uma diferenciação clínica detalhada entre Burnout Autista e Depressão Unipolar?" },
-          { label: "🎓 Orientações para PEI na Escola", prompt: "Como estruturar o Plano de Ensino Individualizado (PEI) garantindo acessibilidade sensorial para o aluno autista?" },
-          { label: "💬 Pedir Script Social de Acomodação", prompt: "Pode me sugerir um script social para comunicar uma necessidade sensorial ou pedir acomodação no trabalho?" },
-          { label: "🧘 Exercício de Grounding", prompt: "Pode me guiar passo a passo em uma técnica de grounding (5-4-3-2-1) para desacelerar agora?" },
+          { label: "🗓️ Organizar meu dia", prompt: "Pode me ajudar a organizar o meu dia de forma clara e sem sobrecarga?" },
+          { label: "🧩 Dividir tarefa em etapas", prompt: "Tenho uma tarefa grande para fazer e estou com dificuldade de começar. Pode me ajudar a dividi-la em etapas simples?" },
+          { label: "✍️ Pedir instruções por escrito", prompt: "Pode redigir uma mensagem curta e educada pedindo que as instruções da tarefa sejam enviadas por escrito?" },
+          { label: "🎧 Pedir uso de fones abafadores", prompt: "Pode me ajudar a redigir um pedido para utilizar fones com cancelamento de ruído no ambiente de trabalho ou estudo?" },
+          { label: "🎓 Adaptar atividade escolar", prompt: "Como posso tornar uma atividade de estudo mais acessível e dividida em passos para reduzir sobrecarga?" },
+          { label: "💬 Script para conversa difícil", prompt: "Tenho uma conversa delicada pela frente. Pode me sugerir um roteiro respeitoso para expressar meus limites?" },
+          { label: "🧘 Autorregulação & Pausa", prompt: "Estou me sentindo sobrecarregado(a). Pode me guiar em uma estratégia simples de respiração ou descompressão sensorial?" },
           { label: "🆘 Apoio em crise", action: onOpenCrisis },
         ].map((chip, idx) => (
           <button
@@ -497,7 +564,7 @@ Você pode selecionar o nível de profundidade e perspectiva técnica no topo do
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder={`Digite sua dúvida no nível (${interactionRole.toUpperCase()})...`}
+          placeholder="Digite sua mensagem ou o que deseja organizar hoje..."
           disabled={isLoading}
           className={`flex-1 px-4 py-3 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm transition ${
             isDark

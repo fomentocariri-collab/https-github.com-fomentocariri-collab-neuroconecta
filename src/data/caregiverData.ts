@@ -18,7 +18,7 @@ export const CAREGIVER_GUIDE: CaregiverGuideItem[] = [
       "Não force contato visual nem exija que 'se acalme rápido'."
     ],
     phrasesToUse: [
-      "\"Estou aqui com você. Você está seguro(a).\"",
+      "\"Estou aqui com você. Vamos diminuir os estímulos para ajudar você a passar por este momento.\"",
       "\"Não precisa falar agora. Respire no seu tempo.\"",
       "\"Vou diminuir a luz e o barulho.\""
     ]

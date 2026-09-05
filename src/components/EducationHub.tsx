@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { BookOpen, Search, Sparkles, CheckCircle2, HelpCircle, Printer, Building2, Phone, Mail, MapPin, FileText, Download, Users, Calendar, GraduationCap } from "lucide-react";
+import { BookOpen, Search, Sparkles, CheckCircle2, HelpCircle, Printer, Building2, Phone, Mail, MapPin, FileText, Download, Users, Calendar, GraduationCap, PenTool, Lightbulb, Brain } from "lucide-react";
 import { EDUCATION_ARTICLES, MYTHS_AND_FACTS } from "../data/education";
 import { calculateAge, getAgeCategory } from "../types";
+import { AccessibleActivityPlanner } from "./AccessibleActivityPlanner";
+import { FunctionalLearningProfile } from "./FunctionalLearningProfile";
 
 export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
+  const [activeTab, setActiveTab] = useState<"artigos" | "adaptar" | "perfil_funcional" | "mitos">("artigos");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
 
@@ -178,152 +181,249 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
         </div>
       </div>
 
-      {/* Pescar Aluno / Cadastro Geral para Acomodações Escolares e PEI */}
-      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+      {/* Subtab Navigation */}
+      <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <button
+          onClick={() => setActiveTab("artigos")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === "artigos"
+              ? "bg-teal-600 text-white shadow-md"
+              : isDark
+              ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-teal-300" />
+          <span>Artigos & Diretrizes de Inclusão</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("adaptar")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === "adaptar"
+              ? "bg-teal-600 text-white shadow-md"
+              : isDark
+              ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+          }`}
+        >
+          <PenTool className="w-4 h-4 text-amber-300" />
+          <span>Criar / Adaptar Atividade Acessível</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("perfil_funcional")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === "perfil_funcional"
+              ? "bg-teal-600 text-white shadow-md"
+              : isDark
+              ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+          }`}
+        >
+          <Brain className="w-4 h-4 text-cyan-300" />
+          <span>Perfil Funcional de Aprendizagem & Apoio</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("mitos")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
+            activeTab === "mitos"
+              ? "bg-teal-600 text-white shadow-md"
+              : isDark
+              ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+              : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+          }`}
+        >
+          <HelpCircle className="w-4 h-4 text-emerald-300" />
+          <span>Desmistificando Mitos</span>
+        </button>
+      </div>
+
+      {/* Princípio Pedagógico & Não Exigência de Diagnóstico (Itens 10 e 11 do Adendo) */}
+      <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed flex items-start gap-3 ${
+        isDark ? "bg-teal-950/40 border-teal-800/60 text-teal-200" : "bg-teal-50 border-teal-200 text-teal-900"
       }`}>
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-amber-950 text-amber-400 rounded-xl border border-amber-800">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <span>Pescar Aluno / Cadastrado para PEI</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
-                {globalStudents.length} aluno(s)
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400">Importe dados do aluno cadastrado no sistema para emitir diretrizes de acomodação escolar.</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 transition ${
-              isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
-            }`}
-          >
-            {globalStudents.length === 0 ? (
-              <option value="">Nenhum aluno cadastrado no momento</option>
-            ) : (
-              globalStudents.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} • {getAgeCategory(s.birthDate)} ({calculateAge(s.birthDate) !== null ? `${calculateAge(s.birthDate)} anos` : "Idade N/A"})
-                </option>
-              ))
-            )}
-          </select>
+        <Lightbulb className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-bold">
+            Princípio Fundamental da Escola Neuroafirmativa:
+          </p>
+          <p className="opacity-95">
+            O professor não é responsável por diagnosticar ou tratar condições clínicas. O papel da escola e do NeuroConecta é tornar atividades acessíveis, organizar instruções em etapas, criar diferentes formas de participação, utilizar apoio visual e colaborar com a família e o AEE.
+          </p>
+          <p className="text-[11px] font-semibold text-teal-300 dark:text-teal-300 pt-0.5">
+            💡 Não é necessário um diagnóstico para oferecer diferentes formas de participação, comunicação e acesso ao conteúdo.
+          </p>
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
-              selectedCategory === cat.id
-                ? "bg-teal-600 text-white border-teal-500 shadow"
-                : isDark
-                ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
+      {/* ABA 2: CRIAR / ADAPTAR ATIVIDADE ACESSÍVEL (PROFESSOR) */}
+      {activeTab === "adaptar" && (
+        <AccessibleActivityPlanner isDark={isDark} />
+      )}
 
-      {/* Articles List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-            <Sparkles className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-            <span>Artigos e Orientações ({filteredArticles.length})</span>
-          </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">Formato pronto para impressão</span>
-        </div>
+      {/* ABA: PERFIL FUNCIONAL DE APRENDIZAGEM & APOIO (ITEM 16 DO ADENDO) */}
+      {activeTab === "perfil_funcional" && (
+        <FunctionalLearningProfile
+          studentName={selectedStudent?.name || "Estudante"}
+          isDark={isDark}
+        />
+      )}
 
-        <div className="space-y-4">
-          {filteredArticles.length === 0 ? (
-            <div className={`p-8 border rounded-2xl text-center text-xs ${
-              isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-white border-slate-200 text-slate-600"
-            }`}>
-              Nenhum termo encontrado para &quot;{searchTerm}&quot;. Tente buscar por lei, CIPTEA, PEI ou conceito.
+      {/* ABA 1: ARTIGOS & DIRETRIZES */}
+      {activeTab === "artigos" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Pescar Aluno / Cadastro Geral para Acomodações Escolares e PEI */}
+          <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-950 text-amber-400 rounded-xl border border-amber-800">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <span>Pescar Aluno / Cadastrado para PEI</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
+                    {globalStudents.length} aluno(s)
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400">Importe dados do aluno cadastrado no sistema para emitir diretrizes de acomodação escolar.</p>
+              </div>
             </div>
-          ) : (
-            filteredArticles.map((art) => (
-              <div
-                key={art.id}
-                className={`p-5 rounded-2xl space-y-3 border shadow-sm transition ${
-                  isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={selectedStudentId}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 transition ${
+                  isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-300">{art.term}</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20">
-                    {art.category}
-                  </span>
-                </div>
-
-                <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-300">
-                  {art.shortDefinition}
-                </p>
-
-                <div className={`p-4 border rounded-xl text-xs sm:text-sm leading-relaxed ${
-                  isDark ? "bg-slate-950 border-slate-800/80 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
-                }`}>
-                  {art.fullExplanation}
-                </div>
-
-                {art.practicalTips && art.practicalTips.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <h4 className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Estratégias Práticas:</h4>
-                    <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                      {art.practicalTips.map((tip, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-teal-500 font-bold">•</span>
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {globalStudents.length === 0 ? (
+                  <option value="">Nenhum aluno cadastrado no momento</option>
+                ) : (
+                  globalStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} • {getAgeCategory(s.birthDate)} ({calculateAge(s.birthDate) !== null ? `${calculateAge(s.birthDate)} anos` : "Idade N/A"})
+                    </option>
+                  ))
                 )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Myths vs Facts */}
-      <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
-        <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-          <HelpCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-          <span>Desmistificando Mitos Comuns</span>
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {MYTHS_AND_FACTS.map((item, idx) => (
-            <div key={idx} className={`p-5 rounded-2xl space-y-3 border shadow-sm ${
-              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-            }`}>
-              <div className={`p-3 border rounded-xl text-xs ${
-                isDark ? "bg-rose-950/60 border-rose-800/50 text-rose-200" : "bg-rose-50 border-rose-200 text-rose-900"
-              }`}>
-                <strong>❌ MITO:</strong> {item.myth}
-              </div>
-              <div className={`p-3 border rounded-xl text-xs ${
-                isDark ? "bg-emerald-950/60 border-emerald-800/50 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
-              }`}>
-                <strong>✅ {item.fact}</strong>
-              </div>
+              </select>
             </div>
-          ))}
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
+                  selectedCategory === cat.id
+                    ? "bg-teal-600 text-white border-teal-500 shadow"
+                    : isDark
+                    ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Articles List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+                <Sparkles className="w-5 h-5 text-teal-500 dark:text-teal-400" />
+                <span>Artigos e Orientações ({filteredArticles.length})</span>
+              </h2>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Formato pronto para impressão</span>
+            </div>
+
+            <div className="space-y-4">
+              {filteredArticles.length === 0 ? (
+                <div className={`p-8 border rounded-2xl text-center text-xs ${
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-white border-slate-200 text-slate-600"
+                }`}>
+                  Nenhum termo encontrado para &quot;{searchTerm}&quot;. Tente buscar por lei, CIPTEA, PEI ou conceito.
+                </div>
+              ) : (
+                filteredArticles.map((art) => (
+                  <div
+                    key={art.id}
+                    className={`p-5 rounded-2xl space-y-3 border shadow-sm transition ${
+                      isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-300">{art.term}</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20">
+                        {art.category}
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm font-semibold leading-relaxed text-slate-700 dark:text-slate-300">
+                      {art.shortDefinition}
+                    </p>
+
+                    <div className={`p-4 border rounded-xl text-xs sm:text-sm leading-relaxed ${
+                      isDark ? "bg-slate-950 border-slate-800/80 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
+                    }`}>
+                      {art.fullExplanation}
+                    </div>
+
+                    {art.practicalTips && art.practicalTips.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <h4 className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Estratégias Práticas:</h4>
+                        <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                          {art.practicalTips.map((tip, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-teal-500 font-bold">•</span>
+                              <span>{tip}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ABA 3: MITOS VS FATOS */}
+      {activeTab === "mitos" && (
+        <div className="space-y-4 animate-fadeIn">
+          <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
+            <HelpCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+            <span>Desmistificando Mitos Comuns sobre Neurodivergência</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {MYTHS_AND_FACTS.map((item, idx) => (
+              <div key={idx} className={`p-5 rounded-2xl space-y-3 border shadow-sm ${
+                isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+              }`}>
+                <div className={`p-3 border rounded-xl text-xs ${
+                  isDark ? "bg-rose-950/60 border-rose-800/50 text-rose-200" : "bg-rose-50 border-rose-200 text-rose-900"
+                }`}>
+                  <strong>❌ MITO:</strong> {item.myth}
+                </div>
+                <div className={`p-3 border rounded-xl text-xs ${
+                  isDark ? "bg-emerald-950/60 border-emerald-800/50 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                }`}>
+                  <strong>✅ {item.fact}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Company Contact Card Banner */}
       <div className={`p-6 border rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl ${

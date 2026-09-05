@@ -12,11 +12,11 @@ interface SuperAdminModuleModalProps {
 
 export const MODULE_DEFINITIONS: { id: NavTab; label: string; desc: string; category: string }[] = [
   { id: "chat", label: "Assistente IA Neuroafirmativo", desc: "Triagem com IA, escuta empática e tira-dúvidas", category: "Geral" },
-  { id: "musicoterapia", label: "Musicoterapia & Frequências", desc: "Gerador binaural de ondas Alpha/Theta e som 432Hz", category: "Sensorial" },
-  { id: "jogos", label: "Jogos Neurocognitivos & Relaxamento", desc: "Estímulos visuais, memória e desaceleração", category: "Sensorial" },
+  { id: "musicoterapia", label: "Som & Autorregulação", desc: "Paisagens sonoras, ruídos confortáveis e pausas sensoriais", category: "Sensorial" },
+  { id: "jogos", label: "Jogos Sensoriais & Desafios", desc: "Estímulos visuais, memória, foco e desaceleração", category: "Sensorial" },
   { id: "rotina", label: "Rotina Visual Interativa", desc: "Quadros de apoio visual e transição de tarefas", category: "Organização" },
   { id: "agenda", label: "Agenda & Medicamentos", desc: "Lembretes de farmácia e compromissos", category: "Organização" },
-  { id: "sensorial", label: "Manejo e Regulação Sensorial", desc: "Diagnóstico de gatilhos visuais, auditivos e táteis", category: "Sensorial" },
+  { id: "sensorial", label: "Regulação Sensorial", desc: "Mapeamento de preferências e sensibilidades visuais, auditivas e táteis", category: "Sensorial" },
   { id: "humor", label: "Diário de Humor & Energia", desc: "Rastreio de bateria social e sintomas", category: "Bem-estar" },
   { id: "comunicacao", label: "Comunicação Aumentativa (AAC)", desc: "Pranchas de comunicação por pictogramas", category: "Acessibilidade" },
   { id: "testes", label: "Escalas de Autoavaliação", desc: "AQ-10, ASRS-18, M-CHAT e CAT-Q Masking", category: "Avaliação" },

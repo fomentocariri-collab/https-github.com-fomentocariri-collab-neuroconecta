@@ -22,6 +22,8 @@ import { AuthModal } from "./components/AuthModal";
 import { FooterAndContact } from "./components/FooterAndContact";
 import { SuperAdminModuleModal } from "./components/SuperAdminModuleModal";
 import { LandingCoverScreen } from "./components/LandingCoverScreen";
+import { ShareManagerModal } from "./components/ShareManagerModal";
+import { FunctionalPlanModal } from "./components/FunctionalPlanModal";
 import { EyeOff } from "lucide-react";
 import { UserProfile } from "./types";
 
@@ -31,6 +33,8 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isModuleAdminOpen, setIsModuleAdminOpen] = useState(false);
+  const [isShareManagerOpen, setIsShareManagerOpen] = useState(false);
+  const [isFunctionalPlanOpen, setIsFunctionalPlanOpen] = useState(false);
 
   // Hidden modules state for Superadmin control
   const [hiddenModules, setHiddenModules] = useState<string[]>(() => {
@@ -194,6 +198,8 @@ export default function App() {
         toggleLowStimMode={toggleLowStimMode}
         hiddenModules={hiddenModules}
         onOpenModuleAdmin={() => setIsModuleAdminOpen(true)}
+        onOpenShareManager={() => setIsShareManagerOpen(true)}
+        onOpenFunctionalPlan={() => setIsFunctionalPlanOpen(true)}
       />
 
       {/* Main Content Body */}
@@ -241,9 +247,20 @@ export default function App() {
 
             {activeTab === "agenda" && <AgendaAndMeds isDark={userProfile.lowStimulationMode} />}
 
-            {activeTab === "sensorial" && <SensoryHub />}
+            {activeTab === "sensorial" && (
+              <SensoryHub
+                isDark={userProfile.lowStimulationMode}
+                userProfile={userProfile}
+              />
+            )}
 
-            {activeTab === "humor" && <MoodTracker />}
+            {activeTab === "humor" && (
+              <MoodTracker
+                isDark={userProfile.lowStimulationMode}
+                userProfile={userProfile}
+                onOpenShareModal={() => setIsShareManagerOpen(true)}
+              />
+            )}
 
             {activeTab === "comunicacao" && <CommunicationHub />}
 
@@ -295,6 +312,8 @@ export default function App() {
               <CaregiverHub
                 currentSupportLevel={userProfile.supportLevel}
                 userName={userProfile.preferredName || "Visitante"}
+                userProfile={userProfile}
+                onOpenFunctionalPlan={() => setIsFunctionalPlanOpen(true)}
               />
             )}
 
@@ -368,6 +387,20 @@ export default function App() {
         hiddenModules={hiddenModules}
         onToggleModule={handleToggleModule}
         onResetAll={handleResetHiddenModules}
+      />
+
+      {/* Share Grants & Privacy Manager Modal */}
+      <ShareManagerModal
+        isOpen={isShareManagerOpen}
+        onClose={() => setIsShareManagerOpen(false)}
+        userProfile={userProfile}
+      />
+
+      {/* Functional Support Plan Modal */}
+      <FunctionalPlanModal
+        isOpen={isFunctionalPlanOpen}
+        onClose={() => setIsFunctionalPlanOpen(false)}
+        userProfile={userProfile}
       />
     </div>
   );

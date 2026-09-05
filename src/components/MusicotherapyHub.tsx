@@ -37,47 +37,47 @@ export interface SoundPreset {
 const SOUND_PRESETS: SoundPreset[] = [
   {
     id: "preset-brown",
-    title: "Ruído Marrom Profundo",
+    title: "Ruído Marrom Contínuo",
     category: "descompressao",
     icon: Wind,
     color: "from-amber-600 to-orange-700",
-    description: "Frequências graves aveludadas que 'desligam' o zumbido mental e mascaram ruídos imprevisíveis.",
-    benefits: "Ideal para desacelerar crises de sobrecarga sensorial e acalmar pensamentos acelerados no TDAH e Autismo.",
+    description: "Som contínuo de baixa frequência que algumas pessoas utilizam para mascarar ruídos ambientais ou criar sensação de constância sonora.",
+    benefits: "Use em volume confortável e interrompa se causar incômodo auditivo.",
     type: "brown_noise",
     baseFreq: 120,
   },
   {
     id: "preset-432",
-    title: "Frequência Harmônica 432 Hz",
+    title: "Faixa Sonora 432 Hz",
     category: "grounding",
     icon: Feather,
     color: "from-emerald-600 to-teal-700",
-    description: "Sintonia harmônica alinhada aos ritmos da natureza para alívio tensional imediato.",
-    benefits: "Ajuda a desacelerar batimentos cardíacos e proporciona ancoragem sensorial suave durante o Grounding.",
+    description: "Faixa sonora suave disponível para experimentação pessoal durante momentos de pausa ou ancoragem.",
+    benefits: "Algumas pessoas relatam preferência por esse tipo de som, mas seus efeitos variam individualmente.",
     type: "binaural_432",
     baseFreq: 432,
     binauralBeat: 5,
   },
   {
     id: "preset-528",
-    title: "Frequência de Restauração 528 Hz",
+    title: "Tom Suave 528 Hz",
     category: "ansiedade",
     icon: Heart,
     color: "from-rose-500 to-pink-700",
-    description: "Tom puro e ressonante conhecido por induzir sensação de acolhimento e segurança emocional.",
-    benefits: "Reduz o cortisol, acalma o peito apertado e diminui respostas de luta ou fuga.",
+    description: "Opção sonora para escuta relaxante conforme preferência pessoal durante períodos de descanso.",
+    benefits: "Uso de conforto pessoal. Não substitui intervenção clínica, terapêutica ou tratamento médico.",
     type: "binaural_528",
     baseFreq: 528,
     binauralBeat: 7,
   },
   {
     id: "preset-alpha",
-    title: "Ondas Alfa (10 Hz Focus)",
+    title: "Padrão Auditivo Alfa (10 Hz)",
     category: "foco",
     icon: Zap,
     color: "from-cyan-600 to-blue-700",
-    description: "Pulsatação auditiva em frequência Alfa (8-12 Hz) estimulando foco relaxado sem ansiedade.",
-    benefits: "Facilita a execução de tarefas diárias prevenindo a fadiga executiva.",
+    description: "Padrão sonoro rítmico utilizado por algumas pessoas durante momentos de concentração ou estudo.",
+    benefits: "A resposta a estímulos rítmicos varia de pessoa para pessoa. Ajuste a duração ao seu bem-estar.",
     type: "alpha_waves",
     baseFreq: 220,
     binauralBeat: 10,
@@ -88,19 +88,19 @@ const SOUND_PRESETS: SoundPreset[] = [
     category: "grounding",
     icon: Sparkles,
     color: "from-teal-500 to-emerald-700",
-    description: "Sons orgânicos sintéticos de gotas contínuas para criação de um casulo acústico protetor.",
-    benefits: "Neutraliza barulhos repentinos de reformas, trânsito ou conversas paralelas incomodas.",
+    description: "Sons contínuos simulando chuva suave para atenuar ruídos externos imprevisíveis e promover conforto acústico.",
+    benefits: "Ajuda a criar uma camada sonora previsível no ambiente para quem prefere sons da natureza.",
     type: "rain_sim",
     baseFreq: 180,
   },
   {
     id: "preset-sleep",
-    title: "Transição Suave para o Sono (Delta 2Hz)",
+    title: "Baixa Frequência de Desaceleração (Delta)",
     category: "sono",
     icon: Moon,
     color: "from-indigo-600 to-purple-800",
-    description: "Graves desacelerados com oscilação Delta de 2 Hz para preparar o cérebro neurodivergente para dormir.",
-    benefits: "Facilita a desconexão do hiperfoco noturno e induz o relaxamento muscular.",
+    description: "Som de baixa frequência destinado à experimentação durante momentos de relaxamento ou preparação para o descanso.",
+    benefits: "Auxílio sonoro de conforto pessoal. Não garante indução do sono nem efeito neurológico específico.",
     type: "calm_chord",
     baseFreq: 136.1, // Ohm tone
     binauralBeat: 2,
@@ -346,14 +346,21 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
               <Headphones className="w-4 h-4 text-teal-500" />
-              <span>Regulação Sensorial Neuroafirmativa</span>
+              <span>Conforto Sensorial & Pausa Acústica</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Musicoterapia & Som Regula
+              Som & Autorregulação
             </h1>
             <p className="text-sm sm:text-base opacity-90 leading-relaxed font-sans">
-              A frequência certa para cada momento. Utilize sons de descompressão acústica, ruído marrom e ondas binaurais para modular o sistema nervoso, aliviar o estresse sensorial e recuperar a clareza mental.
+              Paisagens sonoras contínuas, ruído marrom e faixas sonoras de baixa frequência para momentos de foco, pausa ou alívio de ruídos do ambiente.
             </p>
+            {/* Aviso de Segurança Auditiva (Item 5 do Adendo) */}
+            <div className="p-3 bg-teal-950/40 border border-teal-800/60 rounded-xl text-xs text-teal-200/90 flex items-start gap-2">
+              <Info className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Regra de Segurança Auditiva:</strong> Use em volume confortável. Interrompa se sentir dor, desconforto, tontura ou aumento da irritação sensorial. Fones de ouvido são opcionais e devem ser usados em volume seguro.
+              </span>
+            </div>
           </div>
 
           {/* Quick Active Sound Indicator */}
@@ -588,10 +595,10 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         isDark ? "bg-slate-900/60 border-slate-800 text-slate-400" : "bg-teal-50/50 border-teal-100 text-slate-600"
       }`}>
         <h4 className="font-bold text-teal-800 dark:text-teal-300 flex items-center gap-1.5">
-          💡 Como a Musicoterapia ajuda o Cérebro Neurodivergente?
+          💡 Som Ambiente, Previsibilidade e Conforto Sensorial
         </h4>
         <p>
-          O sistema auditivo autista é especialmente sensível ao ritmo e tom. Sons previsíveis em frequências específicas (como ruído marrom ou batimentos binaurais) diminuem a estimulação excessiva no córtex auditivo, favorecendo a recuperação da bateria social e o alívio imediato da sobrecarga sensorial. Utilize fones de ouvido para melhor aproveitamento do efeito binaural estéreo!
+          Ambientes com ruídos imprevisíveis ou conversas paralelas podem demandar muita energia de atenção e gerar sobrecarga. Para muitas pessoas, sons contínuos e homogêneos (como ruído marrom ou sons da natureza) funcionam como uma camada protetora que reduz o impacto de interferências externas. Lembre-se: este módulo oferece opções para experimentação e conforto pessoal, não constituindo musicoterapia clínica formal.
         </p>
       </div>
 

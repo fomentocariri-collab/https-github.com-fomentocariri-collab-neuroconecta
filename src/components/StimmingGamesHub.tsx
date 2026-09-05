@@ -760,7 +760,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
               Jogos &amp; Toys Sensoriais Neuroafirmativos
             </h1>
             <p className="text-sm sm:text-base opacity-90 leading-relaxed font-sans">
-              Brinquedos e jogos sem pressão de tempo, telas estressantes ou pontuações punitivas. Desenvolvidos especialmente para stimming, regulação sensorial e relaxamento.
+              Brinquedos e jogos sem pressão de tempo, telas estressantes ou pontuações punitivas. O stimming (autorregulação sensorial e motora) é uma forma legítima de regulação e processamento: aqui você encontra um espaço livre, seguro e acolhedor.
             </p>
           </div>
 
@@ -1035,7 +1035,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                 Módulo para Adultos &amp; Superdotação / Altas Habilidades
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Lógica dedutiva, teoria dos jogos, otimização algorítmica e treinamento de memória de trabalho.
+                Atividades interativas de lógica dedutiva, padrões espaciais e sequências reflexivas para exploração no seu ritmo e momentos de foco.
               </p>
             </div>
 
@@ -1250,7 +1250,7 @@ export const StimmingGamesHub: React.FC<StimmingGamesHubProps> = ({ isDark = fal
                   </div>
                 </div>
                 <p className="text-xs text-slate-400">
-                  O teste Dual N-Back é a única tarefa neuropsicológica comprovada para expansão da inteligência fluida e memória operacional de adultos.
+                  O Dual N-Back é um exercício interativo de memória de trabalho e alternância de foco espacial e auditivo, sem pressão de tempo ou cobrança.
                 </p>
               </div>
 

@@ -1,18 +1,87 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Waves, Eye, Hand, Volume2, Wind, Heart, Plus, Trash2, VolumeX, Play, Pause, Square, Sparkles } from "lucide-react";
-import { SensoryTrigger } from "../types";
+import { Waves, Eye, Hand, Volume2, Wind, Heart, Plus, Trash2, VolumeX, Play, Pause, Square, Sparkles, ShieldCheck, Activity } from "lucide-react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { SensoryTrigger, SensoryCheckinRecord, UserProfile } from "../types";
+import { Lote1Api } from "../services/lote1Client";
 
-export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
-  const [activeSubTab, setActiveSubTab] = useState<"grounding" | "respiracao" | "sons" | "gatilhos">("grounding");
+const fallbackSensoryProfile: UserProfile = {
+  preferredName: "Você",
+  pronouns: "",
+  diagnosisStatus: "investigacao",
+  currentFocus: "rotina",
+  supportLevel: "nao_especificado",
+  lowStimulationMode: false,
+  userRole: "pcd",
+  emergencyContacts: [],
+  onboardingCompleted: true,
+};
+
+export const SensoryHub: React.FC<{ isDark?: boolean; userProfile?: UserProfile }> = ({
+  isDark = true,
+  userProfile = fallbackSensoryProfile,
+}) => {
+  const profile = userProfile || fallbackSensoryProfile;
+  const subjectId = profile.email || "user-local";
+  const [activeSubTab, setActiveSubTab] = useState<"grounding" | "respiracao" | "sons" | "gatilhos" | "autopercepcao">("grounding");
+
+  // Autopercepção Sensorial State
+  const [sensoryRecords, setSensoryRecords] = useState<SensoryCheckinRecord[]>([]);
+  const [checkinEnergy, setCheckinEnergy] = useState(3);
+  const [checkinOverload, setCheckinOverload] = useState(2);
+  const [checkinNotes, setCheckinNotes] = useState("");
+  const [selectedSensoryTags, setSelectedSensoryTags] = useState<string[]>([]);
+  const [usedGrounding, setUsedGrounding] = useState(false);
+  const [usedBreathing, setUsedBreathing] = useState(false);
+  const [usedAudio, setUsedAudio] = useState(false);
+
+  const loadSensoryRecords = async () => {
+    const data = await Lote1Api.getSensoryRecords(subjectId, profile);
+    setSensoryRecords(data);
+  };
+
+  useEffect(() => {
+    loadSensoryRecords();
+  }, [subjectId]);
+
+  const handleSaveCheckin = async () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    const newRecord: SensoryCheckinRecord = {
+      id: `sensory-${Date.now()}`,
+      subjectId,
+      authorId: profile.email || "local",
+      authorName: profile.preferredName || "Você",
+      date: dateStr,
+      time: timeStr,
+      energyLevel: checkinEnergy,
+      sensoryOverloadLevel: checkinOverload,
+      notes: checkinNotes.trim(),
+      activeSensoryTags: selectedSensoryTags,
+      groundingUsed: usedGrounding,
+      breathingUsed: usedBreathing,
+      audioUsed: usedAudio,
+      createdAt: now.toISOString(),
+    };
+
+    await Lote1Api.createSensoryRecord(newRecord, profile);
+    setCheckinNotes("");
+    setSelectedSensoryTags([]);
+    setUsedGrounding(false);
+    setUsedBreathing(false);
+    setUsedAudio(false);
+    await loadSensoryRecords();
+  };
 
   // Grounding 5-4-3-2-1 state
   const [groundingStep, setGroundingStep] = useState(1);
   const groundingSteps = [
-    { num: 5, sense: "Visão", icon: Eye, title: "Olhe ao redor e identifique 5 objetos", desc: "Perceba cores, formas ou luzes ao seu redor. Nomeie mentalmente cada um." },
-    { num: 4, sense: "Tato", icon: Hand, title: "Sinta 4 texturas ou superfícies", desc: "Sinta a roupa na sua pele, a mesa com os dedos, os pés no chão, ou segure um objeto firme." },
-    { num: 3, sense: "Audição", icon: Volume2, title: "Escute 3 sons diferentes", desc: "Mesmo em silêncio, perceba o zumbido do ar condicionado, passos distantes ou sua própria respiração." },
-    { num: 2, sense: "Olfato", icon: Wind, title: "Perceba 2 aromas ou cheiros", desc: "Note o cheiro do ambiente, do café, da sua pele ou um óleo essencial." },
-    { num: 1, sense: "Autoafirmação", icon: Heart, title: "Diga 1 palavra ou frase gentil a si mesmo(a)", desc: "Ex: 'Eu estou em segurança agora', 'Estou fazendo o meu melhor'." },
+    { num: 5, sense: "Visão", icon: Eye, title: "Olhe ao redor e identifique 5 objetos", desc: "Se for confortável, perceba cores ou formas ao seu redor, ou olhe para um ponto fixo neutro." },
+    { num: 4, sense: "Tato", icon: Hand, title: "Sinta 4 texturas ou apoios", desc: "Sinta o contato dos pés no chão, o tecido da roupa, o apoio da cadeira ou segure um objeto sensorial familiar." },
+    { num: 3, sense: "Audição", icon: Volume2, title: "Escute 3 sons ao redor", desc: "Perceba sons contínuos do ambiente (vento, trânsito distante, respiração) sem tentar julgá-los." },
+    { num: 2, sense: "Olfato ou Temperatura", icon: Wind, title: "Perceba 2 sensações térmicas ou aromas", desc: "Sinta a temperatura do ar nas mãos, no rosto ou um aroma suave presente." },
+    { num: 1, sense: "Gentileza", icon: Heart, title: "Diga 1 frase gentil e acolhedora a si mesmo(a)", desc: "Ex: 'Vou respeitar meu tempo e respirar com calma', 'Estou fazendo o que é possível agora'." },
   ];
 
   // Breathing Pacer state (Respiração Quadrada 4-4-4-4)
@@ -213,6 +282,7 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
           { id: "respiracao", label: "🫁 Respiração Guiada" },
           { id: "sons", label: "🎧 Ruído & Sons Calmantes" },
           { id: "gatilhos", label: "📝 Registro de Gatilhos" },
+          { id: "autopercepcao", label: "📊 Autopercepção & Check-in" },
         ].map((sub) => (
           <button
             key={sub.id}
@@ -292,7 +362,7 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
           <div className="space-y-1">
             <h2 className="text-xl font-bold">Marcapasso de Respiração Quadrada (4-4-4-4)</h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Acalme o nervo vago e reduza batimentos cardíacos com ritmos suaves de respiração.
+              Guia visual de respiração compassada para momentos de pausa. Se reter o ar for desconfortável, respire suavemente no seu próprio ritmo sem pausas forçadas.
             </p>
           </div>
 
@@ -332,10 +402,14 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
           isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
         }`}>
           <div className="space-y-1">
-            <h2 className="text-xl font-bold">Gerador de Áudio Calmante Sintetizado</h2>
+            <h2 className="text-xl font-bold">Gerador de Áudio Sintetizado para Conforto Sensorial</h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Sons gerados em tempo real direto no seu navegador sem consumir dados de internet.
+              Sons contínuos gerados localmente no seu navegador para mascarar ruídos imprevisíveis ou criar constância acústica.
             </p>
+            {/* Aviso de Segurança Auditiva */}
+            <div className="mt-2 p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-xl text-xs text-teal-800 dark:text-teal-300">
+              ⚠️ <strong>Regra de Segurança Auditiva:</strong> Use em volume confortável. Interrompa se sentir dor, desconforto, tontura ou aumento da irritação sensorial. Fones de ouvido são opcionais.
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -349,8 +423,8 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
                   <Volume2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm sm:text-base">Ruído Marrom (Brownian Noise)</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Frequências graves suaves parecidas com cachoeira ou vento suave.</p>
+                  <h3 className="font-bold text-sm sm:text-base">Ruído Marrom Contínuo</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Som contínuo de baixa frequência para mascarar ruídos do ambiente.</p>
                 </div>
               </div>
               
@@ -380,8 +454,8 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm sm:text-base">Tom de Frequência Calma (136.1 Hz)</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Tom puro e suave de meditação profunda para desacelerar pensamentos.</p>
+                  <h3 className="font-bold text-sm sm:text-base">Tom Suave de Baixa Frequência</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Opção sonora de experimentação para momentos de pausa e relaxamento pessoal.</p>
                 </div>
               </div>
 
@@ -397,7 +471,7 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
                   onClick={startCalmDrone}
                   className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md"
                 >
-                  <Play className="w-4 h-4" /> Tocar Frequência Calma
+                  <Play className="w-4 h-4" /> Tocar Frequência Suave
                 </button>
               )}
             </div>
@@ -494,6 +568,247 @@ export const SensoryHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =>
             </button>
           </div>
 
+        </div>
+      )}
+
+      {/* 5. Autopercepção & Check-in Sensorial */}
+      {activeSubTab === "autopercepcao" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Disclaimer Neuroafirmativo */}
+          <div className="p-4 bg-teal-950/40 border border-teal-900/60 rounded-2xl flex items-start gap-3 text-xs text-teal-200">
+            <ShieldCheck className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 leading-relaxed">
+              <p className="font-semibold text-teal-300">
+                Acompanhamento / Autopercepção Sensorial Cotidiana
+              </p>
+              <p className="text-slate-300">
+                Este espaço é dedicado ao seu autoconhecimento e à identificação de padrões de sobrecarga e regulação.
+                <strong> Esta ferramenta não substitui avaliação clínica e não constitui diagnóstico médico.</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Form de Check-in */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-5">
+            <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-teal-400" />
+              Check-in Sensorial do Momento
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-300">Bateria / Energia Física:</span>
+                  <span className="text-teal-400 font-bold">{checkinEnergy} / 5</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={checkinEnergy}
+                  onChange={(e) => setCheckinEnergy(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                />
+              </div>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-300">Nível de Sobrecarga Sensorial:</span>
+                  <span className="text-amber-400 font-bold">{checkinOverload} / 5</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={checkinOverload}
+                  onChange={(e) => setCheckinOverload(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Estímulos presentes */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-400">Estímulos presentes no ambiente agora:</label>
+              <div className="flex flex-wrap gap-2">
+                {["Luz fluorescente", "Barulho excessivo", "Multidão / Aglomeração", "Odores fortes", "Tecido incômodo", "Calor/Frio", "Telas / Monitores"].map((tag) => {
+                  const isSel = selectedSensoryTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        if (isSel) {
+                          setSelectedSensoryTags(selectedSensoryTags.filter((t) => t !== tag));
+                        } else {
+                          setSelectedSensoryTags([...selectedSensoryTags, tag]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                        isSel
+                          ? "bg-amber-950 border-amber-700 text-amber-300 font-bold"
+                          : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ferramentas utilizadas */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-400">Técnicas de regulação que utilizei hoje:</label>
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={usedGrounding}
+                    onChange={(e) => setUsedGrounding(e.target.checked)}
+                    className="rounded text-teal-600 focus:ring-0"
+                  />
+                  Grounding 5-4-3-2-1
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={usedBreathing}
+                    onChange={(e) => setUsedBreathing(e.target.checked)}
+                    className="rounded text-teal-600 focus:ring-0"
+                  />
+                  Respiração Guiada 4-4-4-4
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={usedAudio}
+                    onChange={(e) => setUsedAudio(e.target.checked)}
+                    className="rounded text-teal-600 focus:ring-0"
+                  />
+                  Áudio Ruído Marrom / Drone Calmante
+                </label>
+              </div>
+            </div>
+
+            {/* Observações */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-400">Observações adicionais de autopercepção:</label>
+              <input
+                type="text"
+                placeholder="Ex: Saí para um ambiente mais arejado e tomei água fria..."
+                value={checkinNotes}
+                onChange={(e) => setCheckinNotes(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveCheckin}
+                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Registrar Check-in</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Gráfico de Acompanhamento */}
+          {sensoryRecords.length > 1 && (
+            <div className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <h4 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-teal-400" />
+                    Histórico de Autopercepção Sensorial
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Acompanhamento pessoal de sobrecarga e recuperação.
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-60 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[...sensoryRecords].reverse().slice(-14).map((r) => ({
+                      label: `${r.date} ${r.time}`,
+                      Energia: r.energyLevel,
+                      Sobrecarga: r.sensoryOverloadLevel,
+                    }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="label" stroke="#64748b" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[1, 5]} stroke="#64748b" tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#020617",
+                        borderColor: "#334155",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                      }}
+                    />
+                    <Line type="monotone" dataKey="Energia" stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="Sobrecarga" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Registros Anteriores */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Check-ins Anteriores ({sensoryRecords.length})
+            </h4>
+            {sensoryRecords.length === 0 ? (
+              <p className="p-4 text-xs text-slate-500 bg-slate-900 rounded-2xl border border-slate-800 text-center">
+                Nenhum check-in registrado ainda.
+              </p>
+            ) : (
+              sensoryRecords.slice(0, 10).map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-200">{rec.date} às {rec.time}</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-teal-300 text-[10px]">
+                        Energia: {rec.energyLevel}/5
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px]">
+                        Sobrecarga: {rec.sensoryOverloadLevel}/5
+                      </span>
+                    </div>
+
+                    {rec.notes && <p className="text-slate-300 italic">"{rec.notes}"</p>}
+
+                    {rec.activeSensoryTags && rec.activeSensoryTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {rec.activeSensoryTags.map((t, idx) => (
+                          <span key={idx} className="px-1.5 py-0.5 bg-slate-950 text-slate-400 text-[10px] rounded">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 text-[10px] text-slate-400">
+                    {rec.groundingUsed && <span className="px-2 py-0.5 bg-teal-950 text-teal-300 rounded">Grounding</span>}
+                    {rec.breathingUsed && <span className="px-2 py-0.5 bg-cyan-950 text-cyan-300 rounded">Respiração</span>}
+                    {rec.audioUsed && <span className="px-2 py-0.5 bg-purple-950 text-purple-300 rounded">Áudio</span>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 

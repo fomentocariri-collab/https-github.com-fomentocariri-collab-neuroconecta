@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MessageSquare, Copy, Check, FileText, Share2, HelpCircle, Volume2 } from "lucide-react";
+import { MessageSquare, Copy, Check, FileText, Share2, HelpCircle, Volume2, Edit3, RotateCcw, Info, Sparkles } from "lucide-react";
 import { SOCIAL_SCRIPTS, LITERAL_LANGUAGE_GUIDE } from "../data/scripts";
 
 export const CommunicationHub: React.FC = () => {
@@ -8,16 +8,37 @@ export const CommunicationHub: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
 
+  // Custom in-place edited text map
+  const [editedTexts, setEditedTexts] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [useDiagMention, setUseDiagMention] = useState<Record<string, boolean>>({});
+
   // Accommodation Generator state
-  const [recipient, setRecipient] = useState("Gestor(a) / RH");
+  const [recipient, setRecipient] = useState("Gestor(a) / Coordenação");
   const [requestType, setRequestType] = useState("fones");
   const [customDetail, setCustomDetail] = useState("");
+  const [includeDiagnosticDisclosure, setIncludeDiagnosticDisclosure] = useState(false);
   const [generatedText, setGeneratedText] = useState("");
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleShare = async (title: string, text: string, id: string) => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `NeuroConecta • ${title}`,
+          text: text,
+        });
+      } catch {
+        // Fallback to copy if user closed share sheet
+      }
+    } else {
+      handleCopy(id, text);
+    }
   };
 
   const handleSpeak = (id: string, text: string) => {
@@ -35,28 +56,43 @@ export const CommunicationHub: React.FC = () => {
     }
   };
 
+  const getEffectiveScriptText = (sc: typeof SOCIAL_SCRIPTS[0]) => {
+    if (editedTexts[sc.id] !== undefined) {
+      return editedTexts[sc.id];
+    }
+    if (useDiagMention[sc.id] && sc.diagnosticOptionalText) {
+      return sc.diagnosticOptionalText;
+    }
+    return sc.scriptText;
+  };
+
   const handleGenerateAccommodation = () => {
     let detailText = "";
     if (requestType === "fones") {
-      detailText = "a autorização para utilizar fones de ouvido com cancelamento de ruído passivo ou ativo durante as tarefas individuais para reduzir o estresse por ruídos de fundo.";
+      detailText = "a autorização para utilizar fones com abafamento ou cancelamento de ruído durante momentos de concentração individual para reduzir o estresse sonoro do ambiente.";
     } else if (requestType === "instrucoes_escritas") {
-      detailText = "que as instruções de projetos, tarefas complexas e prazos sejam enviadas por e-mail ou aplicativo de mensagem por escrito, garantindo alinhamento e precisão.";
+      detailText = "que as instruções de projetos, tarefas complexas e prioridades de entrega sejam fornecidas também por escrito (via e-mail ou mensagem), garantindo alinhamento claro de expectativas.";
     } else if (requestType === "local_tranquilo") {
-      detailText = "a possibilidade de trabalhar em uma mesa em local de menor circulação de pessoas ou em regime híbrido/remoto alguns dias na semana.";
+      detailText = "a possibilidade de alocação em um posto de trabalho mais silencioso ou flexibilidade de pausas rápidas em ambiente calmo quando necessário.";
     } else {
-      detailText = customDetail || "pequenas adaptações sensoriais e de fluxo de trabalho para otimizar meu desempenho.";
+      detailText = customDetail || "ajustes funcionais razoáveis no fluxo e ambiente de trabalho/estudo para otimizar meu foco e bem-estar.";
     }
 
-    const fullTemplate = `Prezado(a) ${recipient || "Sua Equipe"},
+    const framing = includeDiagnosticDisclosure
+      ? "Como pessoa neurodivergente, funciono de maneira mais focada e eficiente com certas estruturações de apoio funcional."
+      : "Para otimizar meu rendimento, foco e qualidade de entrega em minhas tarefas cotidianas:";
 
-Gostaria de solicitar uma acomodação razoável no ambiente de trabalho/estudo para otimizar meu foco e bem-estar.
+    const fullTemplate = `Prezado(a) ${recipient || "Equipe / Coordenação"},
 
-Como pessoa neurodivergente (autismo/TEA), funciono de maneira mais eficiente com certas estruturações. Solicito gentilmente:
+Gostaria de solicitar um ajuste funcional razoável no ambiente de estudo/trabalho para apoiar meu rendimento e bem-estar.
+
+${framing}
+Solicito gentilmente:
 • ${detailText}
 
-Essa simples medida me ajudará a manter alta qualidade de entregas e evitar a fadiga cognitiva excessiva. 
+Essa simples adaptação me ajudará a manter alta previsibilidade, concentração e qualidade de entregas.
 
-Permaneço totalmente à disposição para esclarecer qualquer dúvida.
+Permaneço à disposição para alinharmos os detalhes práticos.
 
 Atenciosamente,`;
 
@@ -109,9 +145,10 @@ Atenciosamente,`;
       {activeTab === "scripts" && (
         <div className="space-y-6">
           {/* Category Filter */}
-          <div className="flex overflow-x-auto no-scrollbar gap-2">
+          <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
             {[
               { id: "todos", label: "Todos" },
+              { id: "tdah_organizacao", label: "⚡ Organização, Atenção & TDAH" },
               { id: "trabalho", label: "Trabalho" },
               { id: "saude", label: "Saúde / Médicos" },
               { id: "familia", label: "Família" },
@@ -121,7 +158,7 @@ Atenciosamente,`;
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
                   selectedCategory === cat.id
                     ? "bg-teal-600 text-white"
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -132,49 +169,159 @@ Atenciosamente,`;
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredScripts.map((sc) => (
-              <div
-                key={sc.id}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400 bg-teal-950 px-2.5 py-0.5 rounded-md border border-teal-800">
-                      {sc.category}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-slate-100 text-base">{sc.title}</h3>
-                  <p className="text-xs text-slate-400">{sc.description}</p>
-
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
-                    {sc.scriptText}
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => handleCopy(sc.id, sc.scriptText)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                  >
-                    {copiedId === sc.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedId === sc.id ? "Copiado!" : "Copiar"}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSpeak(sc.id, sc.scriptText)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                      speakingId === sc.id
-                        ? "bg-teal-600 text-white animate-pulse"
-                        : "bg-slate-800 hover:bg-slate-700 text-teal-300"
-                    }`}
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    <span>{speakingId === sc.id ? "Falando..." : "Ouvir Áudio"}</span>
-                  </button>
-                </div>
+          {/* Educational / Anti-Stereotype Banner for TDAH & Executive Function Scripts */}
+          {selectedCategory === "tdah_organizacao" && (
+            <div className="p-4 bg-teal-950/70 border border-teal-800/80 rounded-2xl flex items-start gap-3 text-xs text-teal-200 shadow-sm animate-fadeIn">
+              <Sparkles className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold text-teal-100">Recurso Funcional para Organização & Foco</p>
+                <p className="text-teal-300 leading-relaxed">
+                  Este recurso pode ser útil para pessoas que se beneficiam de instruções estruturadas, prioridades claras e redução de distrações. Não é necessário diagnóstico formal para utilizar estes modelos. O padrão é sempre funcional e sem patologização.
+                </p>
               </div>
-            ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredScripts.map((sc) => {
+              const currentText = getEffectiveScriptText(sc);
+              const isEditing = editingId === sc.id;
+              const hasCustomEdit = editedTexts[sc.id] !== undefined;
+
+              return (
+                <div
+                  key={sc.id}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400 bg-teal-950 px-2.5 py-0.5 rounded-md border border-teal-800">
+                        {sc.category === "tdah_organizacao" ? "Atenção & TDAH" : sc.category}
+                      </span>
+
+                      {/* Optional Diagnostic Disclosure Toggle (User Conscious Choice) */}
+                      {sc.diagnosticOptionalText && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUseDiagMention((prev) => ({ ...prev, [sc.id]: !prev[sc.id] }));
+                          }}
+                          className={`text-[10px] px-2 py-0.5 rounded-md border transition ${
+                            useDiagMention[sc.id]
+                              ? "bg-amber-950 text-amber-200 border-amber-700 font-semibold"
+                              : "bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200"
+                          }`}
+                          title="Opção consciente: por padrão o texto é funcional e sem menção a diagnóstico"
+                        >
+                          {useDiagMention[sc.id] ? "✓ Com menção explícita de TDAH" : "+ Mencionar TDAH (opcional)"}
+                        </button>
+                      )}
+                    </div>
+
+                    <h3 className="font-bold text-slate-100 text-base">{sc.title}</h3>
+                    <p className="text-xs text-slate-400">{sc.description}</p>
+
+                    {/* Script text or Inline Editable area */}
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <textarea
+                          rows={5}
+                          value={currentText}
+                          onChange={(e) => setEditedTexts((prev) => ({ ...prev, [sc.id]: e.target.value }))}
+                          className="w-full p-3 bg-slate-950 border border-teal-600 rounded-xl text-xs text-slate-100 font-sans leading-relaxed focus:outline-none"
+                          placeholder="Personalize o texto do seu script conforme sua necessidade..."
+                        />
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-teal-400">Edição personalizada ativa</span>
+                          {hasCustomEdit && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const copy = { ...editedTexts };
+                                delete copy[sc.id];
+                                setEditedTexts(copy);
+                              }}
+                              className="text-slate-400 hover:text-rose-400 flex items-center gap-1"
+                            >
+                              <RotateCcw className="w-3 h-3" /> Restaurar padrão
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap relative group">
+                        {currentText}
+                        {hasCustomEdit && (
+                          <span className="absolute top-2 right-2 text-[9px] font-bold uppercase bg-teal-950 text-teal-300 px-1.5 py-0.5 rounded border border-teal-800">
+                            Editado
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tips */}
+                    {sc.tips && sc.tips.length > 0 && (
+                      <div className="text-[11px] text-slate-400 space-y-1">
+                        {sc.tips.map((tip, idx) => (
+                          <p key={idx} className="flex items-start gap-1.5">
+                            <span className="text-teal-400">•</span>
+                            <span>{tip}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions: Copiar, Editar, Ouvir Áudio, Compartilhar */}
+                  <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleCopy(sc.id, currentText)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                      >
+                        {copiedId === sc.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedId === sc.id ? "Copiado!" : "Copiar"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setEditingId(isEditing ? null : sc.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                          isEditing
+                            ? "bg-teal-600 text-white"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                        }`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isEditing ? "Concluir" : "Editar"}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSpeak(sc.id, currentText)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                          speakingId === sc.id
+                            ? "bg-teal-600 text-white animate-pulse"
+                            : "bg-slate-800 hover:bg-slate-700 text-teal-300"
+                        }`}
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>{speakingId === sc.id ? "Falando..." : "Ouvir"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleShare(sc.title, currentText, sc.id)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                        title="Compartilhar script"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Compartilhar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -216,6 +363,19 @@ Atenciosamente,`;
             </div>
           </div>
 
+          <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center gap-2.5 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              id="includeDiag"
+              checked={includeDiagnosticDisclosure}
+              onChange={(e) => setIncludeDiagnosticDisclosure(e.target.checked)}
+              className="rounded border-slate-700 text-teal-600 focus:ring-teal-500"
+            />
+            <label htmlFor="includeDiag" className="cursor-pointer">
+              Mencionar neurodivergência explicitamente no texto (opcional — por padrão, foca apenas na necessidade funcional prática).
+            </label>
+          </div>
+
           <button
             onClick={handleGenerateAccommodation}
             className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs sm:text-sm rounded-xl transition flex items-center gap-2"
@@ -226,10 +386,16 @@ Atenciosamente,`;
 
           {generatedText && (
             <div className="space-y-3 pt-3 border-t border-slate-800">
-              <h4 className="text-xs font-bold text-teal-400 uppercase tracking-wider">Texto Gerado:</h4>
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 font-mono whitespace-pre-wrap leading-relaxed">
-                {generatedText}
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-teal-400 uppercase tracking-wider">Texto Gerado (Editável):</h4>
+                <span className="text-[11px] text-slate-400">Você pode ajustar o texto diretamente abaixo</span>
               </div>
+              <textarea
+                rows={10}
+                value={generatedText}
+                onChange={(e) => setGeneratedText(e.target.value)}
+                className="w-full p-4 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-200 font-sans leading-relaxed focus:border-teal-500 focus:outline-none"
+              />
 
               <button
                 onClick={() => handleCopy("gen-acc", generatedText)}

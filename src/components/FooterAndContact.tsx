@@ -92,13 +92,13 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
                 <h3 className="text-base font-bold text-teal-300">
                   NeuroConecta
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Plataforma para Autismo, TDAH e Saúde Mental CAPS
+                <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                  Tecnologia assistiva, acessibilidade e comunicação para autonomia, inclusão e apoio em diferentes contextos da vida.
                 </p>
               </div>
             </div>
             <p className="text-slate-400 leading-relaxed text-[11px]">
-              Tecnologia desenvolvida com foco em isolamento LGPD, regulação sensorial, suporte multiprofissional e direitos da pessoa com deficiência.
+              Recursos para pessoas, famílias, cuidadores e educadores, com arquitetura orientada à privacidade, compartilhamento controlado e respeito à neurodiversidade.
             </p>
           </div>
 
@@ -144,7 +144,7 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
           <p>© {new Date().getFullYear()} SISTEMASTOP Soluções Tecnológicas. Todos os direitos reservados.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Conformidade LGPD & Acessibilidade
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Privacidade & Acessibilidade
             </span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-400">Crato - Ceará - Brasil</span>

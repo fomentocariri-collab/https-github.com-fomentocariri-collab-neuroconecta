@@ -3,6 +3,8 @@ export type DiagnosisStatus =
   | "investigacao" 
   | "laudo_formal" 
   | "familiar_apoiador" 
+  | "necessidades_sensoriais_comunicacao"
+  | "sem_diagnostico"
   | "nao_informado";
 
 export type FocusArea = 
@@ -149,12 +151,132 @@ export interface SensoryTrigger {
 export interface MoodLogEntry {
   id: string;
   date: string;
-  time: string;
-  mood: "excelente" | "calmo" | "neutro" | "sobrecarregado" | "exausto";
-  energyLevel: number; // 1 to 5
-  sensoryLevel: number; // 1 to 5 (1 = tranquilo, 5 = sobrecarga)
+  time?: string;
+  mood?: "excelente" | "calmo" | "neutro" | "sobrecarregado" | "exausto";
+  energyLevel?: number; // 1 to 5
+  sensoryLevel?: number; // 1 to 5 (1 = tranquilo, 5 = sobrecarga)
   notes?: string;
   triggers?: string[];
+  privacyLevel?: "private" | "shared_caregivers" | "shared_school";
+  // Novas propriedades do Lote 1 para autoria, contexto e isolamento
+  subjectId?: string;
+  entryType?: "personal" | "caregiver_observation" | "school_note";
+  authorId?: string;
+  authorName?: string;
+  authorRole?: string;
+  contextTag?: "vitoria" | "rotina" | "gatilho" | "comunicacao" | "geral" | "sala_de_aula" | "intervalo";
+  createdAt?: string;
+}
+
+export type ExtendedMoodLogEntry = MoodLogEntry;
+
+// --- LOTE 1: ARQUITETURA PESSOA • FAMÍLIA • ESCOLA ---
+
+export type ShareContext = "familia_cuidador" | "escola_educador" | "geral";
+
+export type ShareResourceType = 
+  | "plano_funcional" 
+  | "estrategias_comunicacao" 
+  | "rotina_escolar" 
+  | "necessidades_sensoriais" 
+  | "observacoes_cuidador"
+  | "diario_pessoal"; // Estritamente opcional com consentimento explícito, bloqueado por padrão
+
+export type SharePermission = "VIEW" | "CONTRIBUTE" | "EDIT";
+
+export interface ShareGrant {
+  id: string;
+  subjectId: string; // ID da pessoa no centro
+  subjectName?: string;
+  grantedBy: string; // ID do titular/responsável que concedeu
+  grantedToName: string; // Nome da pessoa ou entidade (ex: "Escola Municipal", "Profª Renata - AEE", "Pai / Cuidador")
+  grantedToId?: string;
+  relationship: "mae_pai_responsavel" | "cuidador" | "professor_aee" | "escola" | "outro";
+  context: ShareContext;
+  resourceType: ShareResourceType;
+  permission: SharePermission;
+  status: "active" | "revoked";
+  createdAt: string;
+  updatedAt: string;
+  revokedAt?: string;
+  description?: string;
+}
+
+export interface SensoryCheckinRecord {
+  id: string;
+  subjectId: string;
+  authorId: string;
+  authorName: string;
+  date: string;
+  time: string;
+  energyLevel: number; // 1-5
+  sensoryOverloadLevel: number; // 1-5
+  notes?: string;
+  activeSensoryTags: string[]; // ruído, luz, toque, textura, aglomeração, etc.
+  groundingUsed?: boolean;
+  breathingUsed?: boolean;
+  audioUsed?: boolean;
+  createdAt: string;
+}
+
+export interface FunctionalSupportPlan {
+  id: string;
+  subjectId: string;
+  subjectName?: string;
+  version: number;
+  updatedAt: string;
+  updatedBy: string;
+  communicationPreferences: string[];
+  sensoryOverloadSigns: string[];
+  helpfulStrategies: string[];
+  whatToAvoid: string[];
+  transitionAlerts: string;
+  breakRequestProtocol: string;
+  schoolAccommodationsAgreed: string[];
+  authorizedSupportContacts: { name: string; phone: string; role: string }[];
+}
+
+export interface PeiDraftVersion {
+  id: string;
+  subjectId: string;
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  creatorRole: string;
+  studentName: string;
+  schoolName: string;
+  grade: string;
+  specialistName: string;
+  functionalNeeds: string;
+  sensoryAccommodations: string[];
+  curricularAccommodations: string[];
+  pedagogicalGoals: string;
+  status: "minuta_rascunho" | "em_revisao_equipe" | "aprovado_com_familia";
+  reviewNotes?: string;
+}
+
+export type SchoolFamilyNoteType = 
+  | "SCHOOL_NOTE"
+  | "FAMILY_NOTE"
+  | "ROUTINE_UPDATE"
+  | "ACCOMMODATION_REQUEST"
+  | "ACCOMMODATION_FEEDBACK"
+  | "SUPPORT_STRATEGY"
+  | "MEETING_NOTE";
+
+export interface SchoolFamilyMessage {
+  id: string;
+  subjectId: string;
+  authorId: string;
+  authorName: string;
+  authorContext: "escola" | "familia";
+  type: SchoolFamilyNoteType;
+  title: string;
+  content: string;
+  date: string;
+  time: string;
+  readByOtherContext: boolean;
+  createdAt: string;
 }
 
 export interface CaregiverGuideItem {
@@ -167,13 +289,23 @@ export interface CaregiverGuideItem {
   phrasesToUse: string[];
 }
 
+export type SupportContext = 
+  | "meu_apoio" 
+  | "educacao" 
+  | "familia_cuidado" 
+  | "comunicacao_acessibilidade" 
+  | "organizacao_rotina" 
+  | "saude" 
+  | "trabalho";
+
 export interface SocialScript {
   id: string;
   title: string;
-  category: "trabalho" | "saude" | "familia" | "social" | "acomodacoes";
+  category: "trabalho" | "saude" | "familia" | "social" | "acomodacoes" | "tdah_organizacao";
   description: string;
   scriptText: string;
   tips: string[];
+  diagnosticOptionalText?: string;
 }
 
 export interface EducationArticle {

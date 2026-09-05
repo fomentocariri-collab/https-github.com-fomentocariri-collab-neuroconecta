@@ -1,94 +1,98 @@
 import React, { useState, useEffect } from "react";
-import { Smile, Frown, Meh, AlertTriangle, Battery, BatteryCharging, Zap, Plus, Trash2, Calendar, TrendingUp, Sparkles, HeartPulse } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from "recharts";
-import { MoodLogEntry } from "../types";
+import {
+  Smile,
+  Frown,
+  Meh,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  Calendar,
+  Sparkles,
+  HeartPulse,
+  Lock,
+  Users,
+  School,
+  ShieldCheck,
+  Share2,
+  Tag,
+  Clock,
+  UserCheck,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+import { ExtendedMoodLogEntry, UserProfile } from "../types";
+import { Lote1Api } from "../services/lote1Client";
 
-export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
-  const [logs, setLogs] = useState<MoodLogEntry[]>([]);
-  
+interface MoodTrackerProps {
+  isDark?: boolean;
+  userProfile?: UserProfile;
+  onOpenShareModal?: () => void;
+}
+
+const fallbackProfile: UserProfile = {
+  preferredName: "Você",
+  pronouns: "",
+  diagnosisStatus: "investigacao",
+  currentFocus: "rotina",
+  supportLevel: "nao_especificado",
+  lowStimulationMode: false,
+  userRole: "pcd",
+  emergencyContacts: [],
+  onboardingCompleted: true,
+};
+
+export const MoodTracker: React.FC<MoodTrackerProps> = ({
+  isDark = true,
+  userProfile = fallbackProfile,
+  onOpenShareModal,
+}) => {
+  const profile = userProfile || fallbackProfile;
+  const subjectId = profile.email || "user-local";
+  const [logs, setLogs] = useState<ExtendedMoodLogEntry[]>([]);
+  const [deniedCount, setDeniedCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Filter tabs
+  const [activeFilter, setActiveFilter] = useState<"todos" | "personal" | "caregiver" | "school">("todos");
+
   // New entry form state
-  const [selectedMood, setSelectedMood] = useState<MoodLogEntry["mood"]>("calmo");
+  const [selectedMood, setSelectedMood] = useState<ExtendedMoodLogEntry["mood"]>("calmo");
   const [energyLevel, setEnergyLevel] = useState<number>(3);
   const [sensoryLevel, setSensoryLevel] = useState<number>(2);
   const [notes, setNotes] = useState<string>("");
   const [triggerTag, setTriggerTag] = useState<string>("");
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
+  const [contextTag, setContextTag] = useState<ExtendedMoodLogEntry["contextTag"]>("geral");
 
-  // Load logs
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("neuroconecta_mood_logs");
-      if (stored) {
-        setLogs(JSON.parse(stored));
-      } else {
-        // Sample default historical logs for demonstration and nice charts
-        const sampleLogs: MoodLogEntry[] = [
-          {
-            id: "ml-1",
-            date: "01/08",
-            time: "09:00",
-            mood: "calmo",
-            energyLevel: 4,
-            sensoryLevel: 2,
-            notes: "Manhã tranquila com música de fundo suave.",
-            triggers: ["Música calma"],
-          },
-          {
-            id: "ml-2",
-            date: "01/08",
-            time: "15:30",
-            mood: "sobrecarregado",
-            energyLevel: 2,
-            sensoryLevel: 4,
-            notes: "Barulho forte no escritório e luzes fluorescentes.",
-            triggers: ["Barulho", "Luz forte"],
-          },
-          {
-            id: "ml-3",
-            date: "02/08",
-            time: "10:00",
-            mood: "excelente",
-            energyLevel: 5,
-            sensoryLevel: 1,
-            notes: "Fiz pausa sensorial de 10 minutos e usei abafador.",
-            triggers: ["Pausa sensorial"],
-          },
-          {
-            id: "ml-4",
-            date: "02/08",
-            time: "18:00",
-            mood: "calmo",
-            energyLevel: 3,
-            sensoryLevel: 2,
-            notes: "Rotina concluída com calma.",
-            triggers: [],
-          },
-          {
-            id: "ml-5",
-            date: "03/08",
-            time: "11:00",
-            mood: "neutro",
-            energyLevel: 3,
-            sensoryLevel: 3,
-            notes: "Dia normal de trabalho.",
-            triggers: ["Interações sociais"],
-          },
-        ];
-        setLogs(sampleLogs);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  // Default entry type depends on user role
+  const defaultEntryType =
+    profile.userRole === "cuidador_educador" && profile.professionalRoleType === "educador"
+      ? "school_note"
+      : profile.userRole === "cuidador_educador"
+      ? "caregiver_observation"
+      : "personal";
 
-  const saveLogs = (updated: MoodLogEntry[]) => {
-    setLogs(updated);
-    try {
-      localStorage.setItem("neuroconecta_mood_logs", JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
+  const [entryType, setEntryType] = useState<"personal" | "caregiver_observation" | "school_note">(defaultEntryType);
+
+  // Load logs via API + Local fallback
+  const fetchLogs = async () => {
+    setLoading(true);
+    const res = await Lote1Api.getDiaryEntries(subjectId, profile);
+    setLogs(res.entries);
+    setDeniedCount(res.deniedPersonalEntriesCount);
+    setLoading(false);
   };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [subjectId, profile.userRole]);
 
   const handleAddTriggerTag = () => {
     if (!triggerTag.trim()) return;
@@ -102,13 +106,23 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
     setSelectedTriggers(selectedTriggers.filter((t) => t !== tag));
   };
 
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
     const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-    const newEntry: MoodLogEntry = {
+    const newEntry: ExtendedMoodLogEntry = {
       id: `log-${Date.now()}`,
+      subjectId,
+      entryType,
+      authorId: profile.email || "local",
+      authorName: profile.preferredName || "Usuário",
+      authorRole:
+        profile.userRole === "cuidador_educador" && profile.professionalRoleType === "educador"
+          ? "Educador / Escola"
+          : profile.userRole === "cuidador_educador"
+          ? "Cuidador / Família"
+          : "Pessoa no Centro",
       date: dateStr,
       time: timeStr,
       mood: selectedMood,
@@ -116,18 +130,23 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
       sensoryLevel,
       notes: notes.trim(),
       triggers: selectedTriggers,
+      contextTag,
+      createdAt: now.toISOString(),
     };
 
-    saveLogs([newEntry, ...logs]);
+    await Lote1Api.createDiaryEntry(newEntry, profile);
     setNotes("");
     setSelectedTriggers([]);
+    await fetchLogs();
   };
 
-  const handleDeleteEntry = (id: string) => {
-    saveLogs(logs.filter((l) => l.id !== id));
+  const handleDeleteEntry = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este registro?")) return;
+    await Lote1Api.deleteDiaryEntry(id, subjectId, profile);
+    await fetchLogs();
   };
 
-  const moodOptions: { id: MoodLogEntry["mood"]; label: string; icon: any; color: string }[] = [
+  const moodOptions: { id: ExtendedMoodLogEntry["mood"]; label: string; icon: any; color: string }[] = [
     { id: "excelente", label: "Excelente", icon: Smile, color: "text-emerald-400 bg-emerald-950 border-emerald-700" },
     { id: "calmo", label: "Calmo / Regulado", icon: HeartPulse, color: "text-teal-400 bg-teal-950 border-teal-700" },
     { id: "neutro", label: "Neutro", icon: Meh, color: "text-slate-300 bg-slate-900 border-slate-700" },
@@ -135,100 +154,158 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
     { id: "exausto", label: "Exausto / Burnout", icon: Frown, color: "text-rose-400 bg-rose-950 border-rose-700" },
   ];
 
-  // Chart data formatting
-  const chartData = [...logs].reverse().map((entry) => ({
-    label: `${entry.date} ${entry.time}`,
-    energia: entry.energyLevel,
-    sobrecarga: entry.sensoryLevel,
-    mood: entry.mood,
-  }));
+  // Filter logs for view
+  const filteredLogs = logs.filter((log) => {
+    if (activeFilter === "todos") return true;
+    if (activeFilter === "personal") return !log.entryType || log.entryType === "personal";
+    if (activeFilter === "caregiver") return log.entryType === "caregiver_observation";
+    if (activeFilter === "school") return log.entryType === "school_note";
+    return true;
+  });
 
-  // Simple pattern insights
-  const avgEnergy = logs.length > 0 ? (logs.reduce((a, b) => a + b.energyLevel, 0) / logs.length).toFixed(1) : "3.0";
-  const avgSensory = logs.length > 0 ? (logs.reduce((a, b) => a + b.sensoryLevel, 0) / logs.length).toFixed(1) : "2.0";
+  // Chart data formatting
+  const chartData = [...logs]
+    .reverse()
+    .slice(-14)
+    .map((entry) => ({
+      label: `${entry.date} ${entry.time}`,
+      Energia: entry.energyLevel,
+      Sensorial: entry.sensoryLevel,
+      tipo:
+        entry.entryType === "school_note"
+          ? "Escola"
+          : entry.entryType === "caregiver_observation"
+          ? "Cuidador"
+          : "Diário Íntimo",
+    }));
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8 animate-fadeIn">
-      
       {/* Header */}
-      <div className={`rounded-2xl p-6 border shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-      }`}>
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-teal-500 dark:text-teal-400" />
-            <span>Diário de Regulação & Gráfico de Humor</span>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-950 border border-teal-800 text-teal-300 text-xs font-bold">
+              Autopercepção & Registros Contextualizados
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+            <HeartPulse className="w-6 h-6 text-teal-400" />
+            Diário de Humor, Energia & Observações
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Acompanhe a oscilação de energia e sobrecarga sensorial ao longo do tempo para identificar gatilhos e prevenir o burnout.
+          <p className="text-sm text-slate-400">
+            Acompanhe o ritmo do seu bem-estar diário com distinção nítida entre seu diário íntimo e notas de apoio.
           </p>
         </div>
 
-        <div className="flex gap-3">
-          <div className={`border rounded-xl p-3 text-center min-w-[100px] ${
-            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-          }`}>
-            <span className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400">Energia Média</span>
-            <div className="text-xl font-extrabold">{avgEnergy} / 5</div>
-          </div>
-          <div className={`border rounded-xl p-3 text-center min-w-[100px] ${
-            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-          }`}>
-            <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400">Sobrecarga Média</span>
-            <div className="text-xl font-extrabold">{avgSensory} / 5</div>
-          </div>
+        {onOpenShareModal && (
+          <button
+            onClick={onOpenShareModal}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+          >
+            <Share2 className="w-4 h-4 text-teal-400" />
+            <span>Gerenciar Privacidade & Compartilhamento</span>
+          </button>
+        )}
+      </div>
+
+      {/* Privacy Notice Card */}
+      <div className="p-4 bg-teal-950/40 border border-teal-900/60 rounded-2xl flex items-start gap-3 text-xs text-teal-200">
+        <ShieldCheck className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+        <div className="space-y-1 leading-relaxed">
+          <p className="font-semibold text-teal-300">
+            Garantia de Privacidade: Diário Íntimo Protegido por Padrão
+          </p>
+          <p className="text-slate-300">
+            Os registros marcados como <strong>Diário Íntimo Pessoal</strong> pertencem exclusivamente à pessoa no centro e
+            <strong> não</strong> são compartilhados automaticamente com escola ou familiares. Observações de cuidadores e notas escolares
+            possuem autoria explícita e contexto delimitado.
+          </p>
         </div>
       </div>
 
-      {/* New Log Registration Form */}
-      <div className={`border rounded-2xl p-6 space-y-6 shadow-xl ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-      }`}>
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Plus className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-          <span>Registrar Estado Atual</span>
-        </h2>
+      {/* Denied Entries Notice */}
+      {deniedCount > 0 && (
+        <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-400 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-teal-400 shrink-0" />
+          <span>
+            Existem <strong>{deniedCount}</strong> registro(s) no Diário Íntimo Pessoal resguardados pelo titular e não acessíveis neste papel.
+          </span>
+        </div>
+      )}
 
-        {/* Mood Selection Buttons */}
+      {/* NEW ENTRY FORM */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-md space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-teal-400" /> Novo Registro de Estado & Vivência
+          </h2>
+
+          {/* Type Selector with Clear Distinctions */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-medium">Tipo:</span>
+            <select
+              value={entryType}
+              onChange={(e) => setEntryType(e.target.value as any)}
+              className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-semibold"
+            >
+              <option value="personal">🔒 Diário Íntimo Pessoal (Privacidade Máxima)</option>
+              <option value="caregiver_observation">👨‍👩‍👧 Observação do Cuidador / Família</option>
+              <option value="school_note">🏫 Observação Escolar / AEE</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Informative pill about active entry type */}
+        <div className="text-xs py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-slate-300">
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-teal-400" />
+            <span>
+              Autor: <strong>{userProfile.preferredName || "Você"}</strong> ({userProfile.userRole || "Pessoa no Centro"})
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-400 italic">
+            {entryType === "personal"
+              ? "Privado para você"
+              : entryType === "caregiver_observation"
+              ? "Observação de apoio cotidiano"
+              : "Contexto pedagógico escolar"}
+          </span>
+        </div>
+
+        {/* Mood Selection */}
         <div className="space-y-2">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Como você se sente agora?</label>
+          <label className="text-xs font-semibold text-slate-400">Como você está se sentindo agora?</label>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {moodOptions.map((option) => {
-              const Icon = option.icon;
-              const isSelected = selectedMood === option.id;
+            {moodOptions.map((opt) => {
+              const Icon = opt.icon;
+              const isSelected = selectedMood === opt.id;
               return (
                 <button
-                  key={option.id}
-                  onClick={() => setSelectedMood(option.id)}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition text-xs font-semibold ${
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSelectedMood(opt.id)}
+                  className={`p-3 rounded-2xl border text-center flex flex-col items-center gap-2 transition ${
                     isSelected
-                      ? option.color + " shadow-md ring-2 ring-teal-500"
-                      : isDark
-                      ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
-                      : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                      ? opt.color + " ring-2 ring-teal-500 shadow-md font-bold scale-[1.02]"
+                      : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{option.label}</span>
+                  <Icon className="w-6 h-6" />
+                  <span className="text-xs">{opt.label}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Sliders for Energy and Sensory Overload */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`space-y-2 p-4 border rounded-xl ${
-            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-          }`}>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-teal-600 dark:text-teal-300 flex items-center gap-1.5">
-                <BatteryCharging className="w-4 h-4 text-teal-500" />
-                <span>Nível de Energia Bateria Interna ({energyLevel}/5)</span>
-              </label>
-              <span className="text-[11px] text-slate-500">
-                {energyLevel <= 2 ? "Bateria Fraca" : energyLevel === 3 ? "Moderada" : "Alta Energia"}
-              </span>
+        {/* Sliders for Energy and Sensory Levels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          {/* Energy Slider */}
+          <div className="space-y-2 p-4 bg-slate-950 rounded-2xl border border-slate-800">
+            <div className="flex justify-between items-center text-xs font-semibold">
+              <span className="text-slate-300">Bateria Social / Nível de Energia:</span>
+              <span className="text-teal-400 font-bold text-sm">{energyLevel} / 5</span>
             </div>
             <input
               type="range"
@@ -236,26 +313,20 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
               max="5"
               value={energyLevel}
               onChange={(e) => setEnergyLevel(Number(e.target.value))}
-              className="w-full accent-teal-500 bg-slate-200 dark:bg-slate-800 h-2 rounded-lg cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>1 (Esgotado)</span>
-              <span>3 (Ok)</span>
-              <span>5 (Vigoroso)</span>
+            <div className="flex justify-between text-[10px] text-slate-500">
+              <span>Esgotado (1)</span>
+              <span>Moderado (3)</span>
+              <span>Energizado (5)</span>
             </div>
           </div>
 
-          <div className={`space-y-2 p-4 border rounded-xl ${
-            isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-          }`}>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-amber-600 dark:text-amber-300 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-amber-500" />
-                <span>Sobrecarga Sensorial / Estresse ({sensoryLevel}/5)</span>
-              </label>
-              <span className="text-[11px] text-slate-500">
-                {sensoryLevel <= 2 ? "Tranquilo" : sensoryLevel === 3 ? "Atenção" : "Sobrecarga Alta"}
-              </span>
+          {/* Sensory Overload Slider */}
+          <div className="space-y-2 p-4 bg-slate-950 rounded-2xl border border-slate-800">
+            <div className="flex justify-between items-center text-xs font-semibold">
+              <span className="text-slate-300">Nível de Estímulo / Sobrecarga Sensorial:</span>
+              <span className="text-amber-400 font-bold text-sm">{sensoryLevel} / 5</span>
             </div>
             <input
               type="range"
@@ -263,64 +334,73 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
               max="5"
               value={sensoryLevel}
               onChange={(e) => setSensoryLevel(Number(e.target.value))}
-              className="w-full accent-amber-500 bg-slate-200 dark:bg-slate-800 h-2 rounded-lg cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>1 (Silencioso/Calmo)</span>
-              <span>3 (Sensível)</span>
-              <span>5 (Perto da Crise)</span>
+            <div className="flex justify-between text-[10px] text-slate-500">
+              <span>Tranquilo (1)</span>
+              <span>Sobrecarga Leve (3)</span>
+              <span>Crítico / Meltdown (5)</span>
             </div>
           </div>
         </div>
 
-        {/* Notes & Trigger Tags */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Anotação Pessoal (Opcional):</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Tive reunião barulhenta, fiz pausa de 10 minutos..."
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-xs ${
-                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
-              }`}
-            />
+        {/* Context Tag and Triggers */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-400">Contexto da Atividade:</label>
+            <select
+              value={contextTag}
+              onChange={(e) => setContextTag(e.target.value as any)}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+            >
+              <option value="geral">Geral / Dia a dia</option>
+              <option value="vitoria">Vitória / Conquista Regulada</option>
+              <option value="rotina">Rotina Doméstica / Cuidado</option>
+              <option value="sala_de_aula">Sala de Aula / Estudos</option>
+              <option value="intervalo">Recreio / Intervalo / Pausa</option>
+              <option value="gatilho">Episódio de Gatilho / Estresse</option>
+              <option value="comunicacao">Tentativa de Comunicação / AAC</option>
+            </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Gatilhos ou Fatores Notados:</label>
+          <div className="md:col-span-2 space-y-1">
+            <label className="text-xs font-semibold text-slate-400">Gatilhos ou Fatores Notáveis (Opcional):</label>
             <div className="flex gap-2">
               <input
                 type="text"
+                placeholder="Ex: Barulho, Fone abafador, Luz fluorescente, Prova..."
                 value={triggerTag}
                 onChange={(e) => setTriggerTag(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddTriggerTag()}
-                placeholder="Ex: Barulho, Fone de Ouvido, Sono Ruim..."
-                className={`flex-1 px-3.5 py-2 border rounded-xl text-xs ${
-                  isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
-                }`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTriggerTag();
+                  }
+                }}
+                className="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
               />
               <button
+                type="button"
                 onClick={handleAddTriggerTag}
-                className={`px-3 py-2 border text-xs font-semibold rounded-xl ${
-                  isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700" : "bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300"
-                }`}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
               >
-                + Tag
+                Inserir
               </button>
             </div>
-
             {selectedTriggers.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-2">
                 {selectedTriggers.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 text-[11px] bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20 px-2.5 py-0.5 rounded-full"
+                    className="px-2 py-0.5 bg-slate-800 text-teal-300 text-xs rounded-lg flex items-center gap-1 border border-slate-700"
                   >
-                    {tag}
-                    <button onClick={() => handleRemoveTriggerTag(tag)} className="hover:text-rose-500">
-                      ×
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTriggerTag(tag)}
+                      className="text-slate-400 hover:text-rose-400"
+                    >
+                      &times;
                     </button>
                   </span>
                 ))}
@@ -329,104 +409,237 @@ export const MoodTracker: React.FC<{ isDark?: boolean }> = ({ isDark = true }) =
           </div>
         </div>
 
-        <button
-          onClick={handleSaveEntry}
-          className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Salvar Registro de Regulação</span>
-        </button>
-      </div>
-
-      {/* Visual Chart Trends */}
-      <div className={`border rounded-2xl p-6 space-y-4 shadow-xl ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-      }`}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-            <span>Evolução Temporal: Energia vs. Sobrecarga Sensorial</span>
-          </h2>
+        {/* Text Note */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-400">Anotações detalhadas:</label>
+          <textarea
+            rows={3}
+            placeholder={
+              entryType === "personal"
+                ? "Como foi sua experiência? O que sentiu no corpo? (Espaço íntimo e protegido)"
+                : entryType === "caregiver_observation"
+                ? "Descreva a resposta comportamental observada, estratégias que ajudaram e o contexto familiar..."
+                : "Descreva a participação pedagógica, interações com pares ou adaptações realizadas em aula..."
+            }
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
+          />
         </div>
 
-        {chartData.length < 2 ? (
-          <div className={`p-8 text-center text-xs sm:text-sm rounded-xl border ${
-            isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-200 text-slate-600"
-          }`}>
-            Adicione pelo menos 2 registros para visualizar o gráfico de tendências emocionais e sensoriais.
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleSaveEntry}
+            disabled={loading}
+            className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Salvar Registro</span>
+          </button>
+        </div>
+      </div>
+
+      {/* CHART SECTION */}
+      {chartData.length > 1 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-md">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-teal-400" />
+                Acompanhamento & Autopercepção Sensorial
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Visualização temporal de tendências para suporte funcional (não constitui diagnóstico médico).
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-semibold">
+              <span className="flex items-center gap-1.5 text-teal-400">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-400" /> Energia
+              </span>
+              <span className="flex items-center gap-1.5 text-amber-400">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Estímulo Sensorial
+              </span>
+            </div>
           </div>
-        ) : (
-          <div className="h-64 w-full pt-4">
+
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#e2e8f0"} />
-                <XAxis dataKey="label" stroke={isDark ? "#94a3b8" : "#64748b"} fontSize={11} />
-                <YAxis domain={[1, 5]} stroke={isDark ? "#94a3b8" : "#64748b"} fontSize={11} />
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="label" stroke="#64748b" tick={{ fontSize: 10 }} />
+                <YAxis domain={[1, 5]} stroke="#64748b" tick={{ fontSize: 10 }} />
                 <Tooltip
-                  contentStyle={isDark ? { backgroundColor: "#020617", borderColor: "#334155", borderRadius: "12px", color: "#f8fafc" } : { backgroundColor: "#ffffff", borderColor: "#cbd5e1", borderRadius: "12px", color: "#0f172a" }}
+                  contentStyle={{
+                    backgroundColor: "#020617",
+                    borderColor: "#334155",
+                    borderRadius: "12px",
+                    fontSize: "11px",
+                  }}
                 />
-                <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Line type="monotone" dataKey="energia" name="Energia (Bateria)" stroke="#0d9488" strokeWidth={3} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="sobrecarga" name="Sobrecarga Sensorial" stroke="#d97706" strokeWidth={3} dot={{ r: 4 }} />
+                <Line
+                  type="monotone"
+                  dataKey="Energia"
+                  stroke="#14b8a6"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: "#14b8a6" }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Sensorial"
+                  stroke="#f59e0b"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: "#f59e0b" }}
+                  activeDot={{ r: 6 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* History Log List */}
-      <div className={`border rounded-2xl p-6 space-y-4 shadow-xl ${
-        isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-      }`}>
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-          <span>Histórico de Registros</span>
-        </h2>
+      {/* FILTER TABS FOR ENTRIES */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="flex overflow-x-auto no-scrollbar gap-2">
+            {[
+              { id: "todos", label: "🌟 Todos os Registros" },
+              { id: "personal", label: "🔒 Meu Diário Íntimo" },
+              { id: "caregiver", label: "👨‍👩‍👧 Observações de Cuidador" },
+              { id: "school", label: "🏫 Observações Escolares" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
+                  activeFilter === tab.id
+                    ? "bg-teal-950 text-teal-200 border border-teal-700"
+                    : "bg-slate-900 hover:bg-slate-800 text-slate-400 border border-transparent"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
+          <span className="text-xs text-slate-400">
+            {filteredLogs.length} registro(s) encontrado(s)
+          </span>
+        </div>
+
+        {/* LOGS LIST */}
         <div className="space-y-3">
-          {logs.map((log) => (
-            <div key={log.id} className={`p-4 border rounded-2xl space-y-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-              isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold font-mono text-teal-700 dark:text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
-                    {log.date} {log.time}
-                  </span>
-                  <span className="text-xs font-bold capitalize">
-                    Estado: {log.mood}
-                  </span>
-                </div>
-                {log.notes && <p className="text-xs italic text-slate-600 dark:text-slate-300">"{log.notes}"</p>}
-                {log.triggers && log.triggers.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {log.triggers.map((t, idx) => (
-                      <span key={idx} className={`text-[10px] px-2 py-0.5 rounded border ${
-                        isDark ? "bg-slate-900 text-slate-400 border-slate-800" : "bg-white text-slate-600 border-slate-300"
-                      }`}>
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 text-xs font-mono">
-                <div className="text-teal-600 dark:text-teal-300">🔋 Energia: {log.energyLevel}/5</div>
-                <div className="text-amber-600 dark:text-amber-300">⚡ Sobrecarga: {log.sensoryLevel}/5</div>
-                <button
-                  onClick={() => handleDeleteEntry(log.id)}
-                  className="text-slate-400 hover:text-rose-500 transition"
-                  title="Excluir"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+          {filteredLogs.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-3xl text-slate-400 text-xs">
+              Nenhum registro encontrado nesta categoria.
             </div>
-          ))}
+          ) : (
+            filteredLogs.map((log) => {
+              const isPersonal = !log.entryType || log.entryType === "personal";
+              const isCaregiver = log.entryType === "caregiver_observation";
+              const isSchool = log.entryType === "school_note";
+
+              return (
+                <div
+                  key={log.id}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-3xl space-y-3 hover:border-slate-700 transition shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {log.date} às {log.time}
+                      </span>
+
+                      {/* Entry Type Badge */}
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          isPersonal
+                            ? "bg-purple-950 text-purple-300 border-purple-800"
+                            : isCaregiver
+                            ? "bg-amber-950 text-amber-300 border-amber-800"
+                            : "bg-cyan-950 text-cyan-300 border-cyan-800"
+                        }`}
+                      >
+                        {isPersonal
+                          ? "🔒 Diário Íntimo"
+                          : isCaregiver
+                          ? "👨‍👩‍👧 Cuidador"
+                          : "🏫 Escola"}
+                      </span>
+
+                      {/* Context Tag */}
+                      {log.contextTag && (
+                        <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] rounded-md font-medium">
+                          {log.contextTag}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-slate-400">
+                        Por: <strong className="text-slate-300">{log.authorName || "Pessoa"}</strong>
+                      </span>
+
+                      <button
+                        onClick={() => handleDeleteEntry(log.id)}
+                        className="text-slate-500 hover:text-rose-400 transition"
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mood & Levels */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-200 capitalize">
+                      <span>Humor:</span>
+                      <span className="text-teal-400 font-bold">{log.mood}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <span>Energia:</span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-teal-300">
+                        {log.energyLevel}/5
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <span>Sensorial:</span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-amber-300">
+                        {log.sensoryLevel}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  {log.notes && (
+                    <p className="text-xs text-slate-200 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                      {log.notes}
+                    </p>
+                  )}
+
+                  {/* Triggers Tags */}
+                  {log.triggers && log.triggers.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {log.triggers.map((t, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 bg-slate-950 text-slate-400 rounded-md text-[10px] border border-slate-800"
+                        >
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
-
     </div>
   );
 };

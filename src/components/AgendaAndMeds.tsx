@@ -73,12 +73,12 @@ export const AgendaAndMeds: React.FC<{ isDark?: boolean }> = ({ isDark = true })
   // State: Gamification
   const [streakDays, setStreakDays] = useState(3);
   const [badges, setBadges] = useState<AchievementBadge[]>([
-    { id: "b1", title: "Primeiro Passo", description: "Criou sua conta e configurou o perfil de acesso.", icon: "🌟", unlocked: true, unlockedDate: "01/08/2026" },
-    { id: "b2", title: "Mente Calma", description: "Completou 3 pausas sensoriais com áudio.", icon: "🎧", unlocked: true, unlockedDate: "02/08/2026" },
-    { id: "b3", title: "Rotina Organizada", description: "Cadastrou e concluiu tarefas na rotina visual.", icon: "📅", unlocked: true, unlockedDate: "03/08/2026" },
-    { id: "b4", title: "Saúde em Dia", description: "Confirmou todas as doses de medicamentos do dia.", icon: "💊", unlocked: false },
-    { id: "b5", title: "Voz & Autonomia", description: "Utilizou a biblioteca de Comunicação AAC / Scripts.", icon: "💬", unlocked: false },
-    { id: "b6", title: "Guardião da Regulação", description: "Alcançou 5 dias seguidos de acompanhamento no app.", icon: "🏆", unlocked: false },
+    { id: "b1", title: "Primeiro Passo", description: "Configurou suas preferências e iniciou sua jornada no aplicativo.", icon: "🌟", unlocked: true, unlockedDate: "01/08/2026" },
+    { id: "b2", title: "Pausa & Autocuidado", description: "Experimentou uma pausa sensorial no seu próprio ritmo.", icon: "🎧", unlocked: true, unlockedDate: "02/08/2026" },
+    { id: "b3", title: "Construção de Rotina", description: "Organizou atividades e etapas no planejador de rotina visual.", icon: "📅", unlocked: true, unlockedDate: "03/08/2026" },
+    { id: "b4", title: "Gestão da Rotina", description: "Personalizou seus horários e lembretes de suporte para o dia a dia.", icon: "🧭", unlocked: false },
+    { id: "b5", title: "Voz & Autonomia", description: "Explorou cartões ou scripts na biblioteca de Comunicação Alternativa (CAA).", icon: "💬", unlocked: false },
+    { id: "b6", title: "Autoconhecimento", description: "Registrou suas preferências sensoriais e formas favoritas de participação.", icon: "🌱", unlocked: false },
   ]);
 
   // Load from localStorage
@@ -269,7 +269,7 @@ export const AgendaAndMeds: React.FC<{ isDark?: boolean }> = ({ isDark = true })
             <span>Agenda Integrada, Medicamentos & Conquistas</span>
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Acompanhe consultas médicas, terapias, lembretes de remédios e celebre seu progresso com conquistas positivas.
+            Acompanhe compromissos, lembretes de rotina diária e celebre seus passos em organização, comunicação e autonomia.
           </p>
         </div>
 
@@ -646,7 +646,7 @@ export const AgendaAndMeds: React.FC<{ isDark?: boolean }> = ({ isDark = true })
                   <span>Galeria de Conquistas NeuroConecta</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Reconhecimento positivo pelos seus passos diários em autorregulação, organização e saúde.
+                  Reconhecimento positivo pelos seus passos diários em autorregulação, organização, rotina e autoconhecimento.
                 </p>
               </div>
 

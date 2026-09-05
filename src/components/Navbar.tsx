@@ -25,6 +25,7 @@ import {
   EyeOff,
   Settings,
   Terminal,
+  Share2,
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -40,6 +41,8 @@ interface NavbarProps {
   toggleLowStimMode: () => void;
   hiddenModules?: string[];
   onOpenModuleAdmin?: () => void;
+  onOpenShareManager?: () => void;
+  onOpenFunctionalPlan?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -52,6 +55,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   toggleLowStimMode,
   hiddenModules = [],
   onOpenModuleAdmin,
+  onOpenShareManager,
+  onOpenFunctionalPlan,
 }) => {
   const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.email?.toLowerCase() === "fomentocariri@gmail.com" || userProfile.userRole === "superadmin";
   const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
@@ -117,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const allTabs = [
     { id: "chat", label: "Assistente IA", icon: Bot, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "musicoterapia", label: "Musicoterapia & Som", icon: Headphones, roles: ["pcd", "superadmin"] },
+    { id: "musicoterapia", label: "Som & Autorregulação", icon: Headphones, roles: ["pcd", "superadmin"] },
     { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "superadmin"] },
     { id: "rotina", label: "Rotina Visual", icon: CalendarCheck, roles: ["pcd", "cuidador_educador", "superadmin"] },
     { id: "agenda", label: "Agenda & Medicamentos", icon: Pill, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
@@ -213,6 +218,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Moon className="w-4 h-4" />
             </button>
+
+            {/* Functional Support Plan Button */}
+            {onOpenFunctionalPlan && (
+              <button
+                onClick={onOpenFunctionalPlan}
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-cyan-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                title="Plano Individual de Apoio Funcional (Compartilhável)"
+              >
+                <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden lg:inline">Plano Funcional</span>
+              </button>
+            )}
+
+            {/* Granular Share & Privacy Button */}
+            {onOpenShareManager && (
+              <button
+                onClick={onOpenShareManager}
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-teal-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                title="Privacidade & Compartilhamento Granular"
+              >
+                <Share2 className="w-3.5 h-3.5 text-teal-400" />
+                <span className="hidden lg:inline">Privacidade</span>
+              </button>
+            )}
 
             {/* Profile Button */}
             <button
