@@ -29,10 +29,11 @@ import { MomentAssessment } from "./MomentAssessment";
 interface TestCenterProps {
   onNavigateToChat: (prompt?: string, role?: string) => void;
   onNavigateToSounds?: () => void;
+  onNavigateToTab?: (tab: any) => void;
   userProfile?: UserProfile;
 }
 
-export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat, onNavigateToSounds, userProfile }) => {
+export const TestCenter: React.FC<TestCenterProps> = ({ onNavigateToChat, onNavigateToSounds, onNavigateToTab, userProfile }) => {
   const [activeSection, setActiveSection] = useState<"momento" | "triagem" | "historico">("momento");
   const [selectedTest, setSelectedTest] = useState<TestDefinition | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -311,6 +312,7 @@ Aviso Legal: Documento emitido por ferramenta pedagógica e psicométrica de tri
             <MomentAssessment
               onNavigateToChat={onNavigateToChat}
               onNavigateToSounds={onNavigateToSounds}
+              onNavigateToTab={onNavigateToTab}
               isDark={true}
             />
           )}

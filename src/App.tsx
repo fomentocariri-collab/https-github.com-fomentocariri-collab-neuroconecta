@@ -203,19 +203,21 @@ export default function App() {
       }`}
     >
       {/* Top Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        userProfile={userProfile}
-        onOpenCrisis={() => setIsCrisisOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        toggleLowStimMode={toggleLowStimMode}
-        hiddenModules={hiddenModules}
-        onOpenModuleAdmin={() => setIsModuleAdminOpen(true)}
-        onOpenShareManager={() => setIsShareManagerOpen(true)}
-        onOpenFunctionalPlan={() => setIsFunctionalPlanOpen(true)}
-      />
+      <div className="no-print">
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          userProfile={userProfile}
+          onOpenCrisis={() => setIsCrisisOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          toggleLowStimMode={toggleLowStimMode}
+          hiddenModules={hiddenModules}
+          onOpenModuleAdmin={() => setIsModuleAdminOpen(true)}
+          onOpenShareManager={() => setIsShareManagerOpen(true)}
+          onOpenFunctionalPlan={() => setIsFunctionalPlanOpen(true)}
+        />
+      </div>
 
       {/* Main Content Body */}
       <main className="flex-1 pb-10">
@@ -260,6 +262,7 @@ export default function App() {
               <TestCenter
                 onNavigateToChat={handleNavigateToChat}
                 onNavigateToSounds={() => setActiveTab("musicoterapia")}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
                 userProfile={userProfile}
               />
             )}
@@ -285,7 +288,13 @@ export default function App() {
 
             {activeTab === "comunicacao" && <CommunicationHub />}
 
-            {activeTab === "relatorio" && <ReportHub userProfile={userProfile} />}
+            {activeTab === "relatorio" && (
+              <ReportHub
+                userProfile={userProfile}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
+                isDark={userProfile.lowStimulationMode}
+              />
+            )}
 
             {activeTab === "rh" && (
               <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 shadow-xl">
@@ -376,7 +385,9 @@ export default function App() {
       </main>
 
       {/* SISTEMASTOP Footer & Fale Conosco */}
-      <FooterAndContact isDark={userProfile.lowStimulationMode} />
+      <div className="no-print">
+        <FooterAndContact isDark={userProfile.lowStimulationMode} />
+      </div>
 
       {/* Emergency Crisis / Meltdown Support Modal */}
       <CrisisModal

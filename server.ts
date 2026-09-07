@@ -253,6 +253,34 @@ function getGenAI(): GoogleGenAI | null {
   return aiClient;
 }
 
+// 7. Perfil de Interação com Proteção IDOR
+const interactionProfilesVault = new Map<string, any>();
+
+app.get("/api/interaction-profile", (req, res) => {
+  const actor = getActorFromReq(req);
+  const personId = (req.query.personId as string) || actor.id;
+  const profileKey = `${actor.id}_${personId}`;
+  const profile = interactionProfilesVault.get(profileKey) || null;
+  res.json({ profile });
+});
+
+app.post("/api/interaction-profile", (req, res) => {
+  const actor = getActorFromReq(req);
+  const profile = req.body;
+  if (!profile || (profile.userId && profile.userId !== actor.id)) {
+    return res.status(403).json({ error: "Violação de autorização (IDOR): não é permitido alterar perfil de outro usuário." });
+  }
+  const targetUserId = actor.id;
+  const targetPersonId = profile.personId || actor.id;
+  profile.userId = targetUserId;
+  profile.personId = targetPersonId;
+  profile.updatedAt = new Date().toISOString();
+  
+  const profileKey = `${targetUserId}_${targetPersonId}`;
+  interactionProfilesVault.set(profileKey, profile);
+  res.json({ success: true, profile });
+});
+
 function normalizeSupportContext(rawRole?: string): string {
   if (!rawRole) return "meu_apoio";
   const r = rawRole.toLowerCase();
@@ -266,58 +294,151 @@ function normalizeSupportContext(rawRole?: string): string {
   return "meu_apoio";
 }
 
-const SYSTEM_INSTRUCTION = `Você é o copiloto virtual de organização, comunicação e acessibilidade do NeuroConecta.
+const SYSTEM_INSTRUCTION = `Você é o copiloto de apoio prático, acessibilidade e organização do NeuroConecta.
 
-Sua identidade é:
-PESSOA → AUTONOMIA → COMUNICAÇÃO → ACESSIBILIDADE → REDE DE APOIO.
-Você NUNCA se apresenta nem assume a persona de um profissional habilitado (médico, psiquiatra, neurologista, enfermeiro, psicólogo clínico, advogado, perito ou gestor de RH).
-Você atua como um copiloto prático, acolhedor e neuroafirmativo.
+=== 1. DIRETRIZES FUNDAMENTAIS DE SEGURANÇA E IDENTIDADE ===
+- PESSOA → AUTONOMIA → ACESSIBILIDADE → REDE DE APOIO.
+- NUNCA se apresente como médico, psicólogo clínico, perito, advogado ou gestor de RH.
+- PROIBIÇÃO ABSOLUTA DE INFERÊNCIA DIAGNÓSTICA: Jamais conclua ou infira por estilo de escrita, perguntas ou preferências que a pessoa é autista, tem TDAH, deficiência intelectual ou qualquer condição clínica. Diagnósticos só são considerados quando expressa e documentalmente declarados pelo usuário.
+- NÃO ROTULAR NEM REPETIR DIAGNÓSTICO: Nunca diga "como autista..." ou force terminologia neurodivergente a menos que a pessoa peça expressamente.
+- CAPACIDADE DE ASSISTENTE DE USO GERAL: Você é um assistente completo e inteligente. Se o usuário perguntar sobre literatura ("Quem escreveu Dom Casmurro?"), ciências ("Como funciona um eclipse?", "Por que chove?"), história ou culinária, RESPONDA O CONTEÚDO DA PERGUNTA de forma correta e direta, sem desviar para temas clínicos.
+- ORDEM DE RACIOCÍNIO: Decida primeiro: "SOBRE O QUE O USUÁRIO ESTÁ PERGUNTANDO?" e depois: "QUAL FORMA DE RESPOSTA MELHOR ATENDE ESTE PERFIL?".
+- HIERARQUIA DE PRECEDÊNCIA: A solicitação explícita do usuário na mensagem atual PREVALECE sobre as preferências persistidas (Ex: se pedir "explique detalhadamente", forneça detalhes mesmo que o perfil tenha preferência por respostas curtas).
 
-LIMITES DE SEGURANÇA INEGOCIÁVEIS:
-- Não realizar diagnóstico clínico nem sugerir confirmação de TEA, TDAH ou transtornos mentais.
-- Não afirmar que um comportamento relatado é "prova" de determinada condição.
-- Não prescrever medicamentos, dosagens, fórmulas ou suplementos, nem sugerir início ou suspensão medicamentosa.
-- Não substituir avaliação profissional presencial.
+=== 2. ADAPTAÇÃO POR IDADE E PERFIL (SEM INFANTILIZAR) ===
+- CRIANÇA: Frases curtas, uma ideia por vez, exemplos concretos, acolhedora. JAMAIS usar linguagem caricata, condescendente ou excesso de diminutivos.
+- ADOLESCENTE: Direta, respeitosa à autonomia, sem tom paternalista.
+- ADULTO: Linguagem adulta, respeitosa e analítica. Adaptar estrutura (etapas, concisão, literalidade) SEM reduzir a complexidade intelectual.
 
-Você ajusta o direcionamento prático conforme o CONTEXTO DO APOIO selecionado:
+=== 3. CONTEXTOS DO APOIO ===
+- MEU APOIO (meu_apoio): Autonomia, divisão de tarefas em etapas, previsibilidade e estratégias práticas para o dia a dia.
+- EDUCAÇÃO (educacao): Foco em Desenho Universal para a Aprendizagem (DUA), acessibilidade pedagógica, alternativas de participação e eliminação de barreiras. NUNCA orientar professores a diagnosticar ou emitir parecer clínico.
+- FAMÍLIA & CUIDADO (familia_cuidado): Rotina familiar, antecipação e redução de atritos sensoriais em casa. Diferenciar claramente "a pessoa relatou" de "o cuidador observou".
+- COMUNICAÇÃO & ACESSIBILIDADE: Scripts sociais assertivos, comunicação literal, pedidos de instruções por escrito e apoio a CAA.`;
 
-1. MEU APOIO (meu_apoio):
-   - Foco na própria pessoa e em sua autonomia no dia a dia.
-   - Ajudar a: organizar o dia, dividir tarefas complexas em etapas executáveis, criar checklists práticos, preparar conversas, organizar pensamentos antes de reuniões, preparar a ida a novos locais (escola, trabalho, consulta), redigir mensagens de pedido de ajuda ou acomodação, encontrar estratégias que respeitem a energia diária e simplificar textos longos.
-   - Não diagnosticar nem julgar.
-
-2. EDUCAÇÃO (educacao):
-   - Foco pedagógico inclusivo com base no Desenho Universal para a Aprendizagem (DUA), LBI e Lei Berenice Piana.
-   - Primeira pergunta orientadora preferencial: "O que você precisa ensinar ou tornar mais acessível?" (e não "Qual diagnóstico o aluno tem?").
-   - Ajudar a: adaptar atividades para reduzir sobrecarga, criar múltiplas formas de participação (oral, escrita, visual), simplificar enunciados mantendo objetivos pedagógicos, organizar instruções por etapas, sugerir apoios visuais para sala de aula, planejar transições entre atividades, redigir minutas de PEI/PDI, registrar observações pedagógicas descritivas e neutras e facilitar o diálogo respeitoso Escola-Família.
-
-3. FAMÍLIA & CUIDADO (familia_cuidado):
-   - Foco na rotina familiar e suporte compartilhado.
-   - O familiar/cuidador é parceiro de apoio, previsibilidade e acolhimento (nunca corretor punitivo de comportamentos atípicos).
-   - Ajudar a: organizar a rotina da casa e da semana, prever momentos de descanso e descompressão sensorial, preparar mudanças de rotina com antecedência, redigir mensagens para a escola ou terapeutas, registrar observações do cotidiano sem julgamentos e reduzir barreiras ambientais em casa (ruído, luz excessiva, imprevisibilidade).
-
-4. COMUNICAÇÃO & ACESSIBILIDADE (comunicacao_acessibilidade):
-   - Foco na expressão, escrita e interação social autêntica.
-   - Ajudar a: criar scripts sociais personalizados, redigir mensagens curtas e objetivas, solicitar acomodações de forma educada e assertiva, pedir instruções por escrito, preparar conversas difíceis, traduzir expressões com duplo sentido para sentido literal e direto, e apoiar o uso de Comunicação Aumentativa e Alternativa (CAA).
-
-5. ORGANIZAÇÃO & ROTINA (organizacao_rotina):
-   - Foco na função executiva diária e ritmo de vida sustentável.
-   - Ajudar a: estruturar agendas diárias ou semanais, priorizar demandas, montar sequências visuais de tarefas, planejar pausas e hidratação, dividir tarefas grandes em passos concretos e preparar rotinas adaptadas para dias de baixa energia.
-
-6. SAÚDE — ORGANIZAÇÃO E PREPARAÇÃO (saude):
-   - AVISO VISÍVEL OBRIGATÓRIO: A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
-   - Permitido: organizar listas de sintomas e observações relatadas pelo próprio usuário em ordem cronológica para levar à consulta, estruturar perguntas claras para médicos ou terapeutas, resumir rotinas para facilitar o diálogo com a equipe de saúde e ajudar a registrar efeitos percebidos para posterior relato ao profissional.
-   - Proibido: emitir laudos/atestados, sugerir diagnósticos conclusivos ou opinar sobre dosagens de medicamentos.
-
-7. TRABALHO — ACESSIBILIDADE & ORGANIZAÇÃO (trabalho):
-   - AVISO VISÍVEL OBRIGATÓRIO: A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
-   - Permitido: redigir mensagens para solicitar instruções de trabalho por escrito, solicitar autorização para fones com cancelamento de ruído ou ambiente com menos estímulos, estruturar rotina de tarefas e prazos, preparar conversas com gestores ou RH sobre necessidades funcionais e organizar entregas com clareza de prioridades.
-
-Estilo de resposta: Claro, empático, direto, em Português do Brasil, sem jargões artificiais nem promessas de cura.`;
-
-function getFallbackAssistantReply(userMessage: string, userContext?: any, rawRole: string = "meu_apoio"): string {
+function getFallbackAssistantReply(userMessage: string, userContext?: any, rawRole: string = "meu_apoio", interactionProfile?: any): string {
   const text = (userMessage || "").toLowerCase().trim();
-  const name = userContext?.preferredName && userContext.preferredName !== "Visitante" ? `, ${userContext.preferredName}` : "";
+  const name = interactionProfile?.personName || userContext?.preferredName || "";
+  const nameGreeting = name && name !== "Visitante" && name !== "Usuário" ? `, ${name}` : "";
+  const role = normalizeSupportContext(rawRole);
+  const isChild = interactionProfile?.faixaEtaria === "crianca";
+  const preferShort = interactionProfile?.tamanhoPreferidoDasRespostas === "curtas";
+  const preferSteps = interactionProfile?.prefereEtapas !== false;
+
+  // 1. Crise e Sobrecarga Aguda (Prioridade Máxima)
+  if (
+    text.includes("crise") ||
+    text.includes("meltdown") ||
+    text.includes("shutdown") ||
+    text.includes("panico") ||
+    text.includes("pânico") ||
+    text.includes("desespero") ||
+    text.includes("socorro") ||
+    text.includes("sobrecarga extrema")
+  ) {
+    return `Olá${nameGreeting}. Estou aqui com você. Se estiver em sobrecarga:
+1. **Reduza Estímulos:** Vá para um local menos iluminado, coloque fones ou feche os olhos.
+2. **Ancoragem Suave:** Beba um gole de água fria e sinta o toque dos seus pés no chão.
+3. Não tente resolver tarefas agora. Dê tempo para o seu corpo recuperar o equilíbrio.
+⚠️ *Em caso de risco, ligue para o CVV (188) ou SAMU (192).*`;
+  }
+
+  // 2. Perguntas Gerais de Conhecimento / Literatura / Ciência (Dom Casmurro, Eclipse, etc.)
+  if (text.includes("dom casmurro") || text.includes("machado de assis")) {
+    if (preferShort) {
+      return `**Dom Casmurro** foi escrito por **Machado de Assis** e publicado em 1899. É um dos maiores clássicos do Realismo brasileiro, narrado por Bento Santiago (Bentinho) sobre seu amor e ciúmes por Capitu.`;
+    }
+    return `**Dom Casmurro** é uma obra-prima da literatura brasileira escrita por **Machado de Assis**, publicada em 1899.
+
+O livro é narrado em primeira pessoa por Bento Santiago (o Bentinho, já idoso e chamado de "Dom Casmurro"), que relembra sua juventude, seu amor de infância por Capitu (de "olhos de cigana oblíqua e dissimulada") e a amizade com Escobar, enquanto convive com a dúvida do ciúme.`;
+  }
+
+  if (text.includes("eclipse")) {
+    if (preferShort || preferSteps) {
+      return `Um **eclipse** acontece quando um astro passa na frente de outro, bloqueando a luz solar:
+1. **Eclipse Solar:** A Lua fica entre a Terra e o Sol, projetando sombra sobre a Terra.
+2. **Eclipse Lunar:** A Terra fica entre o Sol e a Lua, cobrindo a Lua com a sua sombra.`;
+    }
+    return `Um **eclipse** é um evento astronômico que ocorre quando um corpo celeste se move para a sombra de outro astro, bloqueando temporariamente a iluminação direta.
+No eclipse solar, a Lua passa exatamente entre a Terra e o Sol. No eclipse lunar, a Terra projeta sua sombra sobre a superfície da Lua cheia.`;
+  }
+
+  if (text.includes("por que chove") || text.includes("chuva") || text.includes("como nasce uma planta")) {
+    if (isChild) {
+      if (text.includes("planta")) {
+        return `Oi${nameGreeting}! A plantinha nasce assim, em 3 passos bem fáceis:
+1. **A sementinha dorme na terra:** Ela precisa de carinho e terra fofinha.
+2. **Ela bebe água e toma sol:** A água amolece a semente e ela acorda.
+3. **Cresce a raiz e a folhinha:** A raiz puxa o alimento da terra e as folhinhas verdes sobem para o sol!
+Quer fazer o teste do feijão no algodão?`;
+      }
+      return `Oi${nameGreeting}! A chuva acontece em 3 passos bem legais:
+1. **O sol esquenta a água:** A água de rios e mares sobe para o céu em forma de fumacinha (vapor).
+2. **Formam-se as nuvens:** Lá no alto, o vapor esfria e vira um montão de gotinhas de água juntas.
+3. **A chuva cai:** Quando a nuvem fica bem pesada e cheia, as gotinhas caem na terra como chuva!
+Gostaria de ver isso em um desenho?`;
+    }
+    return `A chuva ocorre pelo ciclo hidrológico natural:
+1. **Evaporação:** A radiação solar aquece corpos hídricos terrestres, transformando a água líquida em vapor que sobe para a atmosfera.
+2. **Condensação:** Ao atingir camadas mais frias, o vapor se condensa em microgotas ao redor de núcleos de condensação, formando as nuvens.
+3. **Precipitação:** Quando as gotas se tornam suficientemente densas para superar as correntes ascendentes de ar, caem pela gravidade na forma de chuva.`;
+  }
+
+  // 3. Organização de Rotina e Manhã (Adulto ou Criança)
+  if (text.includes("organizar minha manhã") || text.includes("minha manhã") || text.includes("rotina da manhã")) {
+    return `Aqui está uma sequência prática e direta para organizar sua manhã em 4 etapas:
+1. **Ativação Física (10 min):** Beba um copo cheio de água e lave o rosto com água fria.
+2. **Previsibilidade (5 min):** Abra sua agenda e escolha **apenas 2 tarefas prioritárias** para hoje.
+3. **Nutrição sem Pressa (20 min):** Faça um café da manhã previsível, sem telas ou notificações abertas.
+4. **Primeiro Bloco Focado (30 min):** Inicie a primeira prioridade com o ambiente preparado (fones ou silêncio).`;
+  }
+
+  // 4. Educador / DUA / Atividades e Ecossistemas
+  if (role === "educacao" || text.includes("ecossistema") || text.includes("participação") || text.includes("dua")) {
+    return `[Apoio Pedagógico DUA: Formas Múltiplas de Participação]
+Para uma atividade sobre ecossistemas, o Desenho Universal para a Aprendizagem (DUA) sugere oferecer 3 alternativas de engajamento e expressão:
+
+1. **Acesso ao Conteúdo (Múltiplos Meios de Representação):**
+   • Apresentar o conceito por infográfico visual dos níveis tróficos (produtores, consumidores, decompositores).
+   • Texto com vocabulário-chave em destaque e frases curtas.
+
+2. **Formas de Expressão dos Estudantes:**
+   • Opção A: Elaborar um mapa conceitual ou painel de imagens conectadas por setas.
+   • Opção B: Gravar um áudio curto de 1 minuto explicando a cadeia alimentar de um animal de seu interesse.
+   • Opção C: Responder a um questionário estruturado em 3 perguntas objetivas.
+
+3. **Eliminação de Barreiras:**
+   • Permitir tempo adicional e possibilitar o trabalho individual com fones para quem tem sobrecarga em grupos ruidosos.`;
+  }
+
+  // 5. Cuidador / Transição para Sair de Casa
+  if (role === "familia_cuidado" || text.includes("transição") || text.includes("sair de casa")) {
+    return `[Apoio à Família: Preparando a Transição para Sair de Casa]
+Transições de ambiente geram sobrecarga por quebra de previsibilidade. Aqui estão 4 passos para suavizar essa mudança:
+
+1. **Antecipação em 3 Avisos:**
+   • "Faltam 15 minutos para calçarmos os sapatos."
+   • "Faltam 5 minutos; vamos desligar o que estiver fazendo."
+   • "Hora de ir. Vamos pegar a mochila."
+2. **Apoio Visual / Objeto de Transição:**
+   • Ter um checklist visual com fotos dos passos: (Sapatos → Casaco → Mochila → Porta).
+   • Permitir que a pessoa leve um objeto confortável ou fone de ouvido de confiança.
+3. **Reduzir Pressão Verbal:** Evite dar ordens múltiplas simultâneas enquanto a pessoa está se vestindo.
+4. **Diferenciação Respeitosa:** Registre o que a pessoa relata sentir em comparação ao que você observa no ambiente.`;
+  }
+
+  // Resposta padrão
+  return `Olá${nameGreeting}! Sou o copiloto de apoio do **NeuroConecta**.
+Recebi sua mensagem sobre "${userMessage.substring(0, 80)}".
+
+Posso te apoiar a:
+1. 🗓️ **Organizar demandas:** Estruturar tarefas em passos executáveis.
+2. ✍️ **Redigir comunicações:** Scripts assertivos, pedidos de acomodação ou recusas educadas.
+3. 🧘 **Autorregulação:** Estratégias simples de descompressão sensorial e pausas.
+4. 📚 **Apoio educacional ou familiar:** Métodos DUA e organização da rotina.
+
+Como posso te ajudar neste momento?`;
+}
   const role = normalizeSupportContext(rawRole);
 
   // 1. Detecção de Crise e Sobrecarga Aguda (Prioridade Máxima)
@@ -652,7 +773,7 @@ Digite o que você gostaria de estruturar ou clique em uma das sugestões rápid
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { messages, userContext, interactionRole } = req.body;
+    const { messages, userContext, interactionRole, interactionProfile, minimalInteractionContext } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Campo 'messages' é obrigatório e deve ser um array." });
@@ -663,11 +784,17 @@ app.post("/api/chat", async (req, res) => {
     const ai = getGenAI();
 
     if (ai) {
+      // 1. ACTIVE CONTEXT + MINIMAL INTERACTION PROFILE (Data Minimization)
       let contextPrompt = `[CONTEXTO DO APOIO SELECIONADO: ${activeRole.toUpperCase()}]\n`;
-      if (userContext) {
-        contextPrompt += `[Perfil do Usuário: Nome="${userContext.preferredName || "Não informado"}", Status="${userContext.diagnosisStatus || "Não informado"}"]\n\n`;
+      if (minimalInteractionContext) {
+        contextPrompt += `${minimalInteractionContext}\n\n`;
+      } else if (interactionProfile) {
+        contextPrompt += `[Perfil de Interação Mínimo: Nome="${interactionProfile.personName || "Pessoa"}", FaixaEtária="${interactionProfile.faixaEtaria || "adulto"}", TamanhoRespostas="${interactionProfile.tamanhoPreferidoDasRespostas || "medias"}"]\n\n`;
+      } else if (userContext) {
+        contextPrompt += `[Perfil de Interação Mínimo: Nome="${userContext.preferredName || "Pessoa"}"]\n\n`;
       }
 
+      // 2. CONVERSATION HISTORY
       const formattedHistory = messages
         .map((m: { role: string; content: string }) => {
           const roleName = m.role === "user" ? "Usuário" : "NeuroConecta";
@@ -700,11 +827,11 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // Fallback if AI key is missing or model calls fail
-    const fallbackReply = getFallbackAssistantReply(lastUserMsg, userContext, activeRole);
+    const fallbackReply = getFallbackAssistantReply(lastUserMsg, userContext, activeRole, interactionProfile);
     return res.json({ reply: fallbackReply });
   } catch (error: any) {
     console.error("Erro na rota /api/chat:", error);
-    const fallbackReply = getFallbackAssistantReply("", req.body?.userContext, req.body?.interactionRole || "usuario");
+    const fallbackReply = getFallbackAssistantReply("", req.body?.userContext, req.body?.interactionRole || "usuario", req.body?.interactionProfile);
     return res.json({ reply: fallbackReply });
   }
 });

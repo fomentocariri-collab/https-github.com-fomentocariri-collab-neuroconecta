@@ -4,6 +4,7 @@ import { EDUCATION_ARTICLES, MYTHS_AND_FACTS } from "../data/education";
 import { calculateAge, getAgeCategory } from "../types";
 import { AccessibleActivityPlanner } from "./AccessibleActivityPlanner";
 import { FunctionalLearningProfile } from "./FunctionalLearningProfile";
+import { generateLibraryPdf } from "../utils/pdfGenerator";
 
 export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
   const [activeTab, setActiveTab] = useState<"artigos" | "adaptar" | "perfil_funcional" | "mitos">("artigos");
@@ -41,22 +42,27 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
     return matchesSearch && matchesCat;
   });
 
-  const handlePrintPdf = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  const handlePrint = () => {
+    window.print();
+  };
 
+  const handleDownloadRealPdf = () => {
+    generateLibraryPdf(filteredArticles, MYTHS_AND_FACTS);
+  };
+
+  const handleDownloadHtml = () => {
     const articlesHtml = filteredArticles.map(art => `
-      <div style="margin-bottom: 24px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 12px; page-break-inside: avoid; background-color: #f8fafc;">
+      <div style="margin-bottom: 20px; padding: 16px; border: 1px solid #cbd5e1; border-radius: 10px; page-break-inside: avoid; background-color: #f8fafc;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h3 style="margin: 0; font-size: 18px; color: #0f172a; font-family: sans-serif;">${art.term}</h3>
-          <span style="font-size: 11px; font-weight: bold; background-color: #0d9488; color: white; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">${art.category}</span>
+          <h3 style="margin: 0; font-size: 16px; color: #0f172a; font-family: sans-serif;">${art.term}</h3>
+          <span style="font-size: 10px; font-weight: bold; background-color: #7c3aed; color: white; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">${art.category}</span>
         </div>
-        <p style="margin: 6px 0; font-size: 14px; font-weight: 600; color: #334155;">${art.shortDefinition}</p>
-        <p style="margin: 10px 0; font-size: 13px; color: #475569; line-height: 1.6;">${art.fullExplanation}</p>
+        <p style="margin: 6px 0; font-size: 13px; font-weight: 600; color: #334155;">${art.shortDefinition}</p>
+        <p style="margin: 8px 0; font-size: 12px; color: #475569; line-height: 1.6;">${art.fullExplanation}</p>
         ${art.practicalTips ? `
-          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
-            <strong style="font-size: 12px; color: #0d9488; text-transform: uppercase;">Estratégias Práticas:</strong>
-            <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 13px; color: #334155;">
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+            <strong style="font-size: 11px; color: #7c3aed; text-transform: uppercase;">Estratégias Práticas:</strong>
+            <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 12px; color: #334155;">
               ${art.practicalTips.map(t => `<li style="margin-bottom: 4px;">${t}</li>`).join("")}
             </ul>
           </div>
@@ -65,74 +71,69 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
     `).join("");
 
     const mythsHtml = MYTHS_AND_FACTS.map(m => `
-      <div style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid;">
-        <p style="margin: 0 0 6px 0; color: #991b1b; font-size: 13px;"><strong>❌ MITO:</strong> ${m.myth}</p>
-        <p style="margin: 0; color: #065f46; font-size: 13px;"><strong>✅ ${m.fact}</strong></p>
+      <div style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid; background-color: #f8fafc;">
+        <p style="margin: 0 0 4px 0; color: #991b1b; font-size: 12px;"><strong>❌ MITO:</strong> ${m.myth}</p>
+        <p style="margin: 0; color: #15803d; font-size: 12px;"><strong>✅ ${m.fact}</strong></p>
       </div>
     `).join("");
 
     const dateStr = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Biblioteca NeuroConecta - SISTEMASTOP</title>
-          <style>
-            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 16px; margin-bottom: 24px; }
-            .brand { display: flex; align-items: center; gap: 12px; }
-            .brand-text h1 { margin: 0; font-size: 22px; color: #0f172a; }
-            .brand-text p { margin: 2px 0 0 0; font-size: 12px; color: #0d9488; font-weight: bold; }
-            .company-info { text-align: right; font-size: 11px; color: #64748b; line-height: 1.4; }
-            .section-title { font-size: 18px; font-weight: bold; color: #0f172a; margin-top: 24px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
-            .footer { margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 12px; text-align: center; font-size: 11px; color: #64748b; }
-            @media print {
-              body { margin: 15mm; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="brand">
-              <div class="brand-text">
-                <h1>NeuroConecta • Guia da Biblioteca</h1>
-                <p>Desenvolvido por SISTEMASTOP Soluções Tecnológicas</p>
-              </div>
-            </div>
-            <div class="company-info">
-              <strong>SISTEMASTOP</strong><br/>
-              Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE<br/>
-              CEP: 63.119-060 | Tel/WhatsApp: +55 (88) 99673-9128<br/>
-              contato@sistemastop.com.br
-            </div>
-          </div>
+    const fullHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Biblioteca NeuroConecta - SISTEMASTOP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand-text h1 { margin: 0; font-size: 20px; color: #0f172a; }
+    .brand-text p { margin: 2px 0 0 0; font-size: 11px; color: #7c3aed; font-weight: bold; }
+    .company-info { text-align: right; font-size: 11px; color: #64748b; line-height: 1.4; }
+    .section-title { font-size: 15px; font-weight: bold; color: #5b21b6; margin-top: 24px; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    .footer { margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 12px; text-align: center; font-size: 11px; color: #64748b; }
+    @media print { body { margin: 12mm; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand-text">
+      <h1>NeuroConecta • Biblioteca & Direitos Neuroafirmativos</h1>
+      <p>Plataforma de Tecnologia Assistiva e Apoio Funcional</p>
+    </div>
+    <div class="company-info">
+      <strong>SISTEMASTOP Soluções Tecnológicas</strong><br/>
+      Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE<br/>
+      CEP: 63.119-060 | WhatsApp: +55 (88) 99673-9128<br/>
+      contato@sistemastop.com.br
+    </div>
+  </div>
 
-          <div style="margin-bottom: 20px; font-size: 12px; color: #475569;">
-            Documento gerado em <strong>${dateStr}</strong> contendo guia oficial de conceitos, direitos e suporte neuroafirmativo.
-          </div>
+  <div style="margin-bottom: 20px; font-size: 11px; color: #475569;">
+    Documento emitido em <strong>${dateStr}</strong> contendo guia oficial de conceitos, leis (CIPTEA, Lei Berenice Piana), DUA e acomodações inclusivas.
+  </div>
 
-          <div class="section-title">📚 Conceitos, Direitos e Guias Neuroafirmativos</div>
-          ${articlesHtml}
+  <div class="section-title">📚 Conceitos, Legislação e Estratégias Neuroafirmativas</div>
+  ${articlesHtml}
 
-          <div class="section-title" style="margin-top: 32px;">💡 Desmistificando Mitos sobre Autismo e Neurodivergência</div>
-          ${mythsHtml}
+  <div class="section-title" style="margin-top: 28px;">💡 Desmistificando Mitos sobre Autismo e Neurodivergência</div>
+  ${mythsHtml}
 
-          <div class="footer">
-            SISTEMASTOP Soluções Tecnológicas • Rua Doutor Rolim, 366, Crato - CE • +55 (88) 99673-9128 • contato@sistemastop.com.br
-          </div>
+  <div class="footer">
+    SISTEMASTOP Soluções Tecnológicas &bull; Crato - CE &bull; Apoio à Autonomia e Inclusão &bull; Documento Acessível
+  </div>
+</body>
+</html>`;
 
-          <script>
-            window.onload = function() {
-              window.print();
-            }
-          </script>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `biblioteca_neuroconecta_${new Date().toISOString().split("T")[0]}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -144,7 +145,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
       }`}>
         <div className="space-y-1 max-w-xl">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-teal-500 dark:text-teal-400" />
+            <BookOpen className="w-6 h-6 text-violet-500 dark:text-violet-400" />
             <h1 className="text-xl sm:text-2xl font-bold">
               Biblioteca & Direitos Neuroafirmativos
             </h1>
@@ -154,26 +155,36 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {/* Download Real Binary PDF */}
+          <button
+            onClick={handleDownloadRealPdf}
+            className="px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-md"
+            title="Baixar arquivo PDF autêntico (MIME: application/pdf) diretamente para o seu dispositivo"
+          >
+            <Download className="w-4 h-4 text-white" />
+            <span>Baixar PDF</span>
+          </button>
+
           {/* Print PDF Button */}
           <button
-            onClick={handlePrintPdf}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-md"
-            title="Imprimir ou salvar a biblioteca completa em PDF"
+            onClick={handlePrint}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-sm"
+            title="Imprimir visualização limpa no navegador (sem barras do app)"
           >
-            <Printer className="w-4 h-4" />
-            <span>Imprimir PDF Completo</span>
+            <Printer className="w-4 h-4 text-violet-400" />
+            <span>Imprimir</span>
           </button>
 
           {/* Search Input */}
-          <div className="relative w-full sm:w-60">
+          <div className="relative w-full sm:w-52">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Buscar por termo ou lei..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs focus:outline-none focus:border-teal-500 border ${
+              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs focus:outline-none focus:border-violet-500 border ${
                 isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
               }`}
             />
@@ -187,13 +198,13 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           onClick={() => setActiveTab("artigos")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
             activeTab === "artigos"
-              ? "bg-teal-600 text-white shadow-md"
+              ? "bg-violet-600 text-white shadow-md"
               : isDark
               ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
               : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
           }`}
         >
-          <BookOpen className="w-4 h-4 text-teal-300" />
+          <BookOpen className="w-4 h-4 text-violet-300" />
           <span>Artigos & Diretrizes de Inclusão</span>
         </button>
 
@@ -201,7 +212,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           onClick={() => setActiveTab("adaptar")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
             activeTab === "adaptar"
-              ? "bg-teal-600 text-white shadow-md"
+              ? "bg-violet-600 text-white shadow-md"
               : isDark
               ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
               : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
@@ -215,13 +226,13 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           onClick={() => setActiveTab("perfil_funcional")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
             activeTab === "perfil_funcional"
-              ? "bg-teal-600 text-white shadow-md"
+              ? "bg-violet-600 text-white shadow-md"
               : isDark
               ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
               : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
           }`}
         >
-          <Brain className="w-4 h-4 text-cyan-300" />
+          <Brain className="w-4 h-4 text-indigo-300" />
           <span>Perfil Funcional de Aprendizagem & Apoio</span>
         </button>
 
@@ -229,7 +240,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           onClick={() => setActiveTab("mitos")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition ${
             activeTab === "mitos"
-              ? "bg-teal-600 text-white shadow-md"
+              ? "bg-violet-600 text-white shadow-md"
               : isDark
               ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
               : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
@@ -242,9 +253,9 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
 
       {/* Princípio Pedagógico & Não Exigência de Diagnóstico (Itens 10 e 11 do Adendo) */}
       <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed flex items-start gap-3 ${
-        isDark ? "bg-teal-950/40 border-teal-800/60 text-teal-200" : "bg-teal-50 border-teal-200 text-teal-900"
+        isDark ? "bg-violet-950/40 border-violet-800/60 text-violet-200" : "bg-violet-50 border-violet-200 text-violet-900"
       }`}>
-        <Lightbulb className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
+        <Lightbulb className="w-5 h-5 text-violet-400 flex-shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold">
             Princípio Fundamental da Escola Neuroafirmativa:
@@ -252,7 +263,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           <p className="opacity-95">
             O professor não é responsável por diagnosticar ou tratar condições clínicas. O papel da escola e do NeuroConecta é tornar atividades acessíveis, organizar instruções em etapas, criar diferentes formas de participação, utilizar apoio visual e colaborar com a família e o AEE.
           </p>
-          <p className="text-[11px] font-semibold text-teal-300 dark:text-teal-300 pt-0.5">
+          <p className="text-[11px] font-semibold text-violet-300 dark:text-violet-300 pt-0.5">
             💡 Não é necessário um diagnóstico para oferecer diferentes formas de participação, comunicação e acesso ao conteúdo.
           </p>
         </div>
@@ -322,7 +333,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
                   selectedCategory === cat.id
-                    ? "bg-teal-600 text-white border-teal-500 shadow"
+                    ? "bg-violet-600 text-white border-violet-500 shadow"
                     : isDark
                     ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
@@ -337,7 +348,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-                <Sparkles className="w-5 h-5 text-teal-500 dark:text-teal-400" />
+                <Sparkles className="w-5 h-5 text-violet-500 dark:text-violet-400" />
                 <span>Artigos e Orientações ({filteredArticles.length})</span>
               </h2>
               <span className="text-xs text-slate-500 dark:text-slate-400">Formato pronto para impressão</span>
@@ -359,8 +370,8 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
                     }`}
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <h3 className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-300">{art.term}</h3>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20">
+                      <h3 className="text-base sm:text-lg font-bold text-violet-600 dark:text-violet-300">{art.term}</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20">
                         {art.category}
                       </span>
                     </div>
@@ -377,11 +388,11 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
 
                     {art.practicalTips && art.practicalTips.length > 0 && (
                       <div className="space-y-1.5 pt-1">
-                        <h4 className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Estratégias Práticas:</h4>
+                        <h4 className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Estratégias Práticas:</h4>
                         <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                           {art.practicalTips.map((tip, idx) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <span className="text-teal-500 font-bold">•</span>
+                              <span className="text-violet-500 font-bold">•</span>
                               <span>{tip}</span>
                             </li>
                           ))}
@@ -400,7 +411,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
       {activeTab === "mitos" && (
         <div className="space-y-4 animate-fadeIn">
           <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-            <HelpCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+            <HelpCircle className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
             <span>Desmistificando Mitos Comuns sobre Neurodivergência</span>
           </h2>
 
@@ -415,7 +426,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
                   <strong>❌ MITO:</strong> {item.myth}
                 </div>
                 <div className={`p-3 border rounded-xl text-xs ${
-                  isDark ? "bg-emerald-950/60 border-emerald-800/50 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                  isDark ? "bg-indigo-950/60 border-indigo-800/50 text-indigo-200" : "bg-indigo-50 border-indigo-200 text-indigo-900"
                 }`}>
                   <strong>✅ {item.fact}</strong>
                 </div>
@@ -428,30 +439,40 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
       {/* Company Contact Card Banner */}
       <div className={`p-6 border rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl ${
         isDark
-          ? "bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border-emerald-800/80 text-white"
-          : "bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-emerald-200 text-slate-900"
+          ? "bg-gradient-to-r from-violet-950/90 via-slate-900 to-slate-900 border-violet-800/80 text-white"
+          : "bg-gradient-to-r from-violet-50 via-indigo-50 to-slate-50 border-violet-200 text-slate-900"
       }`}>
         <div className="flex items-center gap-4">
           <img src="/sistemastop_logo.svg" alt="SISTEMASTOP Logo" className={`w-14 h-14 object-contain rounded-xl p-1 border ${
-            isDark ? "bg-slate-950 border-emerald-800" : "bg-white border-emerald-300"
+            isDark ? "bg-slate-950 border-violet-800" : "bg-white border-violet-300"
           }`} />
           <div className="space-y-1">
             <h3 className="text-base font-extrabold">SISTEMASTOP • Soluções Tecnológicas</h3>
             <p className="text-xs text-slate-600 dark:text-slate-300">
               Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE, CEP 63.119-060
             </p>
-            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+            <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
               📞 +55 (88) 99673-9128 (WhatsApp) | ✉️ contato@sistemastop.com.br
             </p>
           </div>
         </div>
 
-        <button
-          onClick={handlePrintPdf}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition whitespace-nowrap shadow-md"
-        >
-          <Printer className="w-4 h-4" /> Baixar PDF para Impressão
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDownloadRealPdf}
+            className="px-5 py-2.5 bg-violet-700 hover:bg-violet-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition whitespace-nowrap shadow-md"
+            title="Baixar arquivo PDF autêntico (MIME: application/pdf)"
+          >
+            <Download className="w-4 h-4" /> Baixar PDF
+          </button>
+          <button
+            onClick={handlePrint}
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-2 transition whitespace-nowrap shadow-sm"
+            title="Imprimir documento diretamente"
+          >
+            <Printer className="w-4 h-4 text-violet-400" /> Imprimir
+          </button>
+        </div>
       </div>
 
     </div>

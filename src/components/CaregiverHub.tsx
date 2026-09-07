@@ -313,14 +313,7 @@ Data de emissão: ${new Date().toLocaleDateString("pt-BR")} via NeuroConecta.
   };
 
   const handlePrintPei = () => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(
-        `<pre style="font-family: sans-serif; white-space: pre-wrap; font-size: 13px; line-height: 1.6; padding: 24px; max-width: 800px; margin: 0 auto;">${generateFormattedPeiText()}</pre>`
-      );
-      printWindow.document.close();
-      printWindow.print();
-    }
+    window.print();
   };
 
   return (
@@ -546,6 +539,14 @@ Data de emissão: ${new Date().toLocaleDateString("pt-BR")} via NeuroConecta.
                 laudo médico pericial. Toda versão deve ser avaliada e validada presencialmente pelos profissionais responsáveis.
               </p>
             </div>
+          </div>
+
+          {/* Safeguard Guarantee Banner: Autoavaliação nunca altera PEI automaticamente */}
+          <div className="p-3 bg-teal-950/40 border border-teal-800/60 rounded-xl flex items-start sm:items-center gap-2.5 text-xs text-teal-200">
+            <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0 mt-0.5 sm:mt-0" />
+            <span className="leading-relaxed">
+              <strong>Garantia de Integridade Documental:</strong> O PEI <em>nunca</em> é modificado de maneira automatizada por questionários, testes ou autoavaliações do usuário. Qualquer adaptação incorporada exige ação e revisão humana consciente pelo educador ou familiar, e o acesso pedagógico por terceiros é estritamente condicionado ao ShareGrant ativo.
+            </span>
           </div>
 
           {savedPeiStatus && (

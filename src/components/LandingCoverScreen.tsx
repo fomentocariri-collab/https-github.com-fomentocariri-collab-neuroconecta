@@ -100,11 +100,11 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
           </div>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-1.5 shadow-sm hover:shadow-md transition">
-            <div className="text-emerald-700 p-2 bg-emerald-50 rounded-xl w-fit border border-emerald-200">
-              <Stethoscope className="w-5 h-5" />
+            <div className="text-violet-700 p-2 bg-violet-50 rounded-xl w-fit border border-violet-200">
+              <Heart className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-extrabold text-slate-900">Saúde & Cuidados</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Prontuário com consentimento e rotinas de apoio.</p>
+            <h3 className="text-xs font-extrabold text-slate-900">Autorregulação & Apoio</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Rotinas sensoriais, diário funcional e bem-estar.</p>
           </div>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-1.5 shadow-sm hover:shadow-md transition">

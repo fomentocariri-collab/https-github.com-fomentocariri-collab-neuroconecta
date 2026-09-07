@@ -2,15 +2,24 @@ import React, { useState, useRef, useEffect } from "react";
 import { 
   Send, Bot, User, Sparkles, Copy, Check, 
   UserCheck, GraduationCap, Users, MessageSquare, 
-  Clock, HeartPulse, Building2, AlertTriangle, Info
+  Clock, HeartPulse, Building2, AlertTriangle, Info,
+  Sliders, Baby
 } from "lucide-react";
-import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
+import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus, InteractionProfile } from "../types";
+import { 
+  getInteractionProfile, 
+  buildMinimalInteractionContext, 
+  listPersonasForUser 
+} from "../services/interactionProfileService";
 
 interface ChatAssistantProps {
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
   onNavigateToTab: (tab: any) => void;
   onOpenCrisis: () => void;
+  activePersonaId?: string;
+  onSelectPersona?: (personId: string) => void;
+  onOpenProfile?: () => void;
   initialPrompt?: { prompt: string; role?: InteractionRole } | null;
   onClearInitialPrompt?: () => void;
 }
@@ -20,15 +29,22 @@ export type InteractionRole =
   | "educacao" 
   | "familia_cuidado" 
   | "comunicacao_acessibilidade" 
-  | "organizacao_rotina" 
-  | "saude" 
-  | "trabalho";
+  | "organizacao_rotina";
 
-const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "meu_apoio"): string => {
+const getSmartAssistantReply = (
+  userMessage: string, 
+  profile: UserProfile, 
+  role: InteractionRole = "meu_apoio",
+  intProfile?: InteractionProfile
+): string => {
   const text = (userMessage || "").toLowerCase().trim();
-  const name = profile.preferredName && profile.preferredName !== "Visitante" ? `, ${profile.preferredName}` : "";
+  const name = intProfile?.personName || (profile.preferredName && profile.preferredName !== "Visitante" ? profile.preferredName : "");
+  const nameGreeting = name ? `, ${name}` : "";
+  const isChild = intProfile?.faixaEtaria === "crianca";
+  const preferShort = intProfile?.tamanhoPreferidoDasRespostas === "curtas";
+  const preferSteps = intProfile?.prefereEtapas !== false;
 
-  // 1. Crise e Sobrecarga Aguda
+  // 1. Crise e Sobrecarga Aguda (Prioridade Máxima)
   if (
     text.includes("crise") ||
     text.includes("meltdown") ||
@@ -40,7 +56,7 @@ const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role:
     text.includes("sobrecarga") ||
     text.includes("ansiedade")
   ) {
-    return `Olá${name}. Estou aqui com você. Se estiver sentindo sobrecarga sensorial ou emocional:
+    return `Olá${nameGreeting}. Estou aqui com você. Se estiver sentindo sobrecarga sensorial ou emocional:
 
 Sua segurança e bem-estar vêm em primeiro lugar.
 
@@ -55,6 +71,92 @@ Sua segurança e bem-estar vêm em primeiro lugar.
 3. Não tente resolver decisões difíceis agora. Apenas respire no seu próprio ritmo.
 
 ⚠️ *Se precisar de acolhimento emergencial humano, use o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
+  }
+
+  // 2. Conhecimento Geral e Literatura (Dom Casmurro, Eclipse, Ciências)
+  if (text.includes("dom casmurro") || text.includes("machado de assis")) {
+    if (preferShort) {
+      return `**Dom Casmurro** foi escrito por **Machado de Assis** e publicado em 1899. É um dos maiores clássicos do Realismo brasileiro, narrado por Bento Santiago (Bentinho) sobre sua relação e ciúmes de Capitu.`;
+    }
+    return `**Dom Casmurro** é uma obra-prima da literatura brasileira escrita por **Machado de Assis**, publicada em 1899.
+
+O romance é narrado em primeira pessoa por Bento Santiago (o Bentinho, já idoso e conhecido como "Dom Casmurro"), que relembra sua juventude, seu casamento com Capitu (dos "olhos de cigana oblíqua e dissimulada") e a amizade com Escobar, convivendo com a dúvida atormentadora sobre a fidelidade da esposa.`;
+  }
+
+  if (text.includes("eclipse")) {
+    if (preferShort || preferSteps) {
+      return `Um **eclipse** acontece quando a luz de um corpo celeste é bloqueada temporariamente pela passagem de outro astro:
+1. **Eclipse Solar:** A Lua passa exatamente entre a Terra e o Sol, projetando sua sombra sobre a Terra.
+2. **Eclipse Lunar:** A Terra fica entre o Sol e a Lua, cobrindo a Lua com sua sombra.`;
+    }
+    return `Um **eclipse** é um evento astronômico fascinante que ocorre quando um corpo celeste se move para a sombra de outro ou bloqueia a passagem de sua luz.
+No eclipse solar, a Lua projeta sua sombra na superfície da Terra durante o dia. No eclipse lunar, a Terra se posiciona entre o Sol e a Lua Cheia, projetando uma sombra avermelhada sobre o satélite.`;
+  }
+
+  if (text.includes("por que chove") || text.includes("chuva") || text.includes("como nasce uma planta")) {
+    if (isChild) {
+      if (text.includes("planta")) {
+        return `Oi${nameGreeting}! A plantinha nasce assim, em 3 passos bem fáceis:
+1. **A semente descansa na terra:** Ela precisa de uma terrinha fofa e úmida.
+2. **Ela bebe água e recebe o sol:** A água acorda a semente e ela começa a se abrir.
+3. **Cresce a raiz e a folhinha:** A raiz bebe comidinha da terra e a folhinha verde cresce em direção à luz!
+Quer fazer o teste de plantar um feijão no algodão?`;
+      }
+      return `Oi${nameGreeting}! A chuva acontece em 3 passos bem legais:
+1. **O sol esquenta a água:** A água dos rios e mares sobe para o céu em forma de vapor invisível.
+2. **Formam-se as nuvens:** Lá no alto, o ar é bem frio e o vapor se junta em milhares de gotinhas de água, formando as nuvens.
+3. **A chuva cai:** Quando a nuvem fica bem pesada e cheia, as gotinhas caem na terra como chuva!
+Gostaria de ver isso em um desenho ou esquema?`;
+    }
+    return `A chuva ocorre pelo ciclo hidrológico natural da Terra:
+1. **Evaporação:** A radiação solar aquece os oceanos, rios e lagos, transformando a água líquida em vapor d'água atmosférico.
+2. **Condensação:** Conforme o ar quente e úmido sobe, ele esfria nas camadas superiores da atmosfera, condensando o vapor ao redor de micropartículas (núcleos de condensação) e formando as nuvens.
+3. **Precipitação:** Quando as gotículas de água em suspensão colidem e se tornam densas demais para serem sustentadas pelas correntes térmicas ascendentes, caem por ação da gravidade em forma de chuva.`;
+  }
+
+  // 3. Organização de Rotina e Manhã
+  if (text.includes("organizar minha manhã") || text.includes("minha manhã") || text.includes("rotina da manhã")) {
+    return `Aqui está uma sequência prática para organizar sua manhã em 4 etapas:
+1. **Ativação Física Suave (10 min):** Beba um copo cheio de água fresca e lave o rosto.
+2. **Previsibilidade do Dia (5 min):** Abra sua agenda e defina **apenas 2 prioridades essenciais** para hoje.
+3. **Café da Manhã sem Telas (20 min):** Faça uma refeição sem checar notificações ou notícias urgentes.
+4. **Primeiro Bloco Focado (25 min):** Inicie a prioridade número um com o ambiente preparado (fones ou silêncio).`;
+  }
+
+  // 4. Educador / DUA / Ecossistemas
+  if (role === "educacao" || text.includes("ecossistema") || text.includes("participação") || text.includes("dua")) {
+    return `[Apoio Pedagógico DUA: Formas Múltiplas de Participação]
+Para planejar uma atividade acessível sobre ecossistemas com base no Desenho Universal para a Aprendizagem (DUA), sugerimos 3 alternativas de participação e engajamento:
+
+1. **Acesso ao Conteúdo (Representação Visual e Concreta):**
+   • Apresentar os papéis ecológicos (produtores, consumidores e decompositores) com diagramas visuais e ilustrações conectadas.
+   • Resumos com vocabulário em destaque e enunciados por etapas curtas.
+
+2. **Múltiplas Formas de Expressão para os Estudantes:**
+   • Opção A: Montar um mapa conceitual ou painel de figuras conectadas por setas.
+   • Opção B: Gravar um áudio curto de 1 minuto explicando a cadeia alimentar de um animal de seu interesse.
+   • Opção C: Responder a um questionário estruturado com 3 perguntas diretas de múltipla escolha ou associação.
+
+3. **Eliminação de Barreiras:**
+   • Permitir tempo adicional para a elaboração e possibilitar a realização individual com fones para alunos com sobrecarga em salas barulhentas.`;
+  }
+
+  // 5. Família & Cuidado / Transição para Sair de Casa
+  if (role === "familia_cuidado" || text.includes("transição") || text.includes("sair de casa")) {
+    return `[Apoio à Família: Preparando a Transição para Sair de Casa]
+Mudanças de ambiente geram sobrecarga por quebra de previsibilidade. Aqui estão 4 passos para tornar a transição mais suave:
+
+1. **Avisos Prévios em 3 Tempos:**
+   • "Faltam 15 minutos para começarmos a nos arrumar."
+   • "Faltam 5 minutos; vamos finalizar o que estiver fazendo."
+   • "Chegou a hora. Vamos calçar os sapatos."
+2. **Apoio Visual dos Passos:**
+   • Utilizar um checklist visual simples: (Sapatos → Casaco → Mochila → Porta).
+   • Permitir levar um objeto confortável ou fones de ouvido de confiança.
+3. **Reduzir Pressão Verbal Simultânea:**
+   • Dê uma orientação por vez e aguarde o tempo de processamento antes de falar novamente.
+4. **Diferenciação Respeitosa:**
+   • Diferencie nos registros o que a pessoa relatou sentir do que os adultos ao redor observaram.`;
   }
 
   // 2. Organizar o Dia e Rotina
@@ -278,34 +380,6 @@ Como posso te apoiar com o seu próximo passo prático?`;
   }
 
   // 10. Contextos Específicos
-  if (role === "saude") {
-    return `[Apoio para Organização & Preparação em Saúde]
-Olá${name}.
-
-⚠️ **Aviso de Segurança:** A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
-
-Posso te ajudar a preparar sua consulta com os seguintes passos práticos:
-1. **Organização cronológica de sintomas:** Registrar o que você sentiu, datas aproximadas e o que atenua ou agrava o desconforto.
-2. **Lista de perguntas prioritárias:** Estruturar 3 a 5 perguntas objetivas para você tirar dúvidas com seu médico ou terapeuta.
-3. **Registro de efeitos de rotina:** Estruturar um diário simples para acompanhar sono, alimentação e efeitos percebidos ao longo dos dias.
-
-O que você gostaria de estruturar para a sua próxima consulta?`;
-  }
-
-  if (role === "trabalho") {
-    return `[Apoio para Acessibilidade & Organização no Trabalho]
-Olá${name}.
-
-ℹ️ **Aviso:** A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
-
-Posso te apoiar com:
-1. **Redação de pedidos de acomodação funcional:** Modelos educados e objetivos para solicitar uso de fones abafadores com cancelamento de ruído, instruções de tarefas por escrito ou assento em área com menor circulação.
-2. **Organização e priorização de tarefas:** Ajudar a organizar demandas acumuladas e sugerir uma mensagem para alinhar prioridades com seu gestor.
-3. **Comunicação profissional assíncrona:** Estruturar emails ou mensagens para evitar sobrecarga de reuniões desnecessárias.
-
-Qual pedido ou alinhamento de trabalho você gostaria de redigir?`;
-  }
-
   if (role === "familia_cuidado") {
     return `[Apoio à Família & Rede de Cuidados]
 Olá${name}! O papel da rede de apoio é construir um ambiente seguro, com previsibilidade e acolhimento mútuo.
@@ -314,7 +388,7 @@ Como posso apoiar a rotina familiar hoje?
 • **Previsibilidade doméstica:** Organizar horários estáveis para as refeições, descanso e momentos de silêncio.
 • **Antecipação de mudanças:** Planejar como conversar antes sobre alterações de horários, visitas ou consultas.
 • **Divisão de tarefas colaborativas:** Estruturar afazeres com a participação da pessoa apoiada respeitando seu ritmo.
-• **Comunicação com a escola/terapeutas:** Preparar mensagens informando sobre a semana sem cobranças ou julgamentos.
+• **Comunicação com a escola:** Preparar mensagens informando sobre a semana com clareza e empatia.
 • **Ajustes ambientais:** Reduzir excesso de estímulos luminosos, sonoros ou desorganização física nos espaços de descanso.`;
   }
 
@@ -513,22 +587,22 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
     <div className="flex flex-col h-[calc(100vh-80px)] w-full max-w-7xl mx-auto p-2 sm:p-4 space-y-3 flex-1">
       
       {/* Support Context Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm flex-shrink-0">
+      <div className={`border rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm flex-shrink-0 ${
+        isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+      }`}>
         <div className="flex items-center gap-2 pl-1">
-          <Sparkles className="w-4 h-4 text-teal-400 shrink-0" />
-          <span className="text-xs font-bold text-slate-200">Contexto do Apoio:</span>
-          <span className="text-[11px] text-slate-400 hidden lg:inline">• Copiloto de organização, comunicação e acessibilidade</span>
+          <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
+          <span className={`text-xs font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>Contexto do Apoio:</span>
+          <span className="text-[11px] text-slate-400 hidden lg:inline">• Orientação para organização executiva, scripts e acessibilidade</span>
         </div>
 
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[
-            { id: "meu_apoio", label: "Meu Apoio", icon: UserCheck, color: "text-teal-300 bg-teal-950/80 border-teal-700" },
-            { id: "educacao", label: "Educação", icon: GraduationCap, color: "text-amber-300 bg-amber-950/80 border-amber-700" },
-            { id: "familia_cuidado", label: "Família & Cuidado", icon: Users, color: "text-emerald-300 bg-emerald-950/80 border-emerald-700" },
-            { id: "comunicacao_acessibilidade", label: "Comunicação & Acessibilidade", icon: MessageSquare, color: "text-sky-300 bg-sky-950/80 border-sky-700" },
-            { id: "organizacao_rotina", label: "Organização & Rotina", icon: Clock, color: "text-indigo-300 bg-indigo-950/80 border-indigo-700" },
-            { id: "saude", label: "Saúde (Organização)", icon: HeartPulse, color: "text-rose-300 bg-rose-950/80 border-rose-700" },
-            { id: "trabalho", label: "Trabalho (Acessibilidade)", icon: Building2, color: "text-cyan-300 bg-cyan-950/80 border-cyan-700" },
+            { id: "meu_apoio", label: "Meu Apoio", icon: UserCheck, color: isDark ? "text-violet-300 bg-violet-950/80 border-violet-700" : "text-violet-800 bg-violet-50 border-violet-300" },
+            { id: "educacao", label: "Educação & DUA", icon: GraduationCap, color: isDark ? "text-amber-300 bg-amber-950/80 border-amber-700" : "text-amber-900 bg-amber-50 border-amber-300" },
+            { id: "familia_cuidado", label: "Família & Cuidado", icon: Users, color: isDark ? "text-indigo-300 bg-indigo-950/80 border-indigo-700" : "text-indigo-900 bg-indigo-50 border-indigo-300" },
+            { id: "comunicacao_acessibilidade", label: "Comunicação & Acessibilidade", icon: MessageSquare, color: isDark ? "text-sky-300 bg-sky-950/80 border-sky-700" : "text-sky-900 bg-sky-50 border-sky-300" },
+            { id: "organizacao_rotina", label: "Organização & Rotina", icon: Clock, color: isDark ? "text-purple-300 bg-purple-950/80 border-purple-700" : "text-purple-900 bg-purple-50 border-purple-300" },
           ].map((ctx) => {
             const Icon = ctx.icon;
             const isSelected = interactionRole === ctx.id;
@@ -538,8 +612,10 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
                 onClick={() => setInteractionRole(ctx.id as InteractionRole)}
                 className={`px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 transition text-xs ${
                   isSelected
-                    ? ctx.color + " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold"
-                    : "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                    ? ctx.color + (isDark ? " ring-1 ring-offset-1 ring-offset-slate-950 shadow-md font-bold" : " ring-1 ring-violet-500 shadow-sm font-bold")
+                    : isDark 
+                      ? "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -549,25 +625,6 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
           })}
         </div>
       </div>
-
-      {/* Context Specific Safety Notice Banner */}
-      {interactionRole === "saude" && (
-        <div className="bg-amber-950/60 border border-amber-800/80 text-amber-200 px-3.5 py-2 rounded-xl text-xs flex items-start gap-2 shadow-sm">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <p className="leading-snug">
-            <strong>Aviso de Apoio em Saúde:</strong> A IA oferece apoio para organizar informações e preparar perguntas ou registros. Não substitui profissionais habilitados nem realiza diagnóstico, prescrição ou decisão clínica.
-          </p>
-        </div>
-      )}
-
-      {interactionRole === "trabalho" && (
-        <div className="bg-cyan-950/60 border border-cyan-800/80 text-cyan-200 px-3.5 py-2 rounded-xl text-xs flex items-start gap-2 shadow-sm">
-          <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <p className="leading-snug">
-            <strong>Aviso de Apoio no Trabalho:</strong> A IA oferece apoio para organizar informações e pedidos funcionais. Não emite parecer jurídico, médico ou trabalhista.
-          </p>
-        </div>
-      )}
 
       {/* Onboarding Box if not completed */}
       {onboardingStep !== "done" && (
@@ -673,68 +730,128 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
         </div>
       )}
 
-      {/* Main Chat Conversation Container */}
-      <div className={`flex-1 rounded-2xl p-4 sm:p-6 overflow-y-auto space-y-4 shadow-inner border text-slate-100 ${
+      {/* Main Chat Conversation Container (Turns: Pergunta + Resposta agrupadas em 1 turno visual) */}
+      <div className={`flex-1 rounded-2xl p-4 sm:p-6 overflow-y-auto space-y-4 border ${
         isDark
-          ? "bg-slate-900/90 border-slate-800 text-slate-100"
-          : "bg-slate-50 border-slate-200 text-slate-900"
+          ? "bg-slate-900/80 border-slate-800"
+          : "bg-white border-slate-200"
       }`}>
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-          >
-            {/* Avatar */}
+        {(() => {
+          interface ChatTurn {
+            id: string;
+            user?: ChatMessage;
+            assistant?: ChatMessage;
+          }
+
+          const turns: ChatTurn[] = [];
+          let pendingUser: ChatMessage | null = null;
+
+          for (const msg of messages) {
+            if (msg.role === "user") {
+              if (pendingUser) {
+                turns.push({ id: `turn-${pendingUser.id}`, user: pendingUser });
+              }
+              pendingUser = msg;
+            } else {
+              if (pendingUser) {
+                turns.push({ id: `turn-${pendingUser.id}`, user: pendingUser, assistant: msg });
+                pendingUser = null;
+              } else {
+                turns.push({ id: `turn-${msg.id}`, assistant: msg });
+              }
+            }
+          }
+          if (pendingUser) {
+            turns.push({ id: `turn-${pendingUser.id}`, user: pendingUser });
+          }
+
+          return turns.map((turn, turnIdx) => (
             <div
-              className={`p-2.5 rounded-xl text-white flex-shrink-0 shadow-sm ${
-                msg.role === "user" ? "bg-teal-600" : "bg-emerald-700 dark:bg-emerald-800"
+              key={turn.id}
+              className={`p-4 sm:p-5 rounded-2xl border transition space-y-4 ${
+                isDark
+                  ? "bg-slate-950/40 border-slate-800/70"
+                  : "bg-slate-50/70 border-slate-200/80"
               }`}
             >
-              {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+              {/* User Prompt (Pergunta) */}
+              {turn.user && (
+                <div className="flex items-start gap-3">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isDark ? "bg-slate-800 text-teal-300" : "bg-teal-100 text-teal-800"
+                  }`}>
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                        {userProfile.preferredName && userProfile.preferredName !== "Visitante" ? userProfile.preferredName : "Você"}
+                      </span>
+                      <span className="text-[11px] text-slate-400">{turn.user.timestamp}</span>
+                    </div>
+                    <p className={`text-sm sm:text-base mt-1 font-medium leading-relaxed ${
+                      isDark ? "text-slate-100" : "text-slate-900"
+                    }`}>
+                      {turn.user.content}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Divider between Question & Answer if user prompt exists */}
+              {turn.user && turn.assistant && (
+                <div className={`border-t ${isDark ? "border-slate-800/60" : "border-slate-200"}`} />
+              )}
+
+              {/* Assistant Response (Resposta) */}
+              {turn.assistant && (
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs font-bold ${isDark ? "text-teal-400" : "text-teal-800"}`}>
+                        Copiloto NeuroConecta
+                      </span>
+                      <span className="text-[11px] text-slate-400">{turn.assistant.timestamp}</span>
+                    </div>
+                    <div className={`text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans ${
+                      isDark ? "text-slate-200" : "text-slate-800"
+                    }`}>
+                      {turn.assistant.content}
+                    </div>
+                    <div className="flex items-center justify-end pt-1">
+                      <button
+                        onClick={() => handleCopy(turn.assistant!.id, turn.assistant!.content)}
+                        className={`text-xs transition flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${
+                          isDark ? "hover:bg-slate-800 text-slate-400 hover:text-slate-200" : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
+                        }`}
+                        title="Copiar resposta do copiloto"
+                      >
+                        {copiedId === turn.assistant.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedId === turn.assistant.id ? "Copiado" : "Copiar"}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State in active turn */}
+              {!turn.assistant && isLoading && turnIdx === turns.length - 1 && (
+                <div className="flex items-center gap-3 text-xs italic pl-10 text-teal-600 dark:text-teal-400">
+                  <Bot className="w-4 h-4 animate-spin" />
+                  <span>O copiloto NeuroConecta está formulando a resposta...</span>
+                </div>
+              )}
             </div>
+          ));
+        })()}
 
-            {/* Message Bubble */}
-            <div
-              className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-4 sm:p-5 text-sm sm:text-base leading-relaxed space-y-2 relative group shadow-sm border ${
-                msg.role === "user"
-                  ? isDark
-                    ? "bg-teal-950/90 text-teal-100 border-teal-800/80 rounded-tr-none"
-                    : "bg-teal-600 text-white font-medium border-teal-700 rounded-tr-none"
-                  : isDark
-                    ? "bg-slate-800/95 text-slate-100 border-slate-700 rounded-tl-none"
-                    : "bg-white text-slate-900 border-slate-200 rounded-tl-none"
-              }`}
-            >
-              <div className="whitespace-pre-wrap font-sans leading-relaxed text-sm sm:text-base">
-                {msg.content}
-              </div>
-
-              {/* Action Bar inside bubble */}
-              <div className={`flex items-center justify-between pt-1 text-[11px] border-t mt-2 ${
-                msg.role === "user" && !isDark
-                  ? "text-teal-100 border-teal-500/40"
-                  : isDark
-                    ? "text-slate-400 border-slate-700/50"
-                    : "text-slate-400 border-slate-100"
-              }`}>
-                <span>{msg.timestamp}</span>
-                <button
-                  onClick={() => handleCopy(msg.id, msg.content)}
-                  className="opacity-0 group-hover:opacity-100 transition p-1 hover:underline flex items-center gap-1"
-                  title="Copiar texto"
-                >
-                  {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedId === msg.id ? "Copiado" : "Copiar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {isLoading && (
-          <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs italic p-2">
-            <Bot className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-spin" />
-            <span>O copiloto NeuroConecta está formulando a resposta...</span>
+        {isLoading && messages.length === 0 && (
+          <div className="flex items-center gap-3 text-slate-500 text-xs italic p-2">
+            <Bot className="w-4 h-4 text-teal-600 animate-spin" />
+            <span>O copiloto NeuroConecta está iniciando...</span>
           </div>
         )}
 
@@ -784,7 +901,7 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Digite sua mensagem ou o que deseja organizar hoje..."
           disabled={isLoading}
-          className={`flex-1 px-4 py-3 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm transition ${
+          className={`flex-1 px-4 py-3 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-sm transition ${
             isDark
               ? "bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500"
               : "bg-white border-slate-300 text-slate-900 placeholder-slate-400"
@@ -793,7 +910,7 @@ Selecione no menu acima o **Contexto do Apoio** mais adequado para o seu momento
         <button
           type="submit"
           disabled={!inputText.trim() || isLoading}
-          className="px-5 py-3 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-semibold rounded-2xl shadow-md transition flex items-center gap-2 flex-shrink-0"
+          className="px-5 py-3 bg-violet-700 hover:bg-violet-600 disabled:opacity-40 text-white font-semibold rounded-2xl shadow-md transition flex items-center gap-2 flex-shrink-0"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">Enviar</span>

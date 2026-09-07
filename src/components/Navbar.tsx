@@ -66,51 +66,42 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getSkinConfig = () => {
     if (isSuperAdmin) {
       return {
-        label: "⚡ Superadmin / Programador TI",
+        label: "⚡ Superadmin / Gestão TI",
         badgeClass: "bg-cyan-950 text-cyan-300 border-cyan-700",
         activeTabClass: "bg-cyan-950 text-cyan-200 border-cyan-700 shadow-cyan-950/50",
         borderAccent: "border-cyan-800/80",
         dotColor: "bg-cyan-400",
       };
     }
-    if (userRole === "saude_caps" || profRoleType === "medico" || profRoleType === "perito" || profRoleType === "enfermeiro") {
-      if (profRoleType === "enfermeiro") {
-        return {
-          label: `🩺 Enfermagem CAPS ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
-          badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-700",
-          activeTabClass: "bg-emerald-950 text-emerald-200 border-emerald-700 shadow-emerald-950/50",
-          borderAccent: "border-emerald-800/80",
-          dotColor: "bg-emerald-400",
-        };
-      }
+    if (userRole === "profissional_apoio" || profRoleType === "terapeuta" || profRoleType === "psicologo") {
       return {
-        label: `🩺 Médico / Perito CAPS ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
-        badgeClass: "bg-rose-950 text-rose-300 border-rose-700",
-        activeTabClass: "bg-rose-950 text-rose-200 border-rose-700 shadow-rose-950/50",
-        borderAccent: "border-rose-800/80",
-        dotColor: "bg-rose-400",
+        label: `🤝 Profissional de Apoio ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+        badgeClass: "bg-indigo-950 text-indigo-300 border-indigo-700",
+        activeTabClass: "bg-indigo-950 text-indigo-200 border-indigo-700 shadow-indigo-950/50",
+        borderAccent: "border-indigo-800/80",
+        dotColor: "bg-indigo-400",
       };
     }
-    if (userRole === "rh_gestor" || profRoleType === "rh") {
+    if (userRole === "cuidador_educador" || profRoleType === "educador" || userRole === "educador_aee") {
       return {
-        label: `🏢 Gestão de RH ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
-        badgeClass: "bg-blue-950 text-blue-300 border-blue-700",
-        activeTabClass: "bg-blue-950 text-blue-200 border-blue-700 shadow-blue-950/50",
-        borderAccent: "border-blue-800/80",
-        dotColor: "bg-blue-400",
-      };
-    }
-    if (userRole === "cuidador_educador" || profRoleType === "educador") {
-      return {
-        label: `🎓 Educador Especial ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+        label: `🎓 Educador / AEE ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
         badgeClass: "bg-amber-950 text-amber-300 border-amber-700",
         activeTabClass: "bg-amber-950 text-amber-200 border-amber-700 shadow-amber-950/50",
         borderAccent: "border-amber-800/80",
         dotColor: "bg-amber-400",
       };
     }
+    if (userRole === "cuidador_familiar") {
+      return {
+        label: `🏡 Família / Cuidador(a)`,
+        badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-700",
+        activeTabClass: "bg-emerald-950 text-emerald-200 border-emerald-700 shadow-emerald-950/50",
+        borderAccent: "border-emerald-800/80",
+        dotColor: "bg-emerald-400",
+      };
+    }
     return {
-      label: `🧩 PCD / Paciente ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
+      label: `🧩 Pessoa / Usuário(a) ${userProfile.preferredName && userProfile.preferredName !== "Visitante" ? `(${userProfile.preferredName})` : ""}`,
       badgeClass: "bg-purple-950 text-purple-300 border-purple-700",
       activeTabClass: "bg-purple-950 text-purple-200 border-purple-700 shadow-purple-950/50",
       borderAccent: "border-purple-800/80",
@@ -131,20 +122,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "comunicacao", label: "Comunicação AAC", icon: MessageSquare, roles: ["pcd", "cuidador_educador", "superadmin"] },
     { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "caps", label: "Saúde CAPS & Prontuário", icon: Stethoscope, roles: ["saude_caps", "superadmin"] },
     { id: "relatorio", label: "Relatórios Funcionais", icon: FileText, roles: ["cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "rh", label: "Módulo RH & NR-1", icon: Building2, roles: ["rh_gestor", "superadmin"] },
     { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
     { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
     { id: "scripts", label: "Central de Scripts (Admin)", icon: Terminal, adminOnly: true, roles: ["superadmin"] },
   ] as const;
 
-  // Modules frozen and made invisible by administration request
-  const FROZEN_TAB_IDS = new Set(["caps", "rh"]);
-
-  // Filter tabs by role and hiddenModules setting (frozen modules are kept strictly invisible)
+  // Filter tabs by role and hiddenModules setting
   const tabs = allTabs.filter(tab => {
-    if (FROZEN_TAB_IDS.has(tab.id)) return false;
     if ('adminOnly' in tab && tab.adminOnly) return isSuperAdmin;
     if (!isSuperAdmin && hiddenModules.includes(tab.id)) return false;
     if (isSuperAdmin) return true;
@@ -154,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getRoleLabel = () => {
     switch(userRole) {
       case "cuidador_educador": return "🎓 Educador / Cuidador";
-      case "saude_caps": return "🩺 Saúde CAPS / Médico";
+      case "saude_caps": return "🩺 Profissional Multidisciplinar";
       case "superadmin": return "⚡ Superadmin TI";
       default: return "🧩 PCD Neurodivergente";
     }

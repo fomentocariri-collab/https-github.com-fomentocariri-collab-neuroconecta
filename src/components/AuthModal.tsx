@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X, Calendar } from "lucide-react";
-import { UserProfile, getAgeCategory, calculateAge } from "../types";
+import { UserProfile, UserRole, ProfessionalRoleType, getAgeCategory, calculateAge } from "../types";
 import { supabase } from "../lib/supabase";
 import neuroconectaLogo from "../assets/logo";
 
@@ -29,8 +29,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("2012-05-15");
-  const [userRole, setUserRole] = useState<"pcd" | "cuidador_educador" | "saude_caps" | "rh_gestor" | "superadmin">("pcd");
-  const [professionalRoleType, setProfessionalRoleType] = useState<"medico" | "enfermeiro" | "perito" | "rh" | "educador" | "pcd">("pcd");
+  const [userRole, setUserRole] = useState<UserRole>("pcd");
+  const [professionalRoleType, setProfessionalRoleType] = useState<ProfessionalRoleType>("pcd");
   const [professionalRegisterNumber, setProfessionalRegisterNumber] = useState("");
   const [diagnosisStatus, setDiagnosisStatus] = useState("laudo_formal");
   const [lgpdConsent, setLgpdConsent] = useState(false);
@@ -551,52 +551,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => {
                       const newRole = e.target.value as any;
                       setUserRole(newRole);
-                      if (newRole === "saude_caps") setProfessionalRoleType("medico");
-                      else if (newRole === "rh_gestor") setProfessionalRoleType("rh");
-                      else if (newRole === "cuidador_educador") setProfessionalRoleType("educador");
+                      if (newRole === "cuidador_educador" || newRole === "educador_aee") setProfessionalRoleType("educador");
+                      else if (newRole === "profissional_apoio") setProfessionalRoleType("terapeuta");
                       else setProfessionalRoleType("pcd");
                     }}
                     className={`w-full px-3 py-2 border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 truncate transition ${
                       isDark ? "bg-slate-950 border-teal-800/80 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
                     }`}
                   >
-                    <option value="pcd" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🧩 Paciente / PCD Neurodivergente (Skin Roxa - Interface Calma)</option>
-                    <option value="saude_caps" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🩺 Médico / Enfermeiro / Perito CAPS (Skin Rosa/Verde - Prontuário)</option>
-                    <option value="rh_gestor" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🏢 Recursos Humanos / Gestor de Pessoas (Skin Azul - Dossiê & NR-1)</option>
-                    <option value="cuidador_educador" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🎓 Educador / Professor / Cuidador (Skin Âmbar - PEI Escola)</option>
-                    <option value="superadmin" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>⚡ Superadmin / Programador TI (Acesso Geral)</option>
+                    <option value="pcd" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🧩 Pessoa / Usuário(a) (Autonomia, rotinas e autorregulação)</option>
+                    <option value="cuidador_familiar" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🏡 Família / Cuidador(a) (Apoio compartilhado e diário)</option>
+                    <option value="cuidador_educador" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🎓 Educador(a) / Escola / AEE (Acomodações DUA e PEI)</option>
+                    <option value="profissional_apoio" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>🤝 Profissional de Apoio (Terapia, Psicologia e Apoio Funcional)</option>
+                    <option value="superadmin" className={isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-900"}>⚡ Administrador(a) do Sistema (Gestão técnica)</option>
                   </select>
                 </div>
 
                 {/* Sub-role and Professional Registration Number */}
-                {userRole === "saude_caps" && (
+                {userRole === "profissional_apoio" && (
                   <>
                     <div className="space-y-1">
                       <label className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                        Categoria Profissional
+                        Área de Atuação
                       </label>
                       <select
                         value={professionalRoleType}
                         onChange={(e) => setProfessionalRoleType(e.target.value as any)}
-                        className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500 transition ${
+                        className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
                           isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-slate-50 border-slate-300 text-slate-900"
                         }`}
                       >
-                        <option value="medico">Médico (Skin Rosa)</option>
-                        <option value="enfermeiro">Enfermeiro(a) (Skin Verde)</option>
-                        <option value="perito">Perito(a) Médico(a) (Skin Rosa)</option>
+                        <option value="terapeuta">Terapeuta Ocupacional / Fonoaudiólogo(a)</option>
+                        <option value="psicologo">Psicólogo(a) / Neuropsicólogo(a)</option>
+                        <option value="educador">Psicopedagogo(a) / Especialista em Inclusão</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
                       <label className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                        {professionalRoleType === "enfermeiro" ? "Registro COREN" : "Registro CRM"}
+                        Registro no Conselho Profissional
                       </label>
                       <input
                         type="text"
                         value={professionalRegisterNumber}
                         onChange={(e) => setProfessionalRegisterNumber(e.target.value)}
-                        placeholder={professionalRoleType === "enfermeiro" ? "Ex: COREN/CE 123456" : "Ex: CRM/CE 654321"}
+                        placeholder="Ex: CREFITO, CRP, CRFa, etc."
                         className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
                           isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900"
                         }`}
@@ -605,33 +604,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </>
                 )}
 
-                {userRole === "rh_gestor" && (
+                {(userRole === "cuidador_educador" || (userRole as string) === "educador_aee") && (
                   <div className="space-y-1 sm:col-span-2">
                     <label className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                      Registro Profissional RH / CRA / MTE
+                      Instituição Escolar / Registro de Docência
                     </label>
                     <input
                       type="text"
                       value={professionalRegisterNumber}
                       onChange={(e) => setProfessionalRegisterNumber(e.target.value)}
-                      placeholder="Ex: CRA/CE 98765 ou MTE/RH 00123"
-                      className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                        isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900"
-                      }`}
-                    />
-                  </div>
-                )}
-
-                {userRole === "cuidador_educador" && (
-                  <div className="space-y-1 sm:col-span-2">
-                    <label className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-                      Registro MEC / Matrícula Escolar
-                    </label>
-                    <input
-                      type="text"
-                      value={professionalRegisterNumber}
-                      onChange={(e) => setProfessionalRegisterNumber(e.target.value)}
-                      placeholder="Ex: MEC/CE 45678 ou Matrícula 2026-90"
+                      placeholder="Ex: Matrícula Escolar ou Registro Docente"
                       className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 transition ${
                         isDark ? "bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900"
                       }`}

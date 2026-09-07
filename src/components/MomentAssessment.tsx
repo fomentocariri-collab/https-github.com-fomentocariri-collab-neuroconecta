@@ -40,6 +40,7 @@ export interface FunctionalMomentResult {
 interface MomentAssessmentProps {
   onNavigateToChat?: (prompt?: string, role?: string) => void;
   onNavigateToSounds?: () => void;
+  onNavigateToTab?: (tab: any) => void;
   isDark?: boolean;
 }
 
@@ -48,6 +49,7 @@ const STORAGE_KEY = "neuroconecta_moment_assessments_v1";
 export const MomentAssessment: React.FC<MomentAssessmentProps> = ({
   onNavigateToChat,
   onNavigateToSounds,
+  onNavigateToTab,
   isDark = true,
 }) => {
   // Dimension selections
@@ -61,6 +63,7 @@ export const MomentAssessment: React.FC<MomentAssessmentProps> = ({
   const [savedRecords, setSavedRecords] = useState<FunctionalMomentResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+  const [planLinkedMessage, setPlanLinkedMessage] = useState<string | null>(null);
 
   // Load history from localStorage
   useEffect(() => {
@@ -265,6 +268,27 @@ Como você pode me apoiar a estruturar meus próximos passos práticos de forma 
     onNavigateToChat?.(prompt, "organizacao_rotina");
   };
 
+  const handleLinkToFunctionalPlan = (res: FunctionalMomentResult) => {
+    try {
+      const planKey = "neuroconecta_functional_plan_active";
+      const existingRaw = localStorage.getItem(planKey);
+      const plan = existingRaw ? JSON.parse(existingRaw) : {
+        subjectId: "user-local",
+        sensoryAccommodations: [],
+        routineGuidelines: [],
+        communicationPreferences: [],
+        updatedAt: new Date().toISOString()
+      };
+      plan.sensoryAccommodations = Array.from(new Set([...(plan.sensoryAccommodations || []), ...res.whatToDo]));
+      plan.updatedAt = new Date().toISOString();
+      localStorage.setItem(planKey, JSON.stringify(plan));
+      setPlanLinkedMessage("Diretrizes vinculadas ao seu Plano Funcional de Apoio pessoal. (Garantia: O PEI escolar nunca é alterado automaticamente e requer revisão humana).");
+      setTimeout(() => setPlanLinkedMessage(null), 6000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="space-y-8">
       
@@ -287,6 +311,14 @@ Como você pode me apoiar a estruturar meus próximos passos práticos de forma 
             <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span>Sem rótulos clínicos. Foco em acomodação e bem-estar.</span>
           </div>
+        </div>
+
+        {/* Safeguard Guarantee Banner: AUTO-SAFE-01 & SHARE-01 */}
+        <div className="mt-4 p-3 bg-teal-950/40 border border-teal-800/60 rounded-xl flex items-start sm:items-center gap-2.5 text-xs text-teal-200">
+          <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0 mt-0.5 sm:mt-0" />
+          <span className="leading-relaxed">
+            <strong>Garantia de Integridade &amp; Privacidade:</strong> A autoavaliação é estritamente de uso pessoal do usuário. Ela <em>nunca</em> altera o Plano de Ensino Individualizado (PEI) escolar automaticamente e não pode ser visualizada por professores ou terceiros sem uma Concessão de Compartilhamento (ShareGrant) explícita e voluntária.
+          </span>
         </div>
       </div>
 
@@ -544,21 +576,69 @@ Como você pode me apoiar a estruturar meus próximos passos práticos de forma 
 
           </div>
 
+          {/* Linked Plan Confirmation Feedback */}
+          {planLinkedMessage && (
+            <div className="p-3.5 bg-emerald-950/80 border border-emerald-700 text-emerald-300 rounded-xl text-xs font-semibold flex items-start sm:items-center gap-2 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" />
+              <span>{planLinkedMessage}</span>
+            </div>
+          )}
+
           {/* Integrated Next Steps */}
-          <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-slate-400 flex items-center gap-2">
-              <span>Gostaria de aprofundar ou relaxar com som agora?</span>
+          <div className="pt-3 border-t border-slate-800 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-teal-400" />
+                Vincular a Apoios Funcionais Práticos:
+              </span>
+              <span className="text-[11px] text-slate-400">
+                Ações imediatas para colocar o parecer em prática
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleLinkToFunctionalPlan(currentResult)}
+                className="px-3.5 py-2 bg-teal-800 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm border border-teal-700"
+                title="Incorporar as diretrizes desta autoavaliação ao seu Plano Funcional de Apoio pessoal (sem alterar o PEI escolar)"
+              >
+                <Save className="w-3.5 h-3.5 text-teal-300" />
+                <span>Incorporar ao Meu Plano Funcional</span>
+              </button>
+
+              {onNavigateToTab && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab("rotina")}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                  title="Aplicar bloco de foco ou descanso na sua rotina visual"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Aplicar na Rotina Visual</span>
+                </button>
+              )}
+
+              {onNavigateToTab && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab("comunicacao")}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                  title="Usar pranchas de comunicação alternativa para avisar sobre sua energia"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Comunicação AAC</span>
+                </button>
+              )}
+
               {onNavigateToSounds && (
                 <button
                   type="button"
                   onClick={onNavigateToSounds}
-                  className="px-4 py-2 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-2 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/60 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                 >
-                  <Headphones className="w-3.5 h-3.5" />
-                  <span>Ir para Som &amp; Autorregulação</span>
+                  <Headphones className="w-3.5 h-3.5 text-indigo-300" />
+                  <span>Som &amp; Autorregulação</span>
                 </button>
               )}
 
@@ -566,7 +646,7 @@ Como você pode me apoiar a estruturar meus próximos passos práticos de forma 
                 <button
                   type="button"
                   onClick={() => handleSendToChat(currentResult)}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Levar Parecer ao Copiloto IA</span>
