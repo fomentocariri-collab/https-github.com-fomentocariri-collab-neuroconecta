@@ -2,24 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { 
   Send, Bot, User, Sparkles, Copy, Check, 
   UserCheck, GraduationCap, Users, MessageSquare, 
-  Clock, HeartPulse, Building2, AlertTriangle, Info,
-  Sliders, Baby
+  Clock, HeartPulse, Building2, AlertTriangle, Info
 } from "lucide-react";
-import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus, InteractionProfile } from "../types";
-import { 
-  getInteractionProfile, 
-  buildMinimalInteractionContext, 
-  listPersonasForUser 
-} from "../services/interactionProfileService";
+import { UserProfile, ChatMessage, FocusArea, DiagnosisStatus } from "../types";
 
 interface ChatAssistantProps {
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
   onNavigateToTab: (tab: any) => void;
   onOpenCrisis: () => void;
-  activePersonaId?: string;
-  onSelectPersona?: (personId: string) => void;
-  onOpenProfile?: () => void;
   initialPrompt?: { prompt: string; role?: InteractionRole } | null;
   onClearInitialPrompt?: () => void;
 }
@@ -31,20 +22,11 @@ export type InteractionRole =
   | "comunicacao_acessibilidade" 
   | "organizacao_rotina";
 
-const getSmartAssistantReply = (
-  userMessage: string, 
-  profile: UserProfile, 
-  role: InteractionRole = "meu_apoio",
-  intProfile?: InteractionProfile
-): string => {
+const getSmartAssistantReply = (userMessage: string, profile: UserProfile, role: InteractionRole = "meu_apoio"): string => {
   const text = (userMessage || "").toLowerCase().trim();
-  const name = intProfile?.personName || (profile.preferredName && profile.preferredName !== "Visitante" ? profile.preferredName : "");
-  const nameGreeting = name ? `, ${name}` : "";
-  const isChild = intProfile?.faixaEtaria === "crianca";
-  const preferShort = intProfile?.tamanhoPreferidoDasRespostas === "curtas";
-  const preferSteps = intProfile?.prefereEtapas !== false;
+  const name = profile.preferredName && profile.preferredName !== "Visitante" ? `, ${profile.preferredName}` : "";
 
-  // 1. Crise e Sobrecarga Aguda (Prioridade Máxima)
+  // 1. Crise e Sobrecarga Aguda
   if (
     text.includes("crise") ||
     text.includes("meltdown") ||
@@ -56,7 +38,7 @@ const getSmartAssistantReply = (
     text.includes("sobrecarga") ||
     text.includes("ansiedade")
   ) {
-    return `Olá${nameGreeting}. Estou aqui com você. Se estiver sentindo sobrecarga sensorial ou emocional:
+    return `Olá${name}. Estou aqui com você. Se estiver sentindo sobrecarga sensorial ou emocional:
 
 Sua segurança e bem-estar vêm em primeiro lugar.
 
@@ -71,92 +53,6 @@ Sua segurança e bem-estar vêm em primeiro lugar.
 3. Não tente resolver decisões difíceis agora. Apenas respire no seu próprio ritmo.
 
 ⚠️ *Se precisar de acolhimento emergencial humano, use o botão **SOS Crise** no topo ou ligue para o CVV (188) ou SAMU (192).*`;
-  }
-
-  // 2. Conhecimento Geral e Literatura (Dom Casmurro, Eclipse, Ciências)
-  if (text.includes("dom casmurro") || text.includes("machado de assis")) {
-    if (preferShort) {
-      return `**Dom Casmurro** foi escrito por **Machado de Assis** e publicado em 1899. É um dos maiores clássicos do Realismo brasileiro, narrado por Bento Santiago (Bentinho) sobre sua relação e ciúmes de Capitu.`;
-    }
-    return `**Dom Casmurro** é uma obra-prima da literatura brasileira escrita por **Machado de Assis**, publicada em 1899.
-
-O romance é narrado em primeira pessoa por Bento Santiago (o Bentinho, já idoso e conhecido como "Dom Casmurro"), que relembra sua juventude, seu casamento com Capitu (dos "olhos de cigana oblíqua e dissimulada") e a amizade com Escobar, convivendo com a dúvida atormentadora sobre a fidelidade da esposa.`;
-  }
-
-  if (text.includes("eclipse")) {
-    if (preferShort || preferSteps) {
-      return `Um **eclipse** acontece quando a luz de um corpo celeste é bloqueada temporariamente pela passagem de outro astro:
-1. **Eclipse Solar:** A Lua passa exatamente entre a Terra e o Sol, projetando sua sombra sobre a Terra.
-2. **Eclipse Lunar:** A Terra fica entre o Sol e a Lua, cobrindo a Lua com sua sombra.`;
-    }
-    return `Um **eclipse** é um evento astronômico fascinante que ocorre quando um corpo celeste se move para a sombra de outro ou bloqueia a passagem de sua luz.
-No eclipse solar, a Lua projeta sua sombra na superfície da Terra durante o dia. No eclipse lunar, a Terra se posiciona entre o Sol e a Lua Cheia, projetando uma sombra avermelhada sobre o satélite.`;
-  }
-
-  if (text.includes("por que chove") || text.includes("chuva") || text.includes("como nasce uma planta")) {
-    if (isChild) {
-      if (text.includes("planta")) {
-        return `Oi${nameGreeting}! A plantinha nasce assim, em 3 passos bem fáceis:
-1. **A semente descansa na terra:** Ela precisa de uma terrinha fofa e úmida.
-2. **Ela bebe água e recebe o sol:** A água acorda a semente e ela começa a se abrir.
-3. **Cresce a raiz e a folhinha:** A raiz bebe comidinha da terra e a folhinha verde cresce em direção à luz!
-Quer fazer o teste de plantar um feijão no algodão?`;
-      }
-      return `Oi${nameGreeting}! A chuva acontece em 3 passos bem legais:
-1. **O sol esquenta a água:** A água dos rios e mares sobe para o céu em forma de vapor invisível.
-2. **Formam-se as nuvens:** Lá no alto, o ar é bem frio e o vapor se junta em milhares de gotinhas de água, formando as nuvens.
-3. **A chuva cai:** Quando a nuvem fica bem pesada e cheia, as gotinhas caem na terra como chuva!
-Gostaria de ver isso em um desenho ou esquema?`;
-    }
-    return `A chuva ocorre pelo ciclo hidrológico natural da Terra:
-1. **Evaporação:** A radiação solar aquece os oceanos, rios e lagos, transformando a água líquida em vapor d'água atmosférico.
-2. **Condensação:** Conforme o ar quente e úmido sobe, ele esfria nas camadas superiores da atmosfera, condensando o vapor ao redor de micropartículas (núcleos de condensação) e formando as nuvens.
-3. **Precipitação:** Quando as gotículas de água em suspensão colidem e se tornam densas demais para serem sustentadas pelas correntes térmicas ascendentes, caem por ação da gravidade em forma de chuva.`;
-  }
-
-  // 3. Organização de Rotina e Manhã
-  if (text.includes("organizar minha manhã") || text.includes("minha manhã") || text.includes("rotina da manhã")) {
-    return `Aqui está uma sequência prática para organizar sua manhã em 4 etapas:
-1. **Ativação Física Suave (10 min):** Beba um copo cheio de água fresca e lave o rosto.
-2. **Previsibilidade do Dia (5 min):** Abra sua agenda e defina **apenas 2 prioridades essenciais** para hoje.
-3. **Café da Manhã sem Telas (20 min):** Faça uma refeição sem checar notificações ou notícias urgentes.
-4. **Primeiro Bloco Focado (25 min):** Inicie a prioridade número um com o ambiente preparado (fones ou silêncio).`;
-  }
-
-  // 4. Educador / DUA / Ecossistemas
-  if (role === "educacao" || text.includes("ecossistema") || text.includes("participação") || text.includes("dua")) {
-    return `[Apoio Pedagógico DUA: Formas Múltiplas de Participação]
-Para planejar uma atividade acessível sobre ecossistemas com base no Desenho Universal para a Aprendizagem (DUA), sugerimos 3 alternativas de participação e engajamento:
-
-1. **Acesso ao Conteúdo (Representação Visual e Concreta):**
-   • Apresentar os papéis ecológicos (produtores, consumidores e decompositores) com diagramas visuais e ilustrações conectadas.
-   • Resumos com vocabulário em destaque e enunciados por etapas curtas.
-
-2. **Múltiplas Formas de Expressão para os Estudantes:**
-   • Opção A: Montar um mapa conceitual ou painel de figuras conectadas por setas.
-   • Opção B: Gravar um áudio curto de 1 minuto explicando a cadeia alimentar de um animal de seu interesse.
-   • Opção C: Responder a um questionário estruturado com 3 perguntas diretas de múltipla escolha ou associação.
-
-3. **Eliminação de Barreiras:**
-   • Permitir tempo adicional para a elaboração e possibilitar a realização individual com fones para alunos com sobrecarga em salas barulhentas.`;
-  }
-
-  // 5. Família & Cuidado / Transição para Sair de Casa
-  if (role === "familia_cuidado" || text.includes("transição") || text.includes("sair de casa")) {
-    return `[Apoio à Família: Preparando a Transição para Sair de Casa]
-Mudanças de ambiente geram sobrecarga por quebra de previsibilidade. Aqui estão 4 passos para tornar a transição mais suave:
-
-1. **Avisos Prévios em 3 Tempos:**
-   • "Faltam 15 minutos para começarmos a nos arrumar."
-   • "Faltam 5 minutos; vamos finalizar o que estiver fazendo."
-   • "Chegou a hora. Vamos calçar os sapatos."
-2. **Apoio Visual dos Passos:**
-   • Utilizar um checklist visual simples: (Sapatos → Casaco → Mochila → Porta).
-   • Permitir levar um objeto confortável ou fones de ouvido de confiança.
-3. **Reduzir Pressão Verbal Simultânea:**
-   • Dê uma orientação por vez e aguarde o tempo de processamento antes de falar novamente.
-4. **Diferenciação Respeitosa:**
-   • Diferencie nos registros o que a pessoa relatou sentir do que os adultos ao redor observaram.`;
   }
 
   // 2. Organizar o Dia e Rotina

@@ -36,9 +36,6 @@ export interface UserProfile {
   preferredName: string;
   pronouns: string;
   birthDate?: string; // YYYY-MM-DD
-  ageBand?: AgeBand;
-  usageType?: UserUsageType;
-  cipteaNumber?: string;
   userRole?: UserRole;
   professionalRoleType?: ProfessionalRoleType;
   professionalRegisterNumber?: string; // e.g. CRM/SP 123456, COREN/RJ 654321, CRA/BR 98765, MEC/PE 45678, CIPTEA 001/2026
@@ -58,57 +55,6 @@ export interface UserProfile {
   isGuest?: boolean;
   isSuperAdmin?: boolean;
   hiddenModules?: string[];
-}
-
-export type AgeBand = "crianca" | "adolescente" | "adulto" | "idoso";
-
-export type UserUsageType = 
-  | "para_mim" 
-  | "para_crianca" 
-  | "familiar_cuidador" 
-  | "educador_professor" 
-  | "profissional_apoio";
-
-export type ResponseLengthPreference = "curtas" | "medias" | "detalhadas";
-export type DetailLevelPreference = "essencial" | "equilibrado" | "aprofundado";
-export type LanguageStylePreference = "direta" | "acolhedora" | "tecnica_pedagogica" | "simples_concreta";
-
-export interface InteractionProfile {
-  id?: string;
-  userId: string;
-  personId: string;
-  personName: string;
-  faixaEtaria: AgeBand;
-  tipoDeUsuario: UserUsageType;
-  linguagemPreferida: LanguageStylePreference;
-  tamanhoPreferidoDasRespostas: ResponseLengthPreference;
-  nivelDeDetalhamento: DetailLevelPreference;
-  prefereEtapas: boolean;
-  prefereExemplos: boolean;
-  prefereRecursosVisuais: boolean;
-  prefereLinguagemLiteral: boolean;
-  prefereResumoFinal: boolean;
-  prefereUmaPerguntaPorVez: boolean;
-  toleranciaAInformacaoSimultanea: "baixa" | "media" | "alta";
-  modoDeAprendizagemPreferido?: string;
-  interesses?: string[];
-  objetivosAtuais?: string[];
-  necessidadesDeAcessibilidade?: string[];
-  preferenciasDeComunicacao?: string[];
-  contextoPadrao: string;
-  isChildDependent?: boolean;
-  guardianUserId?: string;
-  discoveredPreferences?: Record<string, any>;
-  updatedAt?: string;
-}
-
-export interface ActivePersonContext {
-  personId: string;
-  personName: string;
-  role: "self" | "child_dependent" | "caregiver_view" | "educator_student_view";
-  ageBand: AgeBand;
-  studentShareGrantId?: string;
-  studentAuthorizedFields?: string[];
 }
 
 export function calculateAge(birthDateString?: string): number | null {
