@@ -129,7 +129,7 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthReport> {
     const timeoutId = setTimeout(() => controller.abort(), 3500);
 
     const queryPromise = supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("id")
       .limit(1);
 
@@ -203,78 +203,170 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthReport> {
   }
 }
 
-export const SUPABASE_SQL_SCHEMA = `-- COPY AND RUN THIS IN SUPABASE SQL EDITOR TO CREATE TABLES (PROJECT: neuroconecta)
+export const SUPABASE_SQL_SCHEMA = `-- ====================================================================
+-- NEUROCONECTA — NC-A1: SCHEMA CANÔNICO, PROFILES, AUDITORIA E RLS
+-- ====================================================================
 
--- 1. User Profiles Table
-CREATE TABLE IF NOT EXISTS public.user_profiles (
-  id TEXT PRIMARY KEY DEFAULT 'default_user',
-  preferred_name TEXT,
-  pronouns TEXT,
-  diagnosis_status TEXT,
-  support_level INTEGER,
-  current_focus TEXT,
-  low_stimulation_mode BOOLEAN DEFAULT false,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+-- 1. EXTENSÕES
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. TABELA CANÔNICA DE PERFIS (Vinculada estritamente a auth.users.id)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  display_name TEXT,
+  preferred_name TEXT NOT NULL DEFAULT 'Usuário',
+  pronouns TEXT DEFAULT 'não informado',
+  birth_date TEXT,
+  user_role TEXT NOT NULL DEFAULT 'pcd',
+  professional_role_type TEXT,
+  professional_register_number TEXT,
+  diagnosis_status TEXT NOT NULL DEFAULT 'nao_informado',
+  support_level TEXT NOT NULL DEFAULT 'nao_especificado',
+  current_focus TEXT NOT NULL DEFAULT 'geral',
+  emergency_contacts JSONB NOT NULL DEFAULT '[]'::jsonb,
+  low_stimulation_mode BOOLEAN NOT NULL DEFAULT false,
+  caregiver_mode BOOLEAN NOT NULL DEFAULT false,
+  notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT true,
+  is_super_admin BOOLEAN NOT NULL DEFAULT false,
+  hidden_modules JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ciptea_number TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 2. Test History Table
+-- Trigger para criar perfil automaticamente no SignUp (idempotente)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (
+    id,
+    display_name,
+    preferred_name,
+    user_role,
+    is_super_admin
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE(NEW.raw_user_meta_data->>'preferred_name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'user_role', 'pcd'),
+    CASE WHEN LOWER(NEW.email) IN ('sistemastop@gmail.com', 'fomentocariri@gmail.com') THEN true ELSE false END
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    updated_at = timezone('utc'::text, now());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 3. TABELA DE AUDITORIA IMUTÁVEL
+CREATE TABLE IF NOT EXISTS public.audit_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT,
+  before_data JSONB,
+  after_data JSONB,
+  source TEXT NOT NULL DEFAULT 'web_client',
+  request_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- 4. TABELAS DE DADOS PERSISTENTES DO USUÁRIO (com owner_user_id obrigatório)
 CREATE TABLE IF NOT EXISTS public.test_history (
   id TEXT PRIMARY KEY,
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   test_id TEXT NOT NULL,
   test_title TEXT NOT NULL,
   date TEXT NOT NULL,
-  score INTEGER NOT NULL,
-  max_score INTEGER NOT NULL,
+  score NUMERIC NOT NULL,
+  max_score NUMERIC NOT NULL,
   interpretation_level TEXT NOT NULL,
-  percentage INTEGER NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  percentage NUMERIC NOT NULL,
+  source TEXT DEFAULT 'direct_entry',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 3. Routine Tasks Table
 CREATE TABLE IF NOT EXISTS public.routine_tasks (
   id TEXT PRIMARY KEY,
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   category TEXT NOT NULL,
   target_time TEXT,
   duration_minutes INTEGER,
   icon TEXT,
-  completed BOOLEAN DEFAULT false,
+  completed BOOLEAN NOT NULL DEFAULT false,
   urgency TEXT,
   energy_level TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  source TEXT DEFAULT 'direct_entry',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 4. Mood Logs Table
 CREATE TABLE IF NOT EXISTS public.mood_logs (
   id TEXT PRIMARY KEY,
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   time TEXT NOT NULL,
   mood_score INTEGER NOT NULL,
   energy_score INTEGER NOT NULL,
-  sensory_overload BOOLEAN DEFAULT false,
+  sensory_overload BOOLEAN NOT NULL DEFAULT false,
   note TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  source TEXT DEFAULT 'direct_entry',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 5. Caregiver Logs Table
 CREATE TABLE IF NOT EXISTS public.caregiver_logs (
   id TEXT PRIMARY KEY,
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   note TEXT NOT NULL,
   tag TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  source TEXT DEFAULT 'direct_entry',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- Disable RLS or set public policies for easy access
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS public.agenda_events (
+  id TEXT PRIMARY KEY,
+  owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  date TEXT NOT NULL,
+  time TEXT NOT NULL,
+  category TEXT NOT NULL,
+  notes TEXT,
+  source TEXT DEFAULT 'direct_entry',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- 5. ROW LEVEL SECURITY (RLS) — NEGAR POR PADRÃO
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.test_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.routine_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mood_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.caregiver_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agenda_events ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow public select and insert user_profiles" ON public.user_profiles FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public select and insert test_history" ON public.test_history FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public select and insert routine_tasks" ON public.routine_tasks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public select and insert mood_logs" ON public.mood_logs FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public select and insert caregiver_logs" ON public.caregiver_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "audit_events_insert_own" ON public.audit_events FOR INSERT WITH CHECK (auth.uid() = actor_user_id);
+CREATE POLICY "audit_events_select_own" ON public.audit_events FOR SELECT USING (auth.uid() = actor_user_id);
+
+CREATE POLICY "test_history_owner" ON public.test_history FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
+CREATE POLICY "routine_tasks_owner" ON public.routine_tasks FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
+CREATE POLICY "mood_logs_owner" ON public.mood_logs FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
+CREATE POLICY "caregiver_logs_owner" ON public.caregiver_logs FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
+CREATE POLICY "agenda_events_owner" ON public.agenda_events FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
 `;

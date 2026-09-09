@@ -4,10 +4,17 @@ import neuroconectaLogo from "../assets/logo";
 
 interface LandingCoverScreenProps {
   onOpenAuth: () => void;
+  onExploreGuest?: () => void;
+  onDirectAdminLogin?: () => void;
   isDark?: boolean;
 }
 
-export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAuth, isDark = false }) => {
+export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({
+  onOpenAuth,
+  onExploreGuest,
+  onDirectAdminLogin,
+  isDark = false,
+}) => {
   return (
     <div className="min-h-screen flex flex-col justify-between p-4 sm:p-8 animate-fadeIn bg-slate-50 text-slate-900">
       
@@ -79,14 +86,33 @@ export const LandingCoverScreen: React.FC<LandingCoverScreenProps> = ({ onOpenAu
         </div>
 
         {/* Quick Action Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={onOpenAuth}
-            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-black text-base rounded-2xl shadow-xl shadow-teal-700/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-teal-700/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 active:translate-y-0"
           >
             <LogIn className="w-5 h-5 text-white" />
-            <span>Clique aqui para Acessar / Entrar</span>
+            <span>Acessar / Entrar com Conta</span>
           </button>
+
+          {onDirectAdminLogin && (
+            <button
+              onClick={onDirectAdminLogin}
+              className="w-full sm:w-auto px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Entrar como Administrador</span>
+            </button>
+          )}
+
+          {onExploreGuest && (
+            <button
+              onClick={onExploreGuest}
+              className="w-full sm:w-auto px-5 py-3.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm rounded-2xl border border-slate-300 flex items-center justify-center gap-2 transition"
+            >
+              <span>Explorar em Modo Visitante</span>
+            </button>
+          )}
         </div>
 
         {/* Module Features Grid */}

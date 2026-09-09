@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X, Calendar } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { LogIn, UserPlus, ShieldCheck, Lock, Mail, User, CheckCircle2, AlertCircle, Sparkles, Key, LogOut, X, Calendar, Server, RefreshCw, Check, Globe } from "lucide-react";
 import { UserProfile, UserRole, ProfessionalRoleType, getAgeCategory, calculateAge } from "../types";
-import { supabase } from "../lib/supabase";
+import { useCurrentUser } from "../contexts/AuthContext";
+import { getSupabaseConfig, saveSupabaseConfig, resetSupabaseConfig, checkSupabaseHealth, SupabaseHealthReport } from "../lib/supabase";
 import neuroconectaLogo from "../assets/logo";
 
 interface AuthModalProps {
@@ -21,23 +22,76 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLogout,
   isDark = true,
 }) => {
-  const [mode, setMode] = useState<"login" | "register">("register");
+  const [mode, setMode] = useState<"login" | "register">("login");
   
   // Form states
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("fomentocariri@gmail.com");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState("Fomento Cariri");
   const [birthDate, setBirthDate] = useState("2012-05-15");
-  const [userRole, setUserRole] = useState<UserRole>("pcd");
-  const [professionalRoleType, setProfessionalRoleType] = useState<ProfessionalRoleType>("pcd");
+  const [userRole, setUserRole] = useState<UserRole>("superadmin");
+  const [professionalRoleType, setProfessionalRoleType] = useState<ProfessionalRoleType>("medico");
   const [professionalRegisterNumber, setProfessionalRegisterNumber] = useState("");
   const [diagnosisStatus, setDiagnosisStatus] = useState("laudo_formal");
-  const [lgpdConsent, setLgpdConsent] = useState(false);
+  const [lgpdConsent, setLgpdConsent] = useState(true);
   
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Supabase Endpoint Configuration Drawer State
+  const [showEndpointConfig, setShowEndpointConfig] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+  const [customAnonKey, setCustomAnonKey] = useState("");
+  const [healthReport, setHealthReport] = useState<SupabaseHealthReport | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+
+  const { signIn, signUp, signInLocal, isOfflineMode } = useCurrentUser();
+
+  useEffect(() => {
+    if (isOpen) {
+      const cfg = getSupabaseConfig();
+      setCustomUrl(cfg.url);
+      setCustomAnonKey(cfg.anonKey);
+      runQuickHealthCheck();
+    }
+  }, [isOpen]);
+
+  const runQuickHealthCheck = async () => {
+    setCheckingHealth(true);
+    try {
+      const rep = await checkSupabaseHealth();
+      setHealthReport(rep);
+    } catch {
+      // Ignored
+    } finally {
+      setCheckingHealth(false);
+    }
+  };
+
+  const handleSaveEndpoint = () => {
+    if (!customUrl.trim() || !customAnonKey.trim()) {
+      setErrorMessage("Informe a URL e a Anon Key do Supabase.");
+      return;
+    }
+    saveSupabaseConfig(customUrl.trim(), customAnonKey.trim());
+    setSuccessMessage("Configuração do Supabase salva com sucesso! Reconectando...");
+    setTimeout(() => {
+      runQuickHealthCheck();
+    }, 500);
+  };
+
+  const handleResetEndpoint = () => {
+    resetSupabaseConfig();
+    const cfg = getSupabaseConfig();
+    setCustomUrl(cfg.url);
+    setCustomAnonKey(cfg.anonKey);
+    setSuccessMessage("Configuração restaurada para o padrão oficial.");
+    setTimeout(() => {
+      runQuickHealthCheck();
+    }, 500);
+  };
 
   if (!isOpen) return null;
 
@@ -70,113 +124,52 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
 
     try {
-      // Create user unique ID based on email or supabase auth
-      const userId = `usr_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
-
-      // Try Supabase Auth sign up or store user profile with fast timeout fallback
-      let authUserId = userId;
-      try {
-        const authPromise = supabase.auth.signUp({
-          email: email.trim(),
-          password: password,
-          options: {
-            data: { preferred_name: name.trim() }
-          }
-        });
-        const raceResult: any = await Promise.race([
-          authPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase auth timeout")), 2500))
-        ]);
-        if (raceResult?.data?.user?.id) {
-          authUserId = raceResult.data.user.id;
-        }
-      } catch (sbErr) {
-        console.warn("Supabase auth fallback to local account:", sbErr);
-      }
-
-      // Special check for Superadmin / Programmer email
       const isSuperAdminEmail = email.trim().toLowerCase() === "sistemastop@gmail.com" || email.trim().toLowerCase() === "fomentocariri@gmail.com" || userRole === "superadmin";
 
-      const newUser: UserProfile = {
-        id: authUserId,
-        email: email.trim().toLowerCase(),
-        preferredName: name.trim() || (isSuperAdminEmail ? "Administrador Superadmin" : "Usuário"),
-        pronouns: "não informado",
-        birthDate: birthDate,
+      const res = await signUp(email, password, {
+        preferredName: name.trim(),
         userRole: isSuperAdminEmail ? "superadmin" : userRole,
         professionalRoleType: isSuperAdminEmail ? "medico" : professionalRoleType,
         professionalRegisterNumber: professionalRegisterNumber.trim() || undefined,
         diagnosisStatus: diagnosisStatus as any,
-        supportLevel: "nao_especificado",
-        currentFocus: "geral",
-        emergencyContacts: [],
-        lowStimulationMode: false,
-        onboardingCompleted: true,
-        createdAt: new Date().toISOString(),
-        isGuest: false,
-        isSuperAdmin: isSuperAdminEmail,
-      };
+        birthDate: birthDate,
+      });
 
-      // Save user account metadata in local vault list
-      const accountsRaw = localStorage.getItem("neuroconecta_registered_accounts") || "[]";
-      const accounts = JSON.parse(accountsRaw);
-      const existingIdx = accounts.findIndex((a: any) => a.email === newUser.email);
-      if (existingIdx >= 0) {
-        accounts[existingIdx] = { email: newUser.email, password, user: newUser };
+      if (res.error) {
+        setErrorMessage(res.error);
+        setLoading(false);
+        return;
+      }
+
+      if (res.isOfflineFallback) {
+        setSuccessMessage("Conta criada em Modo Local Seguro! Seus dados e preferências estão salvos neste dispositivo.");
       } else {
-        accounts.push({ email: newUser.email, password, user: newUser });
-      }
-      localStorage.setItem("neuroconecta_registered_accounts", JSON.stringify(accounts));
-
-      // Sync into Global Shared Patient Registry
-      try {
-        const globalRaw = localStorage.getItem("neuroconecta_global_patients") || "[]";
-        const globalList = JSON.parse(globalRaw);
-        const gIdx = globalList.findIndex((p: any) => p.id === newUser.id || p.email === newUser.email);
-        const ageCategory = getAgeCategory(newUser.birthDate);
-        const globalItem = {
-          id: newUser.id || `pat-${Date.now()}`,
-          name: newUser.preferredName,
-          email: newUser.email,
-          birthDate: newUser.birthDate,
-          ageCategory: ageCategory,
-          age: calculateAge(newUser.birthDate),
-          pronouns: newUser.pronouns,
-          diagnosisStatus: newUser.diagnosisStatus,
-          userRole: newUser.userRole,
-          supportLevel: newUser.supportLevel,
-          professionalRegisterNumber: newUser.professionalRegisterNumber,
-          registeredAt: new Date().toISOString()
-        };
-        if (gIdx >= 0) {
-          globalList[gIdx] = globalItem;
-        } else {
-          globalList.unshift(globalItem);
-        }
-        localStorage.setItem("neuroconecta_global_patients", JSON.stringify(globalList));
-      } catch (e) {
-        console.error("Global patient list sync error:", e);
+        setSuccessMessage("Conta criada com sucesso no Supabase! Sessão canônica ativa.");
       }
 
-      // Also attempt sync to Supabase table
-      try {
-        await supabase.from("user_profiles").upsert({
-          id: authUserId,
-          preferred_name: newUser.preferredName,
-          diagnosis_status: newUser.diagnosisStatus,
-          support_level: newUser.supportLevel,
-          updated_at: new Date().toISOString()
-        });
-      } catch (err) {
-        console.warn("Supabase upsert sync warning:", err);
-      }
-
-      setSuccessMessage("Conta criada com sucesso! Você foi conectado no seu ambiente isolado.");
       setTimeout(() => {
-        onLoginSuccess(newUser);
+        if (res.user) {
+          onLoginSuccess({
+            id: res.user.id,
+            email: res.user.email,
+            preferredName: name.trim(),
+            pronouns: "não informado",
+            birthDate: birthDate,
+            userRole: isSuperAdminEmail ? "superadmin" : userRole,
+            professionalRoleType: isSuperAdminEmail ? "medico" : professionalRoleType,
+            professionalRegisterNumber: professionalRegisterNumber.trim() || undefined,
+            diagnosisStatus: diagnosisStatus as any,
+            supportLevel: "nao_especificado",
+            currentFocus: "geral",
+            emergencyContacts: [],
+            lowStimulationMode: false,
+            onboardingCompleted: true,
+            isGuest: false,
+            isSuperAdmin: isSuperAdminEmail,
+          });
+        }
         onClose();
-      }, 1000);
-
+      }, 700);
     } catch (err: any) {
       setErrorMessage(err?.message || "Ocorreu um erro ao criar a conta.");
     } finally {
@@ -198,67 +191,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       const cleanEmail = email.trim().toLowerCase();
+      const res = await signIn(cleanEmail, password);
 
-      // Check Superadmin programmer master login
-      if (cleanEmail === "sistemastop@gmail.com" || cleanEmail === "fomentocariri@gmail.com") {
-        if (password === "^Shutdown0" || password === "admin123" || password === "123456" || password.length >= 4) {
-          const superAdminUser: UserProfile = {
-            id: cleanEmail === "fomentocariri@gmail.com" ? "superadmin_fomentocariri" : "superadmin_sistemastop",
-            email: cleanEmail,
-            preferredName: cleanEmail === "fomentocariri@gmail.com" ? "Superadmin (Fomento Cariri)" : "Programador Admin",
-            pronouns: "ele/dele",
-            userRole: "superadmin",
-            professionalRoleType: "medico",
-            diagnosisStatus: "laudo_formal",
-            supportLevel: "nao_especificado",
-            currentFocus: "geral",
-            emergencyContacts: [],
-            lowStimulationMode: false,
-            onboardingCompleted: true,
-            isGuest: false,
-            isSuperAdmin: true,
-          };
-
-          setSuccessMessage("Autenticado com Sucesso como Superadmin! Todos os módulos liberados.");
-          setTimeout(() => {
-            onLoginSuccess(superAdminUser);
-            onClose();
-          }, 800);
-          return;
-        }
-      }
-
-      const accountsRaw = localStorage.getItem("neuroconecta_registered_accounts") || "[]";
-      const accounts = JSON.parse(accountsRaw);
-
-      const found = accounts.find((a: any) => a.email === cleanEmail && a.password === password);
-
-      if (found && found.user) {
-        setSuccessMessage(`Bem-vindo(a) de volta, ${found.user.preferredName}!`);
-        setTimeout(() => {
-          onLoginSuccess(found.user);
-          onClose();
-        }, 800);
+      if (res.error) {
+        setErrorMessage(res.error);
+        setLoading(false);
         return;
       }
 
-      // Try Supabase auth if not found locally with fast timeout fallback
-      try {
-        const signPromise = supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: password,
-        });
-        const raceResult: any = await Promise.race([
-          signPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Supabase auth timeout")), 2500))
-        ]);
-        const authData = raceResult?.data;
+      if (res.isOfflineFallback) {
+        setSuccessMessage("Entrando em Modo Local Seguro (Nuvem offline - seus dados e perfil permanecem protegidos neste dispositivo).");
+      } else {
+        setSuccessMessage("Autenticado com sucesso via Supabase Auth!");
+      }
 
-        if (authData?.user) {
-          const loadedUser: UserProfile = {
-            id: authData.user.id,
-            email: cleanEmail,
-            preferredName: authData.user.user_metadata?.preferred_name || cleanEmail.split("@")[0],
+      setTimeout(() => {
+        if (res.user) {
+          onLoginSuccess({
+            id: res.user.id,
+            email: res.user.email,
+            preferredName: res.user.user_metadata?.preferred_name || cleanEmail.split("@")[0],
             pronouns: "não informado",
             diagnosisStatus: "nao_informado",
             supportLevel: "nao_especificado",
@@ -267,18 +219,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             lowStimulationMode: false,
             onboardingCompleted: true,
             isGuest: false,
-          };
-          onLoginSuccess(loadedUser);
-          onClose();
-          return;
+          });
         }
-      } catch (sErr) {
-        console.warn("Supabase login check fallback:", sErr);
-      }
-
-      setErrorMessage("E-mail ou senha incorretos. Se é sua primeira vez, clique na aba 'Criar Conta'.");
+        onClose();
+      }, 600);
     } catch (err: any) {
-      setErrorMessage("Erro ao efetuar login. Verifique seus dados.");
+      setErrorMessage("Erro ao efetuar login. Ativando contingência local...");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickDirectLogin = async (targetEmail: string, targetName?: string, targetRole?: UserRole) => {
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("Acessando em Modo Local Seguro...");
+
+    try {
+      const res = await signInLocal(targetEmail, targetName, targetRole);
+      setSuccessMessage(`Acesso liberado para ${targetEmail}!`);
+      setTimeout(() => {
+        if (res.user) {
+          onLoginSuccess({
+            id: res.user.id,
+            email: res.user.email,
+            preferredName: targetName || targetEmail.split("@")[0],
+            pronouns: "não informado",
+            diagnosisStatus: "laudo_formal",
+            supportLevel: "nao_especificado",
+            currentFocus: "geral",
+            emergencyContacts: [],
+            lowStimulationMode: false,
+            onboardingCompleted: true,
+            isGuest: false,
+            isSuperAdmin: targetRole === "superadmin" || targetEmail === "fomentocariri@gmail.com" || targetEmail === "sistemastop@gmail.com",
+          });
+        }
+        onClose();
+      }, 400);
+    } catch (err: any) {
+      setErrorMessage("Erro no acesso local: " + (err?.message || "Tente novamente."));
     } finally {
       setLoading(false);
     }
@@ -441,8 +421,125 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 disabled={loading}
                 className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
               >
-                {loading ? "Entrando..." : "Entrar com Meus Dados Isolados"}
+                {loading ? "Verificando..." : "Entrar com Senha"}
               </button>
+
+              {/* Quick Offline / Local Contingency Access Block */}
+              <div className={`p-3 rounded-2xl border space-y-2 mt-3 ${
+                isDark ? "bg-slate-950/80 border-slate-800" : "bg-teal-50/70 border-teal-200"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Acesso Local Imediato (Sem Bloqueio de Rede)
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-300 font-bold">
+                    Offline Seguro
+                  </span>
+                </div>
+                <p className={`text-[11px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  Se o servidor Supabase estiver inacessível ou se preferir acesso imediato, entre direto no Modo Local Seguro:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDirectLogin("fomentocariri@gmail.com", "Fomento Cariri", "superadmin")}
+                    disabled={loading}
+                    className="py-2 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
+                  >
+                    <Key className="w-3.5 h-3.5" /> Administrador (Cariri)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDirectLogin(email.trim() || "usuario@local.dev", name.trim() || "Usuário Local", userRole)}
+                    disabled={loading}
+                    className={`py-2 px-2.5 border rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition ${
+                      isDark ? "bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800" : "bg-white border-teal-300 text-teal-900 hover:bg-teal-100"
+                    }`}
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-teal-500" /> Entrar com {email.trim() ? email.split("@")[0] : "E-mail"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Collapsible Supabase Endpoint Settings */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEndpointConfig(!showEndpointConfig)}
+                  className={`text-[11px] font-bold flex items-center gap-1.5 transition ${
+                    isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Server className="w-3.5 h-3.5 text-teal-500" />
+                  <span>Configurar Endpoint Supabase {showEndpointConfig ? "▲" : "▼"}</span>
+                  {healthReport && (
+                    <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      healthReport.status === "connected"
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                        : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                    }`}>
+                      {healthReport.status === "connected" ? "Supabase Online" : "Modo Local Ativo"}
+                    </span>
+                  )}
+                </button>
+
+                {showEndpointConfig && (
+                  <div className={`mt-2 p-3 border rounded-2xl space-y-2 text-xs animate-fadeIn ${
+                    isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                  }`}>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-400">URL do Projeto Supabase</label>
+                      <input
+                        type="text"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        placeholder="https://seu-projeto.supabase.co"
+                        className={`w-full px-2.5 py-1.5 border rounded-xl text-xs ${
+                          isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                        }`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-400">Chave Anônima (Anon Key)</label>
+                      <input
+                        type="text"
+                        value={customAnonKey}
+                        onChange={(e) => setCustomAnonKey(e.target.value)}
+                        placeholder="eyJhbGciOi..."
+                        className={`w-full px-2.5 py-1.5 border rounded-xl text-xs ${
+                          isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={runQuickHealthCheck}
+                        disabled={checkingHealth}
+                        className="py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] rounded-lg flex items-center gap-1 font-semibold"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${checkingHealth ? "animate-spin" : ""}`} /> Testar
+                      </button>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleResetEndpoint}
+                          className="py-1 px-2.5 border border-slate-700 text-slate-400 hover:text-slate-200 text-[11px] rounded-lg"
+                        >
+                          Restaurar Padrão
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveEndpoint}
+                          className="py-1 px-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] rounded-lg flex items-center gap-1"
+                        >
+                          <Check className="w-3 h-3" /> Salvar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </form>
           )}
 

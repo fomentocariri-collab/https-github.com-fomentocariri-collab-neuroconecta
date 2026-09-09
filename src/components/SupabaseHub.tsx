@@ -15,7 +15,12 @@ import {
   Layers, 
   CheckCircle, 
   Info,
-  RotateCcw
+  RotateCcw,
+  Shield,
+  Activity,
+  UserCheck,
+  Lock,
+  Clock
 } from "lucide-react";
 import { 
   supabase, 
@@ -26,13 +31,22 @@ import {
   saveSupabaseConfig, 
   resetSupabaseConfig 
 } from "../lib/supabase";
+import { useCurrentUser } from "../contexts/AuthContext";
+import { dataSyncService } from "../services/dataSyncService";
+import { auditService, StoredAuditEvent } from "../services/auditService";
 
 export const SupabaseHub: React.FC = () => {
+  const { user, userProfile, isAuthenticated, isSuperAdmin } = useCurrentUser();
+
   const [healthReport, setHealthReport] = useState<SupabaseHealthReport | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [copied, setCopied] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncLogs, setSyncLogs] = useState<string[]>([]);
+
+  // Audit Logs
+  const [auditEvents, setAuditEvents] = useState<StoredAuditEvent[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
 
   // Custom configuration modal / drawer state
   const [showConfigForm, setShowConfigForm] = useState(false);
@@ -52,12 +66,26 @@ export const SupabaseHub: React.FC = () => {
     }
   };
 
+  const loadAuditLogs = async () => {
+    setIsLoadingAudit(true);
+    try {
+      const targetUserId = user?.id || userProfile.id;
+      const events = await auditService.listForUser(targetUserId);
+      setAuditEvents(events);
+    } catch (e) {
+      console.warn("Erro ao carregar auditoria:", e);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  };
+
   useEffect(() => {
     const config = getSupabaseConfig();
     setCustomUrl(config.url);
     setCustomKey(config.anonKey);
     runHealthCheck();
-  }, []);
+    loadAuditLogs();
+  }, [user?.id]);
 
   const handleCopySQL = () => {
     navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA);
@@ -114,84 +142,37 @@ export const SupabaseHub: React.FC = () => {
   const handleSyncAllData = async () => {
     setSyncing(true);
     const logs: string[] = [];
-    logs.push("⏳ Verificando integridade e conectividade com a nuvem...");
+    logs.push("⏳ [NC-A1] Verificando integridade e conectividade com Supabase...");
 
-    // First check connectivity
+    const targetUserId = user?.id || (isAuthenticated ? userProfile.id : null);
+    if (!targetUserId) {
+      logs.push("⚠️ Usuário em modo visitante (sem login Supabase Auth). Conecte-se para sincronizar com persistência na nuvem vinculada ao seu ID canônico.");
+      setSyncLogs(logs);
+      setSyncing(false);
+      return;
+    }
+
+    logs.push(`🔑 Identificador Canônico (auth.users.id): ${targetUserId}`);
+
     const freshHealth = await checkSupabaseHealth();
     setHealthReport(freshHealth);
 
     if (freshHealth.status === "offline_mitigated" || freshHealth.status === "error") {
-      logs.push("🛡️ [Mitigação Ativa] O endpoint remoto está inacessível ou não responde.");
-      logs.push("✅ Todos os dados locais permanecem 100% seguros e preservados no navegador.");
-      logs.push("ℹ️ A sincronização com a nuvem será concluída automaticamente quando o endpoint do Supabase for configurado com uma URL e chave ativas.");
+      logs.push("🛡️ [Mitigação Ativa] Endpoint Supabase remoto não respondeu no tempo limite.");
+      logs.push("✅ Dados seguros no armazenamento local. Nenhuma perda de registros.");
       setSyncLogs(logs);
       setSyncing(false);
       return;
     }
 
     try {
-      // 1. Sync User Profile
-      const localProfileStr = localStorage.getItem("neuroconecta_user_profile");
-      if (localProfileStr) {
-        const localProfile = JSON.parse(localProfileStr);
-        const { error } = await supabase.from("user_profiles").upsert({
-          id: "default_user",
-          preferred_name: localProfile.preferredName,
-          pronouns: localProfile.pronouns,
-          diagnosis_status: localProfile.diagnosisStatus,
-          support_level: localProfile.supportLevel,
-          current_focus: localProfile.currentFocus,
-          low_stimulation_mode: localProfile.lowStimulationMode,
-          updated_at: new Date().toISOString(),
-        });
-        if (error) logs.push(`⚠️ Perfil: ${error.message}`);
-        else logs.push("✅ Perfil de usuário enviado para `user_profiles`");
-      }
-
-      // 2. Sync Test History
-      const localTestsStr = localStorage.getItem("neuroconecta_test_history");
-      if (localTestsStr) {
-        const localTests = JSON.parse(localTestsStr);
-        for (const test of localTests) {
-          const { error } = await supabase.from("test_history").upsert({
-            id: `${test.testId}-${test.date}`,
-            test_id: test.testId,
-            test_title: test.testTitle,
-            date: test.date,
-            score: test.score,
-            max_score: test.maxScore,
-            interpretation_level: test.interpretationLevel,
-            percentage: test.percentage,
-          });
-          if (error) logs.push(`⚠️ Testes: ${error.message}`);
-        }
-        logs.push(`✅ ${localTests.length} resultado(s) de testes sincronizados em \`test_history\``);
-      }
-
-      // 3. Sync Routine Tasks
-      const localRoutinesStr = localStorage.getItem("neuroconecta_routine_tasks");
-      if (localRoutinesStr) {
-        const localRoutines = JSON.parse(localRoutinesStr);
-        for (const task of localRoutines) {
-          const { error } = await supabase.from("routine_tasks").upsert({
-            id: task.id,
-            title: task.title,
-            category: task.category,
-            target_time: task.targetTime || null,
-            duration_minutes: task.durationMinutes || null,
-            icon: task.icon || null,
-            completed: task.completed,
-            urgency: task.urgency || null,
-            energy_level: task.energyLevel || null,
-          });
-          if (error) logs.push(`⚠️ Rotinas: ${error.message}`);
-        }
-        logs.push(`✅ ${localRoutines.length} tarefa(s) de rotina sincronizadas em \`routine_tasks\``);
-      }
-
-      logs.push("🎉 Sincronização em nuvem finalizada com êxito!");
+      logs.push("🚀 Executando migração e sincronização segura com políticas de RLS...");
+      const result = await dataSyncService.syncFullBidirectional(targetUserId);
+      logs.push(`✅ Registros legados migrados: ${result.migratedLegacyCount}`);
+      logs.push("🎉 Sincronização canônica concluída com êxito!");
+      await loadAuditLogs();
     } catch (e: any) {
-      logs.push(`ℹ️ Sincronização protegida: ${e.message}. Persistência local intacta.`);
+      logs.push(`⚠️ Aviso durante sincronização: ${e.message}`);
     }
 
     setSyncLogs(logs);
@@ -210,17 +191,20 @@ export const SupabaseHub: React.FC = () => {
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs font-bold flex items-center gap-1">
               <Database className="w-3.5 h-3.5 text-emerald-400" /> Banco de Dados & Armazenamento
             </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-950 border border-teal-800 text-teal-300 text-xs font-bold">
+              Arquitetura NC-A1
+            </span>
             {healthReport?.isCustom && (
               <span className="px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-[10px] font-bold">
-                Endpoint Personalizado
+                Endpoint Customizado
               </span>
             )}
           </div>
           <h1 className="text-2xl font-black text-slate-100 flex items-center gap-2">
-            Diagnóstico e Sincronização Supabase
+            Diagnóstico, Governança & Auditoria Supabase
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
-            Monitoramento de conexão em nuvem com arquitetura de contingência e persistência local garantida.
+            Monitoramento de sessão canônica, integridade RLS, trilha imutável de auditoria e contingência offline.
           </p>
         </div>
 
@@ -243,23 +227,106 @@ export const SupabaseHub: React.FC = () => {
         </div>
       </div>
 
-      {/* Mitigation Notice Banner (Addresses: "relatório informa sem conexão") */}
+      {/* NC-A1 Architectural Principles Card */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-md">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-teal-950 border border-teal-800 text-teal-300 rounded-xl">
+              <ShieldCheck className="w-4 h-4 text-teal-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-100">
+                Regras Arquiteturais Canônicas (NC-A1)
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Conformidade de identidade permanente, isolamento por dispositivo e segurança LGPD.
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+            Ativo & Vigente
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-1">
+            <span className="text-slate-400 font-extrabold uppercase text-[10px] tracking-wider block">
+              1. Dispositivo
+            </span>
+            <p className="text-slate-200 font-semibold">Mero Meio de Acesso</p>
+            <p className="text-[11px] text-slate-400">
+              Trocar de celular, tablet ou PC não recria conta nem esvazia perfis.
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-1">
+            <span className="text-teal-400 font-extrabold uppercase text-[10px] tracking-wider block">
+              2. Supabase Auth
+            </span>
+            <p className="text-slate-200 font-semibold">Identidade Canônica</p>
+            <p className="text-[11px] text-slate-400">
+              <code className="text-teal-300">auth.users.id</code> é o identificador único e persistente do usuário.
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-1">
+            <span className="text-cyan-400 font-extrabold uppercase text-[10px] tracking-wider block">
+              3. Supabase DB + RLS
+            </span>
+            <p className="text-slate-200 font-semibold">Fonte Oficial dos Dados</p>
+            <p className="text-[11px] text-slate-400">
+              Row Level Security garante que cada usuário só acessa o que é seu.
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-1">
+            <span className="text-emerald-400 font-extrabold uppercase text-[10px] tracking-wider block">
+              4. Trilha de Auditoria
+            </span>
+            <p className="text-slate-200 font-semibold">Eventos Imutáveis</p>
+            <p className="text-[11px] text-slate-400">
+              Tabela <code className="text-emerald-300">audit_events</code> registra quem, quando e o que alterou.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Session Identity Status */}
       <div className="p-5 bg-gradient-to-r from-slate-900 via-teal-950/40 to-slate-900 border border-teal-800/60 rounded-3xl space-y-3 shadow-md">
         <div className="flex items-start gap-3">
           <div className="p-2.5 bg-teal-950 border border-teal-700/80 text-teal-300 rounded-2xl shrink-0 mt-0.5">
-            <ShieldCheck className="w-5 h-5 text-teal-400" />
+            <UserCheck className="w-5 h-5 text-teal-400" />
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-100">
-                Mitigação de Conexão Ativa & Proteção contra Perda de Dados
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-700/60 text-[10px] font-extrabold uppercase tracking-wider">
-                100% Operacional
-              </span>
+          <div className="space-y-1.5 flex-1">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-100">
+                  Estado da Identidade Atual
+                </h2>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                  isAuthenticated 
+                    ? "bg-emerald-950 text-emerald-300 border-emerald-700" 
+                    : "bg-amber-950 text-amber-300 border-amber-700"
+                }`}>
+                  {isAuthenticated ? "Sessão Canônica Supabase" : "Modo Visitante Local"}
+                </span>
+              </div>
+              {isAuthenticated && user?.id && (
+                <span className="font-mono text-[11px] text-teal-300 bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800">
+                  UUID: {user.id}
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Caso o relatório de rede informe ausência de conexão com o banco de dados remoto (Supabase Cloud), o NeuroConecta opera de forma <strong>autônoma e resiliente</strong>. Todo o armazenamento de rotinas, diários, testes psicométricos e perfis permanece salvo localmente com isolamento e segurança, sem interrupção de uso.
+              {isAuthenticated ? (
+                <>
+                  Você está autenticado como <strong>{userProfile.preferredName}</strong> ({user?.email || userProfile.email}). Seus dados são sincronizados no Supabase e associados ao seu identificador exclusivo, protegidos por RLS.
+                </>
+              ) : (
+                <>
+                  Você está operando em <strong>Modo Local / Visitante</strong>. Conecte sua conta para garantir persistência entre computadores e celulares diferentes.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -269,20 +336,20 @@ export const SupabaseHub: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-xs">
             <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">Tarefas de Rotina:</span>
-              <span className="font-bold text-teal-300 text-sm">{healthReport.totalLocalRecords.routineTasks} salvas localmente</span>
+              <span className="font-bold text-teal-300 text-sm">{healthReport.totalLocalRecords.routineTasks} salvas</span>
             </div>
             <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl">
-              <span className="text-slate-400 block text-[11px]">Testes de Autoavaliação:</span>
-              <span className="font-bold text-teal-300 text-sm">{healthReport.totalLocalRecords.testHistory} registros seguros</span>
+              <span className="text-slate-400 block text-[11px]">Testes Psicométricos:</span>
+              <span className="font-bold text-teal-300 text-sm">{healthReport.totalLocalRecords.testHistory} registros</span>
             </div>
             <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl">
               <span className="text-slate-400 block text-[11px]">Perfil & Acomodações:</span>
-              <span className="font-bold text-emerald-300 text-sm">{healthReport.totalLocalRecords.userProfiles > 0 ? "Perfil Ativo" : "Padrão"}</span>
+              <span className="font-bold text-emerald-300 text-sm">{isAuthenticated ? "Sincronizado" : "Local"}</span>
             </div>
             <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl">
-              <span className="text-slate-400 block text-[11px]">Engine de Armazenamento:</span>
+              <span className="text-slate-400 block text-[11px]">Motor Local:</span>
               <span className="font-bold text-emerald-400 text-sm flex items-center gap-1">
-                <CheckCircle className="w-3.5 h-3.5" /> LocalStorage OK
+                <CheckCircle className="w-3.5 h-3.5" /> 100% Operacional
               </span>
             </div>
           </div>
@@ -300,126 +367,66 @@ export const SupabaseHub: React.FC = () => {
             <span className="text-[11px] text-slate-400">Insira suas chaves do console Supabase</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="space-y-1">
-              <label className="block text-slate-300 font-semibold">Supabase Project URL:</label>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                URL do Projeto (Endpoint HTTPS):
+              </label>
               <input
-                type="text"
+                type="url"
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
                 placeholder="https://exemplo.supabase.co"
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-teal-500 font-mono"
+                required
               />
             </div>
-            <div className="space-y-1">
-              <label className="block text-slate-300 font-semibold">Supabase Anon Key:</label>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Chave Anônima Pública (anon key):
+              </label>
               <input
-                type="password"
+                type="text"
                 value={customKey}
                 onChange={(e) => setCustomKey(e.target.value)}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-teal-500 font-mono"
+                required
               />
             </div>
           </div>
 
           {configSuccessMsg && (
-            <p className="text-xs text-emerald-300 font-bold flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-emerald-400" /> {configSuccessMsg}
-            </p>
+            <p className="text-xs text-emerald-400 font-semibold">{configSuccessMsg}</p>
           )}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
             <button
               type="button"
               onClick={handleResetToDefaultConfig}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1 transition"
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs flex items-center gap-1.5 transition"
             >
-              <RotateCcw className="w-3.5 h-3.5" /> Restaurar Padrão
+              <RotateCcw className="w-3.5 h-3.5" />
+              Restaurar Padrão
             </button>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowConfigForm(false)}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+                className="px-3 py-1.5 text-slate-400 hover:text-slate-200 text-xs font-semibold"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs transition shadow-sm"
               >
-                Salvar & Conectar
+                Salvar Credenciais
               </button>
             </div>
           </div>
         </form>
-      )}
-
-      {/* Connection Status Box */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
-            <Server className="w-4 h-4 text-teal-400" /> Endpoint Atual:
-          </p>
-          <p className="font-mono text-xs text-slate-200 bg-slate-950 p-2.5 rounded-xl border border-slate-800 truncate">
-            {healthReport?.endpointUrl || "https://gbjanxdyllxpsydsubcx.supabase.co"}
-          </p>
-        </div>
-
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-amber-400" /> Modo de Operação:
-          </p>
-          <p className="font-mono text-xs text-slate-200 bg-slate-950 p-2.5 rounded-xl border border-slate-800 truncate flex items-center justify-between">
-            <span>{status === "connected" ? "Híbrido (Nuvem + Local)" : "Local Resiliente (Offline)"}</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          </p>
-        </div>
-
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Status do Diagnóstico:
-          </p>
-          <div className="pt-0.5">
-            {isChecking && (
-              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Testando conexão remota...
-              </span>
-            )}
-            {!isChecking && status === "connected" && (
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Conectado & Tabelas Ativas!
-              </span>
-            )}
-            {!isChecking && status === "tables_missing" && (
-              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-400" /> Supabase Conectado (Criar Tabelas)
-              </span>
-            )}
-            {!isChecking && (status === "offline_mitigated" || status === "error") && (
-              <span className="text-xs font-bold text-teal-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-teal-400" /> Modo Local Seguro (Mitigado)
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Informative Diagnostic Message */}
-      {healthReport?.message && (
-        <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs flex items-start gap-3 text-slate-300 shadow-sm">
-          <Info className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-          <div className="space-y-1 leading-relaxed">
-            <p className="font-bold text-slate-200">Relatório da Conexão:</p>
-            <p>{healthReport.message}</p>
-            {healthReport.technicalDetails && (
-              <p className="text-[11px] font-mono text-slate-400 pt-0.5">
-                Detalhe técnico: {healthReport.technicalDetails}
-              </p>
-            )}
-          </div>
-        </div>
       )}
 
       {/* Sync & Backup Trigger Cards */}
@@ -430,10 +437,10 @@ export const SupabaseHub: React.FC = () => {
           <div className="space-y-1.5">
             <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <HardDrive className="w-4 h-4 text-teal-400" />
-              Sincronização com o Supabase
+              Sincronização Canônica (NC-A1)
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Tenta sincronizar os registros locais com o banco de dados Supabase caso o endpoint esteja acessível.
+              Executa a sincronização segura e idempotente entre os registros locais e as tabelas oficiais com RLS no Supabase.
             </p>
           </div>
           
@@ -443,7 +450,7 @@ export const SupabaseHub: React.FC = () => {
             className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Sincronizando..." : "Sincronizar com Nuvem"}
+            {syncing ? "Sincronizando..." : "Sincronizar com Nuvem Supabase"}
           </button>
         </div>
 
@@ -455,7 +462,7 @@ export const SupabaseHub: React.FC = () => {
               Exportar Backup Local (JSON)
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Baixe uma cópia integral de segurança de todos os seus dados e preferências locais com 1 clique.
+              Baixe uma cópia integral de segurança com 1 clique para garantia adicional de custódia dos dados.
             </p>
           </div>
 
@@ -483,16 +490,68 @@ export const SupabaseHub: React.FC = () => {
         </div>
       )}
 
+      {/* Audit Log Panel */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-md">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              Trilha de Auditoria Recente (<code className="text-xs text-teal-300">public.audit_events</code>)
+            </h2>
+            <p className="text-xs text-slate-400">
+              Registros imutáveis de ações relevantes realizadas no sistema, incluindo migrações e atualizações de perfil.
+            </p>
+          </div>
+          <button
+            onClick={loadAuditLogs}
+            disabled={isLoadingAudit}
+            className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAudit ? "animate-spin" : ""}`} />
+            <span>Atualizar Trilha</span>
+          </button>
+        </div>
+
+        {auditEvents.length === 0 ? (
+          <div className="p-6 bg-slate-950/70 border border-slate-800 rounded-2xl text-center text-xs text-slate-400">
+            Nenhum evento registrado ainda na sessão corrente.
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+            {auditEvents.slice(0, 15).map((evt) => (
+              <div 
+                key={evt.id} 
+                className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between text-xs gap-3"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-200">{evt.action}</span>
+                    <span className="text-slate-400 ml-2 font-mono text-[11px]">({evt.entity_type})</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-slate-400 shrink-0 font-mono">
+                  <span>{new Date(evt.created_at).toLocaleString("pt-BR")}</span>
+                  <span className="hidden sm:inline px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
+                    {evt.source}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* SQL Script for Table Creation */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <Database className="w-4 h-4 text-teal-400" />
-              Script SQL para Criação das Tabelas no Supabase
+              Script SQL Canônico (NC-A1) para Supabase
             </h2>
             <p className="text-xs text-slate-400">
-              Copie este código e cole no <strong>SQL Editor</strong> do painel do seu projeto Supabase para instalar todas as 5 tabelas necessárias.
+              Copie este código e execute no <strong>SQL Editor</strong> do painel Supabase para provisionar as tabelas com RLS e triggers de auditoria.
             </p>
           </div>
           <button
@@ -500,7 +559,7 @@ export const SupabaseHub: React.FC = () => {
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold rounded-xl text-xs flex items-center gap-2 transition border border-slate-700"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-            {copied ? "Copiado!" : "Copiar SQL"}
+            {copied ? "Copiado!" : "Copiar SQL NC-A1"}
           </button>
         </div>
 
@@ -512,4 +571,3 @@ export const SupabaseHub: React.FC = () => {
     </div>
   );
 };
-

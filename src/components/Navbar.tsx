@@ -1,35 +1,49 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import neuroconectaLogo from "../assets/logo";
 import { 
-  Bot, 
-  ClipboardCheck, 
-  CalendarCheck, 
-  Waves, 
-  MessageSquare, 
-  BookOpen, 
+  Menu, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
   ShieldAlert, 
   Moon, 
+  Sun, 
   User, 
+  Lock, 
+  LogOut, 
+  LogIn, 
+  Share2, 
+  FileText, 
+  Settings, 
+  CheckCircle2, 
+  CloudCheck,
+  ChevronDown,
   Sparkles,
-  HeartPulse,
-  Users,
-  FileText,
-  Database,
-  Lock,
-  Headphones,
-  Gamepad2,
-  GraduationCap,
-  Stethoscope,
-  Pill,
-  Building2,
-  EyeOff,
-  Settings,
-  Terminal,
-  Share2,
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 import { UserProfile } from "../types";
+import { useCurrentUser } from "../contexts/AuthContext";
 
-export type NavTab = "chat" | "musicoterapia" | "jogos" | "testes" | "rotina" | "agenda" | "sensorial" | "humor" | "comunicacao" | "relatorio" | "cuidador" | "educacao" | "caps" | "rh" | "supabase" | "scripts";
+export type NavTab = 
+  | "chat" 
+  | "musicoterapia" 
+  | "jogos" 
+  | "testes" 
+  | "rotina" 
+  | "agenda" 
+  | "sensorial" 
+  | "humor" 
+  | "comunicacao" 
+  | "relatorio" 
+  | "cuidador" 
+  | "educacao" 
+  | "caps" 
+  | "rh" 
+  | "supabase" 
+  | "scripts"
+  | "momento"
+  | "atividade"
+  | "aprendizagem";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -43,7 +57,32 @@ interface NavbarProps {
   onOpenModuleAdmin?: () => void;
   onOpenShareManager?: () => void;
   onOpenFunctionalPlan?: () => void;
+  isSidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+  onToggleMobileMenu: () => void;
 }
+
+const TAB_TITLES: Record<NavTab, { title: string; category: string }> = {
+  chat: { title: "Assistente IA (Copiloto)", category: "Comunicação & Apoio" },
+  rotina: { title: "Rotina Visual", category: "Meu Dia a Dia" },
+  humor: { title: "Diário & Humor", category: "Meu Dia a Dia" },
+  momento: { title: "Avaliação do Momento", category: "Meu Dia a Dia" },
+  musicoterapia: { title: "Som & Autorregulação", category: "Meu Dia a Dia" },
+  sensorial: { title: "Regulação Sensorial", category: "Meu Dia a Dia" },
+  jogos: { title: "Jogos & Relaxamento", category: "Meu Dia a Dia" },
+  agenda: { title: "Agenda & Medicamentos", category: "Meu Dia a Dia" },
+  comunicacao: { title: "Comunicação AAC", category: "Comunicação & Apoio" },
+  atividade: { title: "Planejador de Atividades", category: "Comunicação & Apoio" },
+  educacao: { title: "Histórias & Roteiros", category: "Comunicação & Apoio" },
+  cuidador: { title: "Cuidadores & Família", category: "Comunicação & Apoio" },
+  testes: { title: "Centro de Testes", category: "Avaliações & Métricas" },
+  aprendizagem: { title: "Perfil de Aprendizagem", category: "Avaliações & Métricas" },
+  relatorio: { title: "Relatórios Funcionais", category: "Avaliações & Métricas" },
+  supabase: { title: "Supabase DB & Auditoria", category: "Administração & Dados" },
+  scripts: { title: "Central de Scripts", category: "Administração & Dados" },
+  caps: { title: "Saúde CAPS (Congelado)", category: "Geral" },
+  rh: { title: "RH & NR-1 (Congelado)", category: "Geral" },
+};
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
@@ -57,250 +96,311 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenModuleAdmin,
   onOpenShareManager,
   onOpenFunctionalPlan,
+  isSidebarCollapsed,
+  onToggleSidebar,
+  onToggleMobileMenu,
 }) => {
-  const isSuperAdmin = userProfile.isSuperAdmin || userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || userProfile.email?.toLowerCase() === "fomentocariri@gmail.com" || userProfile.userRole === "superadmin";
-  const userRole = userProfile.userRole || (isSuperAdmin ? "superadmin" : "pcd");
-  const profRoleType = userProfile.professionalRoleType;
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Determine automatic color skin theme based on role/profession
-  const getSkinConfig = () => {
+  const { user, isAuthenticated, isSuperAdmin, signOut } = useCurrentUser();
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const currentTabInfo = TAB_TITLES[activeTab] || { title: "NeuroConecta", category: "Módulo" };
+
+  const getRoleBadge = () => {
     if (isSuperAdmin) {
       return {
-        label: "⚡ Superadmin / Gestão TI",
-        badgeClass: "bg-cyan-950 text-cyan-300 border-cyan-700",
-        activeTabClass: "bg-cyan-950 text-cyan-200 border-cyan-700 shadow-cyan-950/50",
-        borderAccent: "border-cyan-800/80",
-        dotColor: "bg-cyan-400",
+        label: "Superadmin TI",
+        classes: "bg-cyan-950 text-cyan-300 border-cyan-700",
       };
     }
-    if (userRole === "profissional_apoio" || profRoleType === "terapeuta" || profRoleType === "psicologo") {
+    if (userProfile.userRole === "profissional_apoio") {
       return {
-        label: `🤝 Profissional de Apoio ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
-        badgeClass: "bg-indigo-950 text-indigo-300 border-indigo-700",
-        activeTabClass: "bg-indigo-950 text-indigo-200 border-indigo-700 shadow-indigo-950/50",
-        borderAccent: "border-indigo-800/80",
-        dotColor: "bg-indigo-400",
+        label: "Profissional de Apoio",
+        classes: "bg-indigo-950 text-indigo-300 border-indigo-700",
       };
     }
-    if (userRole === "cuidador_educador" || profRoleType === "educador" || userRole === "educador_aee") {
+    if (userProfile.userRole === "cuidador_educador" || userProfile.professionalRoleType === "educador") {
       return {
-        label: `🎓 Educador / AEE ${userProfile.professionalRegisterNumber ? `(${userProfile.professionalRegisterNumber})` : ""}`,
-        badgeClass: "bg-amber-950 text-amber-300 border-amber-700",
-        activeTabClass: "bg-amber-950 text-amber-200 border-amber-700 shadow-amber-950/50",
-        borderAccent: "border-amber-800/80",
-        dotColor: "bg-amber-400",
+        label: "Educador(a) / AEE",
+        classes: "bg-amber-950 text-amber-300 border-amber-700",
       };
     }
-    if (userRole === "cuidador_familiar") {
+    if (userProfile.userRole === "cuidador_familiar") {
       return {
-        label: `🏡 Família / Cuidador(a)`,
-        badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-700",
-        activeTabClass: "bg-emerald-950 text-emerald-200 border-emerald-700 shadow-emerald-950/50",
-        borderAccent: "border-emerald-800/80",
-        dotColor: "bg-emerald-400",
+        label: "Familiar / Cuidador",
+        classes: "bg-emerald-950 text-emerald-300 border-emerald-700",
       };
     }
     return {
-      label: `🧩 Pessoa / Usuário(a) ${userProfile.preferredName && userProfile.preferredName !== "Visitante" ? `(${userProfile.preferredName})` : ""}`,
-      badgeClass: "bg-purple-950 text-purple-300 border-purple-700",
-      activeTabClass: "bg-purple-950 text-purple-200 border-purple-700 shadow-purple-950/50",
-      borderAccent: "border-purple-800/80",
-      dotColor: "bg-purple-400",
+      label: "PCD Neurodivergente",
+      classes: "bg-purple-950 text-purple-300 border-purple-700",
     };
   };
 
-  const skin = getSkinConfig();
-
-  const allTabs = [
-    { id: "chat", label: "Assistente IA", icon: Bot, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "musicoterapia", label: "Som & Autorregulação", icon: Headphones, roles: ["pcd", "superadmin"] },
-    { id: "jogos", label: "Jogos & Relaxamento", icon: Gamepad2, roles: ["pcd", "superadmin"] },
-    { id: "rotina", label: "Rotina Visual", icon: CalendarCheck, roles: ["pcd", "cuidador_educador", "superadmin"] },
-    { id: "agenda", label: "Agenda & Medicamentos", icon: Pill, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "sensorial", label: "Regulação Sensorial", icon: Waves, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "humor", label: "Diário & Humor", icon: HeartPulse, roles: ["pcd", "cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "comunicacao", label: "Comunicação AAC", icon: MessageSquare, roles: ["pcd", "cuidador_educador", "superadmin"] },
-    { id: "testes", label: "Autoavaliação", icon: ClipboardCheck, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "cuidador", label: "Cuidadores & PEI Especial", icon: GraduationCap, roles: ["cuidador_educador", "saude_caps", "superadmin"] },
-    { id: "relatorio", label: "Relatórios Funcionais", icon: FileText, roles: ["cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "educacao", label: "Biblioteca", icon: BookOpen, roles: ["pcd", "cuidador_educador", "saude_caps", "rh_gestor", "superadmin"] },
-    { id: "supabase", label: "Supabase DB (Admin)", icon: Database, adminOnly: true, roles: ["superadmin"] },
-    { id: "scripts", label: "Central de Scripts (Admin)", icon: Terminal, adminOnly: true, roles: ["superadmin"] },
-  ] as const;
-
-  // Filter tabs by role and hiddenModules setting
-  const tabs = allTabs.filter(tab => {
-    if ('adminOnly' in tab && tab.adminOnly) return isSuperAdmin;
-    if (!isSuperAdmin && hiddenModules.includes(tab.id)) return false;
-    if (isSuperAdmin) return true;
-    return (tab.roles as readonly string[]).includes(userRole);
-  });
-
-  const getRoleLabel = () => {
-    switch(userRole) {
-      case "cuidador_educador": return "🎓 Educador / Cuidador";
-      case "saude_caps": return "🩺 Profissional Multidisciplinar";
-      case "superadmin": return "⚡ Superadmin TI";
-      default: return "🧩 PCD Neurodivergente";
-    }
-  };
+  const roleBadge = getRoleBadge();
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 border-b border-slate-800 backdrop-blur-md transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        
-        {/* Top Header Row */}
-        <div className="flex items-center justify-between h-16 gap-3">
-          
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("chat")}>
-            <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0">
-              <img 
-                src={neuroconectaLogo} 
-                alt="NeuroConecta Logo" 
-                className="w-9 h-9 object-contain aspect-square"
-              />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">
-                  NeuroConecta
-                </span>
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 font-bold">
-                  SISTEMASTOP
-                </span>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
-                className="text-left text-[11px] font-medium flex items-center gap-1.5 hover:underline"
-                title="Clique para alterar seu perfil de acesso"
-              >
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${skin.badgeClass}`}>
-                  {skin.label}
-                </span>
-              </button>
-            </div>
+    <header className="sticky top-0 z-50 h-16 bg-slate-900/98 border-b border-slate-800 backdrop-blur-md transition-all text-slate-100 flex items-center px-3 sm:px-5 justify-between">
+      
+      {/* Left Area: Navigation Controls & Brand Identity */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Mobile Hamburger Drawer Trigger */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition active:scale-95"
+          aria-label="Abrir menu de navegação"
+          title="Abrir menu lateral"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Desktop Sidebar Collapse Toggle */}
+        <button
+          onClick={onToggleSidebar}
+          className="hidden lg:flex p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition active:scale-95"
+          aria-label={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+          title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+        >
+          {isSidebarCollapsed ? (
+            <PanelLeftOpen className="w-4 h-4 text-teal-400" />
+          ) : (
+            <PanelLeftClose className="w-4 h-4 text-slate-400" />
+          )}
+        </button>
+
+        {/* Brand & Institutional Logo */}
+        <div 
+          className="flex items-center gap-2.5 cursor-pointer select-none group"
+          onClick={() => setActiveTab("chat")}
+          title="Voltar ao Copiloto IA"
+        >
+          <div className="p-1 bg-white rounded-xl border border-teal-200 shadow-sm shrink-0 group-hover:scale-105 transition">
+            <img 
+              src={neuroconectaLogo} 
+              alt="NeuroConecta Logo" 
+              className="w-8 h-8 object-contain aspect-square"
+            />
           </div>
-
-          {/* Right Header Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* SOS Crisis Button */}
-            <button
-              onClick={onOpenCrisis}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-rose-900/30 flex items-center gap-1.5 transition active:scale-95 animate-pulse"
-              title="Apoio imediato em sobrecarga ou meltdown"
-            >
-              <ShieldAlert className="w-4 h-4" />
-              <span>SOS Crise</span>
-            </button>
-
-            {/* Low-Stim Mode Toggle */}
-            <button
-              onClick={toggleLowStimMode}
-              className={`p-2 rounded-xl border transition ${
-                userProfile.lowStimulationMode
-                  ? "bg-slate-800 text-teal-300 border-teal-600 shadow-inner"
-                  : "bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-800"
-              }`}
-              title={userProfile.lowStimulationMode ? "Modo de Baixa Estimulação Ativo" : "Ativar Modo Escuro de Baixa Estimulação"}
-            >
-              <Moon className="w-4 h-4" />
-            </button>
-
-            {/* Functional Support Plan Button */}
-            {onOpenFunctionalPlan && (
-              <button
-                onClick={onOpenFunctionalPlan}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-cyan-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Plano Individual de Apoio Funcional (Compartilhável)"
-              >
-                <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden lg:inline">Plano Funcional</span>
-              </button>
-            )}
-
-            {/* Granular Share & Privacy Button */}
-            {onOpenShareManager && (
-              <button
-                onClick={onOpenShareManager}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-teal-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Privacidade & Compartilhamento Granular"
-              >
-                <Share2 className="w-3.5 h-3.5 text-teal-400" />
-                <span className="hidden lg:inline">Privacidade</span>
-              </button>
-            )}
-
-            {/* Profile Button */}
-            <button
-              onClick={onOpenProfile}
-              className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2 transition"
-            >
-              <User className="w-4 h-4 text-teal-400" />
-              <span className="hidden md:inline max-w-[100px] truncate">
-                {userProfile.preferredName || "Seu Perfil"}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-teal-200 via-emerald-300 to-cyan-200 bg-clip-text text-transparent">
+                NeuroConecta
               </span>
-            </button>
-
-            {/* Account / LGPD Auth Button */}
-            <button
-              onClick={onOpenAuth}
-              className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-teal-950/90 hover:bg-teal-900 border border-teal-700/80 text-teal-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition shadow-sm"
-              title="Acesso individual seguro & Proteção LGPD"
-            >
-              <Lock className="w-3.5 h-3.5 text-teal-400" />
-              <span className="hidden sm:inline">Acesso / Conta</span>
-            </button>
-
-            {/* Superadmin Module Visibility Manager Button */}
-            {isSuperAdmin && onOpenModuleAdmin && (
-              <button
-                onClick={onOpenModuleAdmin}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition shadow-sm"
-                title="Superadmin: Invisibilizar / Exibir Módulos para Usuários"
-              >
-                <Settings className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Módulos</span>
-                {hiddenModules.length > 0 && (
-                  <span className="px-1.5 py-0.2 text-[10px] bg-rose-950 text-rose-300 border border-rose-800 rounded-full font-black">
-                    {hiddenModules.length}
-                  </span>
-                )}
-              </button>
-            )}
+              <span className="hidden sm:inline-flex text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-800 font-extrabold tracking-wider">
+                SISTEMASTOP
+              </span>
+            </div>
+            <span className="hidden md:block text-[10px] text-slate-400 truncate max-w-[180px]">
+              Tecnologia Neuroafirmativa
+            </span>
           </div>
-
         </div>
 
-        {/* Primary Navigation Tabs */}
-        <nav className="flex overflow-x-auto no-scrollbar py-2 gap-1.5 border-t border-slate-800/60 text-xs sm:text-sm">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const isHiddenFromUsers = hiddenModules.includes(tab.id);
+        {/* Contextual Module Breadcrumb Badge (Desktop) */}
+        <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
+          <span className="text-slate-400">{currentTabInfo.category}</span>
+          <span className="text-slate-400">/</span>
+          <span className="font-bold text-teal-300">{currentTabInfo.title}</span>
+        </div>
+      </div>
 
-            return (
+      {/* Right Area: Status, SOS Crisis, Actions & Profile Menu */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        
+        {/* Supabase Identity & Sync Badge */}
+        <div 
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/80 border border-slate-700/80 text-[11px] font-medium"
+          title={
+            isAuthenticated 
+              ? `Autenticado no Supabase com ID persistente: ${user?.id || userProfile.id}` 
+              : "Sessão local em execução. Conecte sua conta para sincronização segura na nuvem."
+          }
+        >
+          {isAuthenticated ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse" />
+              <span className="text-emerald-300 font-semibold">Supabase Nuvem</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-slate-400">Sessão Local</span>
+            </>
+          )}
+        </div>
+
+        {/* SOS Crisis Button */}
+        <button
+          onClick={onOpenCrisis}
+          className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-rose-950/40 flex items-center gap-1.5 transition active:scale-95"
+          title="Apoio imediato em sobrecarga ou meltdown"
+        >
+          <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+          <span className="font-bold">SOS Crise</span>
+        </button>
+
+        {/* Low-Stimulation Theme Mode Toggle */}
+        <button
+          onClick={toggleLowStimMode}
+          className={`p-2 rounded-xl border transition active:scale-95 ${
+            userProfile.lowStimulationMode
+              ? "bg-teal-950 text-teal-300 border-teal-700 shadow-inner"
+              : "bg-slate-800/90 hover:bg-slate-700 text-slate-300 border-slate-700"
+          }`}
+          title={userProfile.lowStimulationMode ? "Modo Baixa Estimulação Ativo (Desativar)" : "Ativar Modo de Baixa Estimulação"}
+          aria-label="Alternar modo de estimulação visual"
+        >
+          {userProfile.lowStimulationMode ? (
+            <Moon className="w-4 h-4 text-teal-300" />
+          ) : (
+            <Sun className="w-4 h-4 text-slate-300" />
+          )}
+        </button>
+
+        {/* User Account / Overflow Dropdown Menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className={`flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition ${
+              isUserMenuOpen
+                ? "bg-slate-800 border-teal-500 text-white"
+                : "bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-200"
+            }`}
+            title="Menu do Usuário & Ações Rápidas"
+          >
+            <div className="w-6 h-6 rounded-lg bg-teal-900/60 border border-teal-600/50 flex items-center justify-center text-teal-300 font-bold text-xs">
+              {(userProfile.preferredName || "U").charAt(0).toUpperCase()}
+            </div>
+            <span className="hidden sm:inline max-w-[110px] truncate text-left">
+              {userProfile.preferredName || "Usuário"}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {/* Clean Dropdown Popover */}
+          {isUserMenuOpen && (
+            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-2 z-50 animate-fadeIn text-slate-200 space-y-1">
+              
+              {/* User Identity Header Card */}
+              <div className="p-2.5 rounded-xl bg-slate-800/70 border border-slate-700/60 mb-2">
+                <p className="text-xs font-bold text-slate-100 truncate">
+                  {userProfile.preferredName || "Visitante"}
+                </p>
+                <p className="text-[11px] text-slate-400 truncate mb-1.5">
+                  {user?.email || userProfile.email || "Sem e-mail vinculado"}
+                </p>
+                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${roleBadge.classes}`}>
+                  {roleBadge.label}
+                </span>
+              </div>
+
+              {/* Action 1: User Profile Settings */}
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as NavTab)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? `${skin.activeTabClass} border shadow-md`
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
-                }`}
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  onOpenProfile();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition"
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
-                <span>{tab.label}</span>
-                {isSuperAdmin && isHiddenFromUsers && (
-                  <EyeOff className="w-3.5 h-3.5 text-rose-400 ml-0.5" title="Módulo atualmente invisível para usuários comuns" />
-                )}
+                <User className="w-4 h-4 text-teal-400" />
+                <span>Meu Perfil & Preferências</span>
               </button>
-            );
-          })}
-        </nav>
+
+              {/* Action 2: Functional Support Plan */}
+              {onOpenFunctionalPlan && (
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenFunctionalPlan();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                >
+                  <FileText className="w-4 h-4 text-cyan-400" />
+                  <span>Plano Individual Funcional</span>
+                </button>
+              )}
+
+              {/* Action 3: Share Grants & Privacy */}
+              {onOpenShareManager && (
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenShareManager();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-400" />
+                  <span>Privacidade & Compartilhamento</span>
+                </button>
+              )}
+
+              {/* Action 4: SuperAdmin Module Visibility */}
+              {isSuperAdmin && onOpenModuleAdmin && (
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenModuleAdmin();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl text-cyan-300 hover:text-white hover:bg-cyan-950/70 border border-cyan-900/60 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Settings className="w-4 h-4 text-cyan-400" />
+                    <span>Gerenciar Visibilidade de Módulos</span>
+                  </div>
+                  {hiddenModules.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] bg-rose-950 text-rose-300 border border-rose-800 rounded-full font-black">
+                      {hiddenModules.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
+              <div className="border-t border-slate-800 my-1" />
+
+              {/* Action 5: Auth Login / Logout */}
+              {isAuthenticated ? (
+                <button
+                  onClick={async () => {
+                    setIsUserMenuOpen(false);
+                    await signOut();
+                    setActiveTab("chat");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-xl text-rose-300 hover:text-rose-100 hover:bg-rose-950/60 transition"
+                >
+                  <LogOut className="w-4 h-4 text-rose-400" />
+                  <span>Desconectar Sessão</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenAuth();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-xl text-teal-300 hover:text-teal-100 hover:bg-teal-950/70 border border-teal-800/80 transition shadow-sm"
+                >
+                  <LogIn className="w-4 h-4 text-teal-400" />
+                  <span>Entrar / Criar Conta Supabase</span>
+                </button>
+              )}
+
+            </div>
+          )}
+        </div>
 
       </div>
+
     </header>
   );
 };
