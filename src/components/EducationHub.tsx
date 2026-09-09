@@ -105,7 +105,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
       <strong>SISTEMASTOP Soluções Tecnológicas</strong><br/>
       Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE<br/>
       CEP: 63.119-060 | WhatsApp: +55 (88) 99673-9128<br/>
-      contato@sistemastop.com.br
+      sistemastop@gmail.com
     </div>
   </div>
 
@@ -452,7 +452,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
               Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE, CEP 63.119-060
             </p>
             <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
-              📞 +55 (88) 99673-9128 (WhatsApp) | ✉️ contato@sistemastop.com.br
+              📞 +55 (88) 99673-9128 (WhatsApp) | ✉️ sistemastop@gmail.com
             </p>
           </div>
         </div>

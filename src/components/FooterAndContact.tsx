@@ -123,8 +123,8 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
 
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <a href="mailto:contato@sistemastop.com.br" className="hover:text-emerald-300 underline font-semibold">
-                  contato@sistemastop.com.br
+                <a href="mailto:sistemastop@gmail.com" className="hover:text-emerald-300 underline font-semibold">
+                  sistemastop@gmail.com
                 </a>
               </div>
             </div>
@@ -253,7 +253,7 @@ export const FooterAndContact: React.FC<FooterAndContactProps> = ({ isDark = tru
             <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-[11px] text-slate-400 space-y-1">
               <p className="font-semibold text-white">📍 Sede da Empresa:</p>
               <p>Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE CEP 63.119-060</p>
-              <p>✉️ <span className="text-emerald-400">contato@sistemastop.com.br</span> | 📞 <span className="text-emerald-400">+55 (88) 99673-9128</span></p>
+              <p>✉️ <span className="text-emerald-400">sistemastop@gmail.com</span> | 📞 <span className="text-emerald-400">+55 (88) 99673-9128</span></p>
             </div>
 
           </div>

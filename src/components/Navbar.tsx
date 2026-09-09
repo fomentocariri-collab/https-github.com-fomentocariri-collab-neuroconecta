@@ -19,10 +19,12 @@ import {
   ChevronDown,
   Sparkles,
   ShieldCheck,
-  Activity
+  Activity,
+  Clock
 } from "lucide-react";
 import { UserProfile } from "../types";
 import { useCurrentUser } from "../contexts/AuthContext";
+import { useFocusTimer } from "../hooks/useFocusTimer";
 
 export type NavTab = 
   | "chat" 
@@ -67,7 +69,7 @@ const TAB_TITLES: Record<NavTab, { title: string; category: string }> = {
   rotina: { title: "Rotina Visual", category: "Meu Dia a Dia" },
   humor: { title: "Diário & Humor", category: "Meu Dia a Dia" },
   momento: { title: "Avaliação do Momento", category: "Meu Dia a Dia" },
-  musicoterapia: { title: "Som & Autorregulação", category: "Meu Dia a Dia" },
+  musicoterapia: { title: "Musicoterapia Clínica", category: "Clínico & Especialistas" },
   sensorial: { title: "Regulação Sensorial", category: "Meu Dia a Dia" },
   jogos: { title: "Jogos & Relaxamento", category: "Meu Dia a Dia" },
   agenda: { title: "Agenda & Medicamentos", category: "Meu Dia a Dia" },
@@ -104,6 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { user, isAuthenticated, isSuperAdmin, signOut } = useCurrentUser();
+  const { timerState, formatTime } = useFocusTimer();
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -219,6 +222,21 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Right Area: Status, SOS Crisis, Actions & Profile Menu */}
       <div className="flex items-center gap-2 sm:gap-2.5">
         
+        {/* Active Persistent Focus Timer Widget */}
+        {timerState.isRunning && (
+          <button
+            onClick={() => setActiveTab("rotina")}
+            title="Cronômetro Ativo — Clique para retornar à Rotina Visual"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-700/80 text-amber-300 hover:bg-amber-900/90 text-xs font-mono font-bold transition shadow-sm animate-pulse"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span>{formatTime(timerState.remainingSeconds)}</span>
+            <span className="hidden sm:inline text-[10px] uppercase font-sans text-amber-300/80 font-bold">
+              {timerState.mode === "foco" ? "Foco" : "Pausa"}
+            </span>
+          </button>
+        )}
+
         {/* Supabase Identity & Sync Badge */}
         <div 
           className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/80 border border-slate-700/80 text-[11px] font-medium"

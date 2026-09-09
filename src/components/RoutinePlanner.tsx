@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { CalendarCheck, Plus, Trash2, CheckCircle2, Clock, Play, Pause, RotateCcw, Sparkles, Image, Bell, BellRing, Upload, Camera } from "lucide-react";
 import { RoutineTask } from "../types";
+import { useFocusTimer } from "../hooks/useFocusTimer";
 
 export const RoutinePlanner: React.FC<{ isDark?: boolean }> = ({ isDark = true }) => {
   const [tasks, setTasks] = useState<RoutineTask[]>([]);
@@ -31,10 +32,19 @@ export const RoutinePlanner: React.FC<{ isDark?: boolean }> = ({ isDark = true }
   // Notifications state
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
 
-  // Sensory Pause Timer
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerMode, setTimerMode] = useState<"foco" | "pausa">("foco");
+  // Sensory Pause & Focus Timer (Persistent across modules and sessions)
+  const {
+    timerState,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    switchMode,
+    formatTime,
+  } = useFocusTimer();
+
+  const isTimerRunning = timerState.isRunning;
+  const timerSeconds = timerState.remainingSeconds;
+  const timerMode = timerState.mode;
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "granted") {
@@ -157,35 +167,6 @@ export const RoutinePlanner: React.FC<{ isDark?: boolean }> = ({ isDark = true }
     saveTasks(tasks.filter((t) => t.id !== id));
   };
 
-  // Timer logic
-  useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
-      // Toggle mode
-      if (timerMode === "foco") {
-        setTimerMode("pausa");
-        setTimerSeconds(5 * 60); // 5 min sensory break
-        alert("⏱️ Hora da Pausa Sensorial! Tire seus fones do áudio ativo, descanse os olhos e alongue-se.");
-      } else {
-        setTimerMode("foco");
-        setTimerSeconds(25 * 60);
-        alert("🔔 Pausa concluída. Você pode retornar ao bloco de foco calmo.");
-      }
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds, timerMode]);
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
   // Micro-steps generator
   const handleGenerateBreakdown = () => {
     if (!breakdownInput.trim()) return;
@@ -244,26 +225,34 @@ export const RoutinePlanner: React.FC<{ isDark?: boolean }> = ({ isDark = true }
             isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200"
           }`}>
             <div className="text-center">
-              <span className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 tracking-wider">
-                {timerMode === "foco" ? "Foco" : "Pausa"}
-              </span>
+              <button
+                type="button"
+                onClick={() => switchMode(timerMode === "foco" ? "pausa" : "foco")}
+                title="Clique para alternar entre Bloco de Foco (25m) e Pausa Sensorial (5m)"
+                className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 tracking-wider hover:underline flex items-center gap-1"
+              >
+                <span>{timerMode === "foco" ? "Foco (25m)" : "Pausa (5m)"}</span>
+              </button>
               <div className={`text-xl font-extrabold font-mono ${isDark ? "text-slate-100" : "text-slate-900"}`}>{formatTime(timerSeconds)}</div>
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setIsTimerRunning(!isTimerRunning)}
-                className="p-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl transition"
-                title={isTimerRunning ? "Pausar Timer" : "Iniciar Timer"}
+                type="button"
+                onClick={() => (isTimerRunning ? pauseTimer() : startTimer())}
+                className={`p-2 rounded-xl transition shadow-sm ${
+                  isTimerRunning
+                    ? "bg-amber-600 hover:bg-amber-500 text-white animate-pulse"
+                    : "bg-teal-600 hover:bg-teal-500 text-white"
+                }`}
+                title={isTimerRunning ? "Pausar Timer (continua salvo ao sair da aba)" : "Iniciar Timer de Foco"}
               >
                 {isTimerRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
               </button>
               <button
-                onClick={() => {
-                  setIsTimerRunning(false);
-                  setTimerSeconds(timerMode === "foco" ? 25 * 60 : 5 * 60);
-                }}
+                type="button"
+                onClick={resetTimer}
                 className={`p-2 rounded-xl transition ${isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-200"}`}
-                title="Reiniciar"
+                title="Reiniciar Duração Original"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
