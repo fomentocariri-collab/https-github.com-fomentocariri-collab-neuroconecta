@@ -324,3 +324,97 @@ export interface EducationArticle {
   fullExplanation: string;
   practicalTips: string[];
 }
+
+// -------------------------------------------------------------
+// SESSÃO DE MUSICOTERAPIA - ESTRUTURA CLÍNICA AUDITÁVEL
+// -------------------------------------------------------------
+
+export type MusicTherapyGoalKey =
+  | "comunicacao"
+  | "interacao_social"
+  | "atencao"
+  | "regulacao_emocional"
+  | "coordenacao_motora"
+  | "imitacao"
+  | "integracao_sensorial";
+
+export type MusicTherapyInterventionKey =
+  | "canto"
+  | "instrumento"
+  | "ritmo"
+  | "improvisacao"
+  | "escuta"
+  | "movimento";
+
+export type MusicTherapyResponseKey =
+  | "engajamento"
+  | "tolerancia_sensorial"
+  | "interacao"
+  | "comunicacao"
+  | "autorregulacao"
+  | "comportamento";
+
+export interface MusicTherapySessionGoal {
+  key: MusicTherapyGoalKey;
+  label: string;
+  selected: boolean;
+  targetFocus: string;
+  notes?: string;
+}
+
+export interface MusicTherapySessionIntervention {
+  key: MusicTherapyInterventionKey;
+  label: string;
+  applied: boolean;
+  details: string;
+  techniquesUsed: string[];
+  bpm?: number;
+  durationMinutes: number;
+}
+
+export interface MusicTherapySessionResponse {
+  key: MusicTherapyResponseKey;
+  label: string;
+  score: number; // 1 to 5
+  descriptor: string;
+  notes?: string;
+}
+
+export interface MusicTherapySession {
+  id: string;
+  sessionNumber: number;
+  date: string; // YYYY-MM-DD
+  time?: string;
+  durationMinutes: number;
+  patientName: string;
+  patientId?: string;
+  therapistName: string;
+  therapistRole: string; // e.g. "Musicoterapeuta Clínico", "Terapeuta Ocupacional / MT"
+  therapistRegister?: string; // UBAM / CBO / CRM / CRP
+  contextSetting: "clinica" | "escola_aee" | "caps" | "domicilio" | "hospital" | "neuroconecta_sala";
+  
+  // 1. Objetivos Terapêuticos
+  goals: Record<MusicTherapyGoalKey, MusicTherapySessionGoal>;
+  
+  // 2. Intervenção
+  interventions: Record<MusicTherapyInterventionKey, MusicTherapySessionIntervention>;
+  
+  // 3. Resposta Observada
+  observedResponses: Record<MusicTherapyResponseKey, MusicTherapySessionResponse>;
+  
+  // 4. Evolução Clínica & Auditoria Longitudinal
+  evolutionSummary: string;
+  interdisciplinaryAlignment?: string; // Fonoaudiologia, T.O., Psicologia, PEI
+  recommendationsForFamily?: string;
+  sensoryAlerts?: string;
+  
+  audit: {
+    createdAt: string;
+    createdBy: string;
+    auditHash: string;
+    verifiedAuditable: boolean;
+    source: string;
+    version: number;
+  };
+}
+

@@ -18,12 +18,21 @@ import {
   Star,
   StarOff,
   Activity,
-  Smile
+  Smile,
+  FileText,
+  PlusCircle,
+  ShieldCheck,
+  Award
 } from "lucide-react";
 import { TwoMinutePause } from "./sound/TwoMinutePause";
 import { ExploreSounds } from "./sound/ExploreSounds";
 import { SoundEnvironment } from "./sound/SoundEnvironment";
 import { GuidedSoundExperiences } from "./sound/GuidedSoundExperiences";
+import { MusicTherapySession } from "../types";
+import { INITIAL_LONGITUDINAL_SESSIONS } from "../data/musicTherapyData";
+import { MusicTherapySessionFlow } from "./musictherapy/MusicTherapySessionFlow";
+import { MusicTherapyLongitudinalAudit } from "./musictherapy/MusicTherapyLongitudinalAudit";
+import { auditService } from "../services/auditService";
 
 interface MusicotherapyHubProps {
   isDark?: boolean;
@@ -116,6 +125,65 @@ const SOUND_PRESETS: SoundPreset[] = [
 ];
 
 export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = false }) => {
+  const [mainSection, setMainSection] = useState<"historico" | "nova_sessao" | "laboratorio_sons">("historico");
+
+  const [sessions, setSessions] = useState<MusicTherapySession[]>(() => {
+    try {
+      const saved = localStorage.getItem("neuroconecta_musictherapy_sessions");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Erro ao carregar sessões de musicoterapia:", e);
+    }
+    return INITIAL_LONGITUDINAL_SESSIONS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_musictherapy_sessions", JSON.stringify(sessions));
+    } catch (e) {
+      console.warn("Erro ao persistir sessões de musicoterapia:", e);
+    }
+  }, [sessions]);
+
+  const handleSaveSession = (newSession: MusicTherapySession) => {
+    setSessions((prev) => {
+      const existingIdx = prev.findIndex((s) => s.id === newSession.id);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = newSession;
+        return next;
+      }
+      return [...prev, newSession];
+    });
+    setMainSection("historico");
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    auditService.log({
+      action: "RECORD_DELETED",
+      entityType: "musicotherapy_session",
+      entityId: sessionId,
+      source: "MusicotherapyHub",
+    });
+  };
+
+  const handleResetSeed = () => {
+    if (confirm("Deseja restaurar as sessões de exemplo do histórico longitudinal?")) {
+      setSessions(INITIAL_LONGITUDINAL_SESSIONS);
+      try {
+        localStorage.setItem("neuroconecta_musictherapy_sessions", JSON.stringify(INITIAL_LONGITUDINAL_SESSIONS));
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+  };
+
+  const nextSessionNumber = sessions.length > 0 ? Math.max(...sessions.map((s) => s.sessionNumber)) + 1 : 1;
+
   const [activeMode, setActiveMode] = useState<
     "player" | "pausa_2min" | "explorar" | "ambiente" | "preparar_tarefa" | "descompressao" | "som_movimento" | "favoritos"
   >("player");
@@ -370,7 +438,86 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8 animate-fadeIn">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
+      
+      {/* Primary Clinical Section Switcher */}
+      <div className={`p-2 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm ${
+        isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+      }`}>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setMainSection("historico")}
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+              mainSection === "historico"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <Activity className="w-4 h-4 text-teal-300" />
+            <span>Histórico Longitudinal Auditável</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950/40 text-teal-200 font-black">
+              {sessions.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("nova_sessao")}
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+              mainSection === "nova_sessao"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <PlusCircle className="w-4 h-4 text-emerald-300" />
+            <span>Registrar Sessão de Musicoterapia</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("laboratorio_sons")}
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+              mainSection === "laboratorio_sons"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-cyan-300" />
+            <span>Biblioteca & Recursos Sonoros</span>
+          </button>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2 pr-3 text-[11px] text-slate-400">
+          <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+          <span>Estrutura Clínica: Objetivos ➔ Intervenção ➔ Resposta ➔ Parecer</span>
+        </div>
+      </div>
+
+      {/* VIEW 1: Histórico Longitudinal Auditável */}
+      {mainSection === "historico" && (
+        <MusicTherapyLongitudinalAudit
+          sessions={sessions}
+          onNewSession={() => setMainSection("nova_sessao")}
+          onDeleteSession={handleDeleteSession}
+          onResetSeed={handleResetSeed}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 2: Registrar Nova Sessão Clínica Estruturada */}
+      {mainSection === "nova_sessao" && (
+        <MusicTherapySessionFlow
+          currentSessionNumber={nextSessionNumber}
+          onSaveSession={handleSaveSession}
+          onCancel={() => setMainSection("historico")}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 3: Biblioteca & Laboratório Sonoro (Recursos da Sala) */}
+      {mainSection === "laboratorio_sons" && (
+        <div className="space-y-8 animate-fadeIn">
       
       {/* Header Banner - Soft, Neuro-friendly */}
       <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm transition ${
@@ -755,6 +902,9 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         </div>
 
       </div>
+      )}
+
+        </div>
       )}
 
       {/* Educational Footer Banner */}

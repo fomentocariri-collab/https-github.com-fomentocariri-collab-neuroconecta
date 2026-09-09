@@ -76,9 +76,10 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         id: "musicoterapia",
-        label: "Som & Autorregulação",
+        label: "Musicoterapia",
         icon: Headphones,
-        description: "Frequências calmas, ruído rosa, marrom e binaurais",
+        description: "Sessões clínicas estruturadas, objetivos e histórico longitudinal auditável",
+        badge: "Clínico",
       },
       {
         id: "sensorial",
