@@ -76,10 +76,11 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         id: "musicoterapia",
-        label: "Musicoterapia",
+        label: "Musicoterapia Clínica",
         icon: Headphones,
-        description: "Sessões clínicas estruturadas, objetivos e histórico longitudinal auditável",
-        badge: "Clínico",
+        description: "Protocolos acústicos e evolução de musicoterapia estruturada",
+        badge: "Especialistas",
+        roles: ["profissional_apoio", "saude_caps", "cuidador_educador", "educador_aee", "superadmin"],
       },
       {
         id: "sensorial",
@@ -196,10 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isDark = true,
 }) => {
   const isSuperAdmin = 
-    userProfile.isSuperAdmin || 
-    userProfile.email?.toLowerCase() === "sistemastop@gmail.com" || 
-    userProfile.email?.toLowerCase() === "fomentocariri@gmail.com" || 
-    userProfile.userRole === "superadmin";
+    Boolean(userProfile.isSuperAdmin || userProfile.userRole === "superadmin");
 
   const userRole = userProfile.userRole || "pcd";
 
@@ -223,7 +221,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const visibleItems = group.items.filter((item) => {
       if (item.adminOnly && !isSuperAdmin) return false;
       if (!isSuperAdmin && hiddenModules.includes(item.id)) return false;
-      if (item.roles && !isSuperAdmin && !item.roles.includes(userRole)) return false;
+      if (item.roles && !isSuperAdmin) {
+        const hasAccess = 
+          item.roles.includes(userRole) ||
+          (!!userProfile.professionalRoleType && item.roles.includes("profissional_apoio")) ||
+          (userProfile.caregiverMode && item.roles.includes("cuidador_familiar"));
+        if (!hasAccess) return false;
+      }
       return true;
     });
     return { ...group, items: visibleItems };

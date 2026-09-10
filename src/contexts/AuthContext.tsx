@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { UserProfile, UserRole } from "../types";
 import { auditService } from "../services/auditService";
 import { dataSyncService } from "../services/dataSyncService";
+import { musicotherapyService } from "../services/musicotherapyService";
 
 export interface AuthContextType {
   user: User | null;
@@ -89,18 +90,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
 
-  // Helper to check if an email is superadmin
-  const checkIsSuperAdmin = (email?: string, role?: string): boolean => {
-    if (!email) return role === "superadmin";
-    const clean = email.trim().toLowerCase();
-    return clean === "sistemastop@gmail.com" || clean === "fomentocariri@gmail.com" || role === "superadmin";
+  // Helper to check if an account has superadmin role
+  const checkIsSuperAdmin = (email?: string, role?: string, profileFlag?: boolean): boolean => {
+    return !!profileFlag || role === "superadmin";
   };
 
   const createDefaultLocalProfile = (userId: string, cleanEmail: string, isSuper: boolean): UserProfile => {
     return {
       id: userId,
       email: cleanEmail,
-      preferredName: cleanEmail === "fomentocariri@gmail.com" ? "Fomento Cariri" : cleanEmail === "sistemastop@gmail.com" ? "Sistema Stop" : cleanEmail.split("@")[0],
+      preferredName: cleanEmail.split("@")[0] || "Usuário",
       pronouns: "não informado",
       userRole: isSuper ? "superadmin" : "pcd",
       diagnosisStatus: "laudo_formal",
@@ -580,6 +579,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         entityId: currentId,
         source: "AuthContext.signOut",
       });
+      // Expulgo rigoroso de rascunhos clínicos locais e cache volátil ao deslogar
+      musicotherapyService.clearUserSessionData(currentId);
     }
 
     try {

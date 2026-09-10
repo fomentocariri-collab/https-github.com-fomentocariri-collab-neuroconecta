@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   FileText, 
   Printer, 
@@ -83,7 +83,10 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
     return [];
   });
 
-  const [selectedPatId, setSelectedPatId] = useState<string>(patients[0]?.id || "");
+  const isSuperAdmin =
+    Boolean(userProfile.isSuperAdmin === true || userProfile.userRole === "superadmin");
+
+  const [selectedPatId, setSelectedPatId] = useState<string>("__me__");
 
   // Save patients list
   useEffect(() => {
@@ -93,8 +96,6 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
       console.error(e);
     }
   }, [patients]);
-
-  const selectedPatient = patients.find((p) => p.id === selectedPatId) || patients[0];
 
   // New Patient Form state
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
@@ -134,23 +135,153 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
   const [functionalPlan, setFunctionalPlan] = useState<FunctionalSupportPlan | null>(null);
   const [peiVersions, setPeiVersions] = useState<PeiDraftVersion[]>([]);
 
+  // Sync test history and logs from all stores and respond to window focus & storage updates
   useEffect(() => {
-    try {
-      const storedTests = localStorage.getItem("neuroconecta_test_history");
-      if (storedTests) setTestHistory(JSON.parse(storedTests));
+    const loadAllData = () => {
+      try {
+        const storedTests = localStorage.getItem("neuroconecta_test_history");
+        const globalTests = localStorage.getItem("neuroconecta_global_assessments_db");
+        const parsedStored: SavedTestResult[] = storedTests ? JSON.parse(storedTests) : [];
+        const parsedGlobal: SavedTestResult[] = globalTests ? JSON.parse(globalTests) : [];
 
-      const storedRoutines = localStorage.getItem("neuroconecta_routine_tasks");
-      if (storedRoutines) setRoutineTasks(JSON.parse(storedRoutines));
+        const combined: SavedTestResult[] = Array.isArray(parsedStored) ? [...parsedStored] : [];
+        if (Array.isArray(parsedGlobal)) {
+          parsedGlobal.forEach((item) => {
+            if (!combined.some((c) => c.id === item.id || (c.testId === item.testId && c.date === item.date && c.score === item.score))) {
+              combined.push(item);
+            }
+          });
+        }
+        setTestHistory(combined);
 
-      const storedMoods = localStorage.getItem("neuroconecta_mood_logs");
-      if (storedMoods) setMoodLogs(JSON.parse(storedMoods));
+        const storedRoutines = localStorage.getItem("neuroconecta_routine_tasks");
+        if (storedRoutines) setRoutineTasks(JSON.parse(storedRoutines));
 
-      const storedCaregiver = localStorage.getItem("neuroconecta_caregiver_logs");
-      if (storedCaregiver) setCaregiverLogs(JSON.parse(storedCaregiver));
-    } catch (e) {
-      console.error(e);
-    }
+        const storedMoods = localStorage.getItem("neuroconecta_mood_logs");
+        if (storedMoods) setMoodLogs(JSON.parse(storedMoods));
+
+        const storedCaregiver = localStorage.getItem("neuroconecta_caregiver_logs");
+        if (storedCaregiver) setCaregiverLogs(JSON.parse(storedCaregiver));
+      } catch (e) {
+        console.error("Erro ao carregar histórico de dados para relatório:", e);
+      }
+    };
+
+    loadAllData();
+    window.addEventListener("focus", loadAllData);
+    window.addEventListener("storage", loadAllData);
+    return () => {
+      window.removeEventListener("focus", loadAllData);
+      window.removeEventListener("storage", loadAllData);
+    };
   }, []);
+
+  // Distinct test subjects registered across tests
+  const distinctTestUsers = useMemo(() => {
+    const map = new Map<string, { userId?: string; userName: string; count: number }>();
+    testHistory.forEach((t) => {
+      const raw = t.userName?.trim() || t.userId || "Usuário";
+      const key = raw.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
+        map.set(key, {
+          userId: t.userId,
+          userName: raw,
+          count: 1,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [testHistory]);
+
+  // Determine report subject
+  const isSelf = selectedPatId === "__me__";
+  const isAll = selectedPatId === "__all__";
+  const isTestUser = selectedPatId.startsWith("user:");
+  const selectedTestUserName = isTestUser ? selectedPatId.replace("user:", "") : "";
+
+  const selectedPatient = !isSelf && !isAll && !isTestUser
+    ? patients.find((p) => p.id === selectedPatId) || null
+    : null;
+
+  const patientName = isAll
+    ? "Consolidado Geral (Todos os Usuários e Avaliações)"
+    : isTestUser
+    ? selectedTestUserName
+    : selectedPatient
+    ? selectedPatient.name
+    : userProfile.preferredName || userProfile.email || "Usuário do Sistema";
+
+  const patientPronouns = isAll
+    ? "diversos"
+    : isTestUser
+    ? "não informado"
+    : selectedPatient
+    ? selectedPatient.pronouns
+    : userProfile.pronouns || "não informado";
+
+  const currentSupportLevel = isSelf
+    ? userProfile.supportLevel
+    : selectedPatient
+    ? selectedPatient.supportLevel
+    : "nao_informado";
+
+  const currentDiagStatus = isSelf
+    ? userProfile.diagnosisStatus
+    : selectedPatient
+    ? selectedPatient.diagnosisStatus
+    : "nao_informado";
+
+  const currentCiptea = isSelf
+    ? userProfile.cipteaNumber
+    : selectedPatient
+    ? selectedPatient.cipteaNumber
+    : undefined;
+
+  // Filter test history safely for selected subject
+  const filteredTestHistory = useMemo(() => {
+    if (isAll) return testHistory;
+
+    if (isTestUser) {
+      const match = testHistory.filter(
+        (t) => t.userName?.toLowerCase() === selectedTestUserName.toLowerCase()
+      );
+      return match.length > 0 ? match : testHistory;
+    }
+
+    if (selectedPatient) {
+      const pName = selectedPatient.name.toLowerCase();
+      const pId = selectedPatient.id;
+      const matched = testHistory.filter(
+        (t) =>
+          (t.userName && t.userName.toLowerCase() === pName) ||
+          (t.userId && t.userId === pId)
+      );
+      return matched;
+    }
+
+    // Default: Self / Current Profile
+    const myId = userProfile.id;
+    const myName = (userProfile.preferredName || "").toLowerCase();
+    const myEmail = (userProfile.email || "").toLowerCase();
+
+    const matched = testHistory.filter(
+      (t) =>
+        (myId && t.userId === myId) ||
+        (myName && t.userName && t.userName.toLowerCase() === myName) ||
+        (myEmail && t.userName && t.userName.toLowerCase() === myEmail)
+    );
+
+    // If no test specifically matches this user's name/id yet, but test records exist in local storage,
+    // show existing tests so the user's completed tests are never hidden
+    if (matched.length === 0 && testHistory.length > 0) {
+      return testHistory;
+    }
+
+    return matched;
+  }, [testHistory, isAll, isTestUser, selectedTestUserName, selectedPatient, userProfile]);
 
   // Fetch authentic PEI and Functional Plan from shared persistent source
   useEffect(() => {
@@ -251,23 +382,43 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
     item.mood === "sobrecarregado"
   ).length;
 
-  // Real tests lookup with provenance check
-  const aq10Result = testHistory.find((t) => t.testId === "aq10" && typeof t.score === "number" && !isNaN(t.score));
-  const sqeqResult = testHistory.find((t) => t.testId === "sqeq" && typeof t.score === "number" && !isNaN(t.score));
-  const sensoryResult = testHistory.find((t) => t.testId === "sensory" && typeof t.score === "number" && !isNaN(t.score));
-  const burnoutResult = testHistory.find((t) => t.testId === "burnout" && typeof t.score === "number" && !isNaN(t.score));
-  const catqResult = testHistory.find((t) => t.testId === "catq" && typeof t.score === "number" && !isNaN(t.score));
+  // Individual test lookup for key batteries
+  const raadsResult = filteredTestHistory.find((t) => (t.testId === "raads-r" || t.testId === "raads") && typeof t.score === "number" && !isNaN(t.score));
+  const aspieResult = filteredTestHistory.find((t) => t.testId === "aspie-quiz" && typeof t.score === "number" && !isNaN(t.score));
+  const aq10Result = filteredTestHistory.find((t) => t.testId === "aq10" && typeof t.score === "number" && !isNaN(t.score));
+  const sqeqResult = filteredTestHistory.find((t) => t.testId === "sqeq" && typeof t.score === "number" && !isNaN(t.score));
+  const sensoryResult = filteredTestHistory.find((t) => t.testId === "sensory" && typeof t.score === "number" && !isNaN(t.score));
+  const burnoutResult = filteredTestHistory.find((t) => t.testId === "burnout" && typeof t.score === "number" && !isNaN(t.score));
+  const catqResult = filteredTestHistory.find((t) => t.testId === "catq" && typeof t.score === "number" && !isNaN(t.score));
 
-  const completedTestsList = [
-    aq10Result ? { name: "AQ-10", res: aq10Result } : null,
-    sqeqResult ? { name: "SQ-EQ", res: sqeqResult } : null,
-    sensoryResult ? { name: "Perfil Sensorial", res: sensoryResult } : null,
-    burnoutResult ? { name: "Burnout Autista", res: burnoutResult } : null,
-    catqResult ? { name: "CAT-Q", res: catqResult } : null,
-  ].filter(Boolean) as { name: string; res: SavedTestResult }[];
+  // Dynamic completed tests list encompassing all valid tests
+  const completedTestsList = useMemo(() => {
+    const list: { name: string; res: SavedTestResult }[] = [];
+    filteredTestHistory.forEach((t) => {
+      if (typeof t.score === "number" && !isNaN(t.score)) {
+        let name = t.testTitle || t.testId;
+        if (t.testId === "raads-r" && !name.toLowerCase().includes("raads")) {
+          name = "RAADS-R (Ritvo Asperger Autism Diagnostic Scale - Revised)";
+        } else if (t.testId === "aspie-quiz" && !name.toLowerCase().includes("aspie")) {
+          name = "Aspie Quiz (Neurodiversidade vs Neurotípico)";
+        } else if (t.testId === "aq10" && !name.toLowerCase().includes("aq-10")) {
+          name = "AQ-10 (Autism Spectrum Quotient - 10 itens)";
+        } else if (t.testId === "catq" && !name.toLowerCase().includes("cat-q")) {
+          name = "CAT-Q (Camuflagem Social no Autismo)";
+        } else if (t.testId === "burnout" && !name.toLowerCase().includes("burnout")) {
+          name = "Avaliação de Burnout Autista & Sobrecarga";
+        } else if (t.testId === "sensory" && !name.toLowerCase().includes("sensorial")) {
+          name = "Perfil Sensorial Simplificado";
+        } else if (t.testId === "sqeq" && !name.toLowerCase().includes("sq-eq")) {
+          name = "SQ-EQ (Empatia e Sistematização)";
+        }
+        list.push({ name, res: t });
+      }
+    });
+    return list;
+  }, [filteredTestHistory]);
 
   // Support level label - Never infer or default to Level 2
-  const currentSupportLevel = selectedPatient ? selectedPatient.supportLevel : userProfile.supportLevel;
   const supportLevelLabel = currentSupportLevel === 1
     ? "Nível 1 de Suporte (Declarado em documento formal prévio)"
     : currentSupportLevel === 2
@@ -277,7 +428,6 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
     : "Não informado / Não documentado";
 
   // Diagnosis label - Never infer diagnosis
-  const currentDiagStatus = selectedPatient ? selectedPatient.diagnosisStatus : userProfile.diagnosisStatus;
   const diagnosisLabel = currentDiagStatus === "laudo_formal"
     ? "Laudo Formal Prévio Declarado pelo Usuário/Responsável"
     : currentDiagStatus === "autodiagnosticado"
@@ -308,12 +458,12 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
   const handleDownloadRealPdf = () => {
     if (validationErrors.length > 0) return;
     generateFunctionalReportPdf({
-      patientName: selectedPatient ? selectedPatient.name : userProfile.preferredName,
-      pronouns: selectedPatient ? selectedPatient.pronouns : "não informado",
+      patientName: patientName,
+      pronouns: patientPronouns,
       supportLevel: supportLevelLabel,
       diagnosisStatus: diagnosisLabel,
-      ciptea: (selectedPatient ? selectedPatient.cipteaNumber : userProfile.cipteaNumber) || "Não informada",
-      periodLabel: period === "semanal" ? "Semanal (Últimos 7 dias)" : period === "mensal" ? "Mensal (Últimos 30 dias)" : "Semestral (Últimos 180 dias)",
+      ciptea: currentCiptea || "Não cadastrado",
+      periodLabel: period === "semanal" ? "Semanal (Últimos 7 dias)" : period === "mensal" ? "Mensal (Últimos 30 dias)" : "Diário (Hoje)",
       goals: functionalPlan?.goals?.join(", ") || "Apoio à autonomia e previsibilidade diária",
       accommodations: functionalPlan?.sensoryAccommodations || [],
       sensoryNeeds: functionalPlan?.sensoryAccommodations?.join("; ") || "Acomodações sensoriais cadastradas no plano de apoio",
@@ -333,7 +483,6 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
       return;
     }
 
-    const patientName = selectedPatient ? selectedPatient.name : userProfile.preferredName;
     const dateStr = new Date().toLocaleDateString("pt-BR");
 
     const htmlContent = `<!DOCTYPE html>
@@ -367,7 +516,7 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
     <div>
       <div class="brand">SISTEMASTOP • NEUROCONECTA — TECNOLOGIA ASSISTIVA NEUROAFIRMATIVA</div>
       <h1>${documentTitle}</h1>
-      <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE | +55 (88) 99673-9128</p>
+      <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE | +55 (88) 99673-9128 | Plataforma NeuroConecta</p>
     </div>
     <div style="text-align: right; font-size: 11px; color: #475569;">
       <p><strong>Emissão:</strong> ${dateStr}</p>
@@ -377,10 +526,10 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
   </div>
 
   <div class="meta-box">
-    <div><strong>Titular:</strong> ${patientName} (${selectedPatient?.pronouns || userProfile.pronouns || "não informado"})</div>
+    <div><strong>Titular:</strong> ${patientName} (${patientPronouns})</div>
     <div><strong>Status Diagnóstico:</strong> ${diagnosisLabel}</div>
     <div><strong>Nível de Suporte Registrado:</strong> ${supportLevelLabel}</div>
-    <div><strong>Documento / CIPTEA:</strong> ${selectedPatient?.cipteaNumber || "Não cadastrado"}</div>
+    <div><strong>Documento / CIPTEA:</strong> ${currentCiptea || "Não cadastrado"}</div>
     <div><strong>Emissor Responsável:</strong> ${userProfile.preferredName || "Responsável"} (${emitterRoleLabel})</div>
     <div><strong>ID do Documento:</strong> NC-DOC-${Date.now().toString(36).toUpperCase()}</div>
   </div>
@@ -420,44 +569,29 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>AQ-10 (Autism Spectrum Quotient)</td>
-        <td>${aq10Result ? aq10Result.date : "Não realizado"}</td>
-        <td>${aq10Result ? `${aq10Result.score} / ${aq10Result.maxScore}` : "Sem dados"}</td>
-        <td>${aq10Result ? aq10Result.interpretationLevel : "Não realizado"}</td>
-      </tr>
-      <tr>
-        <td>SQ-EQ (Empatia e Sistematização)</td>
-        <td>${sqeqResult ? sqeqResult.date : "Não realizado"}</td>
-        <td>${sqeqResult ? `${sqeqResult.score} / ${sqeqResult.maxScore}` : "Sem dados"}</td>
-        <td>${sqeqResult ? sqeqResult.interpretationLevel : "Não realizado"}</td>
-      </tr>
-      <tr>
-        <td>Perfil Sensorial Simplificado</td>
-        <td>${sensoryResult ? sensoryResult.date : "Não realizado"}</td>
-        <td>${sensoryResult ? `${sensoryResult.score} / ${sensoryResult.maxScore}` : "Sem dados"}</td>
-        <td>${sensoryResult ? sensoryResult.interpretationLevel : "Não realizado"}</td>
-      </tr>
-      <tr>
-        <td>Avaliação de Burnout Autista</td>
-        <td>${burnoutResult ? burnoutResult.date : "Não realizado"}</td>
-        <td>${burnoutResult ? `${burnoutResult.score} / ${burnoutResult.maxScore}` : "Sem dados"}</td>
-        <td>${burnoutResult ? burnoutResult.interpretationLevel : "Não realizado"}</td>
-      </tr>
-      <tr>
-        <td>CAT-Q (Camuflagem Social)</td>
-        <td>${catqResult ? catqResult.date : "Não realizado"}</td>
-        <td>${catqResult ? `${catqResult.score} / ${catqResult.maxScore}` : "Sem dados"}</td>
-        <td>${catqResult ? catqResult.interpretationLevel : "Não realizado"}</td>
-      </tr>
+      ${completedTestsList.length > 0 ? completedTestsList.map(t => `
+        <tr>
+          <td><strong>${t.name}</strong></td>
+          <td>${t.res.date}</td>
+          <td><strong>${t.res.score} / ${t.res.maxScore} pts</strong></td>
+          <td>${t.res.interpretationLevel || "Concluído"}</td>
+        </tr>
+      `).join("") : `
+        <tr>
+          <td colspan="4" style="text-align: center; color: #64748b; padding: 14px;">
+            Nenhum instrumento psicométrico ou autoteste foi concluído no período para este perfil.
+          </td>
+        </tr>
+      `}
     </tbody>
   </table>
 
   <div class="section-title">3. Síntese Funcional do Período</div>
   <div class="narrative">
-    <p>O presente documento consolida os registros funcionais de rotina, autorrelatos e apontamentos inseridos na plataforma NeuroConecta referentes a <strong>${patientName}</strong> (${selectedPatient?.pronouns || userProfile.pronouns || "não informado"}), organizados na janela de acompanhamento <strong>${period === "diario" ? "diária" : period === "semanal" ? "semanal (7 dias)" : "mensal (30 dias)"}</strong>.</p>
+    <p>O presente documento consolida os registros funcionais de rotina, autorrelatos e apontamentos inseridos na plataforma NeuroConecta referentes a <strong>${patientName}</strong> (${patientPronouns}), organizados na janela de acompanhamento <strong>${period === "diario" ? "diária" : period === "semanal" ? "semanal (7 dias)" : "mensal (30 dias)"}</strong>.</p>
     <p><strong>Engajamento em Rotina:</strong> ${totalTasks > 0 ? `Foram registradas ${totalTasks} tarefas na rotina visual, com conclusão de ${completedTasksCount} tarefas (${routineCompletionPercentage}% de adesão).` : "Não constam tarefas cadastradas na rotina para este intervalo."}</p>
     <p><strong>Autorregulação &amp; Energia:</strong> ${validMoodEntries.length > 0 || validEnergyEntries.length > 0 ? `Registrada média de humor de ${avgMoodStr}/5.0 e energia média de ${avgEnergyStr}/5.0. Constam ${sensoryOverloadEvents} episódio(s) de sobrecarga sensorial relatados no período.` : "Sem dados numéricos suficientes de humor e energia no período."}</p>
+    <p><strong>Instrumentos Padronizados Concluídos:</strong> ${completedTestsList.length > 0 ? completedTestsList.map(t => `${t.name}: ${t.res.score}/${t.res.maxScore} (${t.res.interpretationLevel || "Concluído"})`).join("; ") : "Nenhum instrumento psicométrico formal realizado no período."}</p>
     <p><strong>Parâmetros Documentais Declarados:</strong> O titular possui status diagnóstico como <em>"${diagnosisLabel}"</em> e suporte registrado como <em>"${supportLevelLabel}"</em>. A plataforma NeuroConecta não realiza diagnósticos, não atribui enquadramentos de suporte de maneira automatizada e não altera documentações preexistentes.</p>
   </div>
 
@@ -634,25 +768,45 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
               onChange={(e) => setSelectedPatId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-violet-700/80 rounded-xl text-slate-100 text-xs font-semibold focus:outline-none focus:border-violet-400"
             >
-              {patients.length > 0 ? (
-                patients.map((pat) => (
-                  <option key={pat.id} value={pat.id}>
-                    {pat.name} — ({pat.pronouns}) {pat.cipteaNumber ? `[${pat.cipteaNumber}]` : ""}
-                  </option>
-                ))
-              ) : (
-                <option value="">{userProfile.preferredName || "Usuário Atual"} (Registro Próprio)</option>
+              <option value="__me__">
+                👤 Meu Próprio Perfil: {userProfile.preferredName || userProfile.email || "Usuário Atual"} (Registro Próprio)
+              </option>
+
+              {isSuperAdmin && (
+                <option value="__all__">
+                  🌐 Visão Global Superadmin: Todos os Usuários &amp; Avaliações ({testHistory.length} testes)
+                </option>
+              )}
+
+              {distinctTestUsers.length > 0 && (
+                <optgroup label="🧪 Usuários com Avaliações / Testes no Sistema">
+                  {distinctTestUsers.map((u, idx) => (
+                    <option key={`tu-${idx}`} value={`user:${u.userName}`}>
+                      🧪 {u.userName} ({u.count} teste{u.count > 1 ? "s" : ""})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+
+              {patients.length > 0 && (
+                <optgroup label="📋 Pacientes / Registros Cadastrados">
+                  {patients.map((pat) => (
+                    <option key={pat.id} value={pat.id}>
+                      📋 {pat.name} — ({pat.pronouns}) {pat.cipteaNumber ? `[${pat.cipteaNumber}]` : ""}
+                    </option>
+                  ))}
+                </optgroup>
               )}
             </select>
           </div>
 
           <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1">
             <div className="flex items-center justify-between font-bold text-slate-200">
-              <span>{selectedPatient ? selectedPatient.name : userProfile.preferredName}</span>
-              <span className="text-violet-400">{selectedPatient ? selectedPatient.pronouns : userProfile.pronouns}</span>
+              <span>{patientName}</span>
+              <span className="text-violet-400">{patientPronouns}</span>
             </div>
             <p className="text-slate-400">Status Diagnóstico: <span className="text-slate-200">{diagnosisLabel}</span></p>
-            <p className="text-violet-300">Suporte: <span className="text-violet-200">{supportLevelLabel}</span> {selectedPatient?.cipteaNumber ? `| Carteira: ${selectedPatient.cipteaNumber}` : ""}</p>
+            <p className="text-violet-300">Suporte: <span className="text-violet-200">{supportLevelLabel}</span> {currentCiptea ? `| Carteira: ${currentCiptea}` : ""}</p>
           </div>
         </div>
       </div>
@@ -809,7 +963,7 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
                   {documentTitle}
                 </h1>
                 <p className="text-[11px] text-slate-400 print:text-slate-600">
-                  Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE | +55 (88) 99673-9128 | contato@sistemastop.com.br
+                  Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE | +55 (88) 99673-9128 | Plataforma NeuroConecta
                 </p>
               </div>
             </div>
@@ -910,42 +1064,67 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
               <thead>
                 <tr className="bg-slate-950 border-b border-slate-800 text-slate-300 print:bg-slate-100 print:text-black print:border-slate-400">
                   <th className="p-3 font-bold">Instrumento</th>
+                  {(isAll || isSuperAdmin) && <th className="p-3 font-bold">Usuário</th>}
                   <th className="p-3 font-bold">Data</th>
                   <th className="p-3 font-bold">Pontuação Obtida</th>
                   <th className="p-3 font-bold">Status / Interpretação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 print:divide-slate-300">
-                <tr className="hover:bg-slate-950/40 print:bg-white">
-                  <td className="p-3 font-semibold text-slate-200 print:text-black">AQ-10 (Autism Spectrum Quotient)</td>
-                  <td className="p-3 text-slate-400 print:text-slate-700">{aq10Result ? aq10Result.date : "Não realizado"}</td>
-                  <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{aq10Result ? `${aq10Result.score} / ${aq10Result.maxScore}` : "Sem dados"}</td>
-                  <td className="p-3 text-slate-300 print:text-black">{aq10Result ? aq10Result.interpretationLevel : "Não realizado"}</td>
-                </tr>
-                <tr className="hover:bg-slate-950/40 print:bg-white">
-                  <td className="p-3 font-semibold text-slate-200 print:text-black">SQ-EQ (Empatia e Sistematização)</td>
-                  <td className="p-3 text-slate-400 print:text-slate-700">{sqeqResult ? sqeqResult.date : "Não realizado"}</td>
-                  <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{sqeqResult ? `${sqeqResult.score} / ${sqeqResult.maxScore}` : "Sem dados"}</td>
-                  <td className="p-3 text-slate-300 print:text-black">{sqeqResult ? sqeqResult.interpretationLevel : "Não realizado"}</td>
-                </tr>
-                <tr className="hover:bg-slate-950/40 print:bg-white">
-                  <td className="p-3 font-semibold text-slate-200 print:text-black">Perfil Sensorial Simplificado</td>
-                  <td className="p-3 text-slate-400 print:text-slate-700">{sensoryResult ? sensoryResult.date : "Não realizado"}</td>
-                  <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{sensoryResult ? `${sensoryResult.score} / ${sensoryResult.maxScore}` : "Sem dados"}</td>
-                  <td className="p-3 text-slate-300 print:text-black">{sensoryResult ? sensoryResult.interpretationLevel : "Não realizado"}</td>
-                </tr>
-                <tr className="hover:bg-slate-950/40 print:bg-white">
-                  <td className="p-3 font-semibold text-slate-200 print:text-black">Avaliação de Burnout Autista</td>
-                  <td className="p-3 text-slate-400 print:text-slate-700">{burnoutResult ? burnoutResult.date : "Não realizado"}</td>
-                  <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{burnoutResult ? `${burnoutResult.score} / ${burnoutResult.maxScore}` : "Sem dados"}</td>
-                  <td className="p-3 text-slate-300 print:text-black">{burnoutResult ? burnoutResult.interpretationLevel : "Não realizado"}</td>
-                </tr>
-                <tr className="hover:bg-slate-950/40 print:bg-white">
-                  <td className="p-3 font-semibold text-slate-200 print:text-black">CAT-Q (Camuflagem Social)</td>
-                  <td className="p-3 text-slate-400 print:text-slate-700">{catqResult ? catqResult.date : "Não realizado"}</td>
-                  <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{catqResult ? `${catqResult.score} / ${catqResult.maxScore}` : "Sem dados"}</td>
-                  <td className="p-3 text-slate-300 print:text-black">{catqResult ? catqResult.interpretationLevel : "Não realizado"}</td>
-                </tr>
+                {completedTestsList.length > 0 ? (
+                  completedTestsList.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-950/40 print:bg-white">
+                      <td className="p-3 font-semibold text-slate-200 print:text-black">
+                        {item.name}
+                      </td>
+                      {(isAll || isSuperAdmin) && (
+                        <td className="p-3 text-slate-400 print:text-slate-700">
+                          {item.res.userName || "Usuário"}
+                        </td>
+                      )}
+                      <td className="p-3 text-slate-400 print:text-slate-700">{item.res.date}</td>
+                      <td className="p-3 font-mono font-bold text-violet-300 print:text-black">
+                        {item.res.score} / {item.res.maxScore} pts
+                      </td>
+                      <td className="p-3 text-slate-300 print:text-black">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-950/80 text-violet-300 border border-violet-800/60 print:border-slate-300 print:bg-slate-100 print:text-black">
+                          {item.res.interpretationLevel || "Concluído"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <>
+                    <tr className="hover:bg-slate-950/40 print:bg-white">
+                      <td className="p-3 font-semibold text-slate-200 print:text-black">RAADS-R (Ritvo Autism Asperger Diagnostic Scale)</td>
+                      {(isAll || isSuperAdmin) && <td className="p-3 text-slate-500">—</td>}
+                      <td className="p-3 text-slate-400 print:text-slate-700">{raadsResult ? raadsResult.date : "Não realizado"}</td>
+                      <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{raadsResult ? `${raadsResult.score} / ${raadsResult.maxScore}` : "Sem dados"}</td>
+                      <td className="p-3 text-slate-400 print:text-black">{raadsResult ? raadsResult.interpretationLevel : "Não realizado"}</td>
+                    </tr>
+                    <tr className="hover:bg-slate-950/40 print:bg-white">
+                      <td className="p-3 font-semibold text-slate-200 print:text-black">Aspie Quiz (Neurodiversidade vs Neurotípico)</td>
+                      {(isAll || isSuperAdmin) && <td className="p-3 text-slate-500">—</td>}
+                      <td className="p-3 text-slate-400 print:text-slate-700">{aspieResult ? aspieResult.date : "Não realizado"}</td>
+                      <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{aspieResult ? `${aspieResult.score} / ${aspieResult.maxScore}` : "Sem dados"}</td>
+                      <td className="p-3 text-slate-400 print:text-black">{aspieResult ? aspieResult.interpretationLevel : "Não realizado"}</td>
+                    </tr>
+                    <tr className="hover:bg-slate-950/40 print:bg-white">
+                      <td className="p-3 font-semibold text-slate-200 print:text-black">AQ-10 (Autism Spectrum Quotient)</td>
+                      {(isAll || isSuperAdmin) && <td className="p-3 text-slate-500">—</td>}
+                      <td className="p-3 text-slate-400 print:text-slate-700">{aq10Result ? aq10Result.date : "Não realizado"}</td>
+                      <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{aq10Result ? `${aq10Result.score} / ${aq10Result.maxScore}` : "Sem dados"}</td>
+                      <td className="p-3 text-slate-400 print:text-black">{aq10Result ? aq10Result.interpretationLevel : "Não realizado"}</td>
+                    </tr>
+                    <tr className="hover:bg-slate-950/40 print:bg-white">
+                      <td className="p-3 font-semibold text-slate-200 print:text-black">CAT-Q (Camuflagem Social no Autismo)</td>
+                      {(isAll || isSuperAdmin) && <td className="p-3 text-slate-500">—</td>}
+                      <td className="p-3 text-slate-400 print:text-slate-700">{catqResult ? catqResult.date : "Não realizado"}</td>
+                      <td className="p-3 font-mono font-bold text-violet-300 print:text-black">{catqResult ? `${catqResult.score} / ${catqResult.maxScore}` : "Sem dados"}</td>
+                      <td className="p-3 text-slate-400 print:text-black">{catqResult ? catqResult.interpretationLevel : "Não realizado"}</td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -962,13 +1141,13 @@ export const ReportHub: React.FC<ReportHubProps> = ({ userProfile, onNavigateToT
 
           <div className="text-xs sm:text-sm text-slate-200 print:text-black leading-relaxed space-y-4 text-justify">
             <p>
-              O presente documento consolida os registros funcionais de rotina, autorrelatos e apontamentos inseridos na plataforma NeuroConecta referentes a <strong>{selectedPatient ? selectedPatient.name : userProfile.preferredName}</strong> ({selectedPatient?.pronouns || userProfile.pronouns || "não informado"}), organizados na janela de acompanhamento <strong>{period === "diario" ? "diária" : period === "semanal" ? "semanal (7 dias)" : "mensal (30 dias)"}</strong>.
+              O presente documento consolida os registros funcionais de rotina, autorrelatos e apontamentos inseridos na plataforma NeuroConecta referentes a <strong>{patientName}</strong> ({patientPronouns}), organizados na janela de acompanhamento <strong>{period === "diario" ? "diária" : period === "semanal" ? "semanal (7 dias)" : "mensal (30 dias)"}</strong>.
             </p>
 
             {/* Instrument Provenance Paragraph */}
             {completedTestsList.length === 0 ? (
               <p className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl print:bg-slate-50 print:border-slate-300">
-                <strong>Instrumentos Padronizados de Triagem:</strong> Nenhum instrumento padronizado (AQ-10, SQ-EQ, Perfil Sensorial, Burnout Autista ou CAT-Q) foi realizado no período selecionado. Em estrita conformidade com as diretrizes de proveniência de dados, o sistema abstém-se de inferir pontuações, categorias diagnósticas ou classificações psicométricas a partir de instrumentos ausentes.
+                <strong>Instrumentos Padronizados de Triagem:</strong> Nenhum instrumento padronizado (RAADS-R, Aspie Quiz, AQ-10, SQ-EQ, Perfil Sensorial, Burnout Autista ou CAT-Q) foi realizado no período selecionado para este perfil. Em estrita conformidade com as diretrizes de proveniência de dados, o sistema abstém-se de inferir pontuações, categorias diagnósticas ou classificações psicométricas a partir de instrumentos ausentes.
               </p>
             ) : (
               <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl print:bg-slate-50 print:border-slate-300 space-y-2">

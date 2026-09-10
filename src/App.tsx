@@ -120,7 +120,7 @@ export default function App() {
     setIsExploringAsGuest(false);
 
     // Intuitively route user upon login
-    if (profile.isSuperAdmin || profile.email?.toLowerCase() === "sistemastop@gmail.com" || profile.userRole === "superadmin") {
+    if (profile.isSuperAdmin || profile.userRole === "superadmin") {
       setActiveTab("chat");
     } else if (profile.professionalRoleType === "educador" || profile.userRole === "cuidador_educador") {
       setActiveTab("educacao");
@@ -130,12 +130,12 @@ export default function App() {
   };
 
   const handleDirectAdminLogin = async () => {
-    const res = await signInLocal("fomentocariri@gmail.com", "Fomento Cariri", "superadmin");
+    const res = await signInLocal("admin@neuroconecta.local", "Administrador do Sistema", "superadmin");
     if (res.user) {
       handleLoginSuccess({
         id: res.user.id,
         email: res.user.email,
-        preferredName: "Fomento Cariri",
+        preferredName: "Administrador do Sistema",
         pronouns: "não informado",
         diagnosisStatus: "laudo_formal",
         supportLevel: "nao_especificado",

@@ -60,7 +60,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
     COALESCE(NEW.raw_user_meta_data->>'preferred_name', split_part(NEW.email, '@', 1)),
     COALESCE(NEW.raw_user_meta_data->>'user_role', 'pcd'),
-    CASE WHEN LOWER(NEW.email) IN ('sistemastop@gmail.com', 'fomentocariri@gmail.com') THEN true ELSE false END
+    COALESCE((NEW.raw_user_meta_data->>'is_super_admin')::boolean, (NEW.raw_user_meta_data->>'user_role' = 'superadmin'), false)
   )
   ON CONFLICT (id) DO UPDATE SET
     updated_at = timezone('utc'::text, now());

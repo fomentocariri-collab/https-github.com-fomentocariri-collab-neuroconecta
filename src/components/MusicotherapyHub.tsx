@@ -22,7 +22,12 @@ import {
   FileText,
   PlusCircle,
   ShieldCheck,
-  Award
+  Award,
+  UserCheck,
+  ClipboardCheck,
+  Target,
+  TrendingUp,
+  FolderLock
 } from "lucide-react";
 import { TwoMinutePause } from "./sound/TwoMinutePause";
 import { ExploreSounds } from "./sound/ExploreSounds";
@@ -32,6 +37,13 @@ import { MusicTherapySession } from "../types";
 import { INITIAL_LONGITUDINAL_SESSIONS } from "../data/musicTherapyData";
 import { MusicTherapySessionFlow } from "./musictherapy/MusicTherapySessionFlow";
 import { MusicTherapyLongitudinalAudit } from "./musictherapy/MusicTherapyLongitudinalAudit";
+import { MusicTherapyCaseManagement } from "./musictherapy/MusicTherapyCaseManagement";
+import { MusicTherapyAssessmentForm } from "./musictherapy/MusicTherapyAssessmentForm";
+import { MusicTherapyPlanManagement } from "./musictherapy/MusicTherapyPlanManagement";
+import { MusicTherapyIndicatorsView } from "./musictherapy/MusicTherapyIndicatorsView";
+import { MusicTherapyReportGenerator } from "./musictherapy/MusicTherapyReportGenerator";
+import { MusicTherapyDocumentsView } from "./musictherapy/MusicTherapyDocumentsView";
+import { MusicotherapyCase } from "../types/musicotherapy";
 import { auditService } from "../services/auditService";
 
 interface MusicotherapyHubProps {
@@ -125,7 +137,48 @@ const SOUND_PRESETS: SoundPreset[] = [
 ];
 
 export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = false }) => {
-  const [mainSection, setMainSection] = useState<"historico" | "nova_sessao" | "laboratorio_sons">("historico");
+  const [mainSection, setMainSection] = useState<
+    | "painel_caso"
+    | "avaliacao"
+    | "plano_metas"
+    | "sessoes"
+    | "nova_sessao"
+    | "indicadores"
+    | "relatorios"
+    | "documentos"
+    | "laboratorio_sons"
+  >("painel_caso");
+
+  const [currentCase, setCurrentCase] = useState<MusicotherapyCase>(() => {
+    try {
+      const saved = localStorage.getItem("neuroconecta_active_mt_case");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: "case-lucas-01",
+      patient_id: "pat-lucas-01",
+      patient_name: "Lucas Mendes Silva",
+      patient_birth_date: "2018-04-12",
+      patient_pronouns: "ele/dele",
+      patient_ciptea: "CIPTEA-CE 2026/089",
+      patient_diagnosis_status: "laudo_formal",
+      professional_id: "prof-mt-01",
+      professional_name: "Dra. Mariana Vasconcelos",
+      professional_register: "CBO 2263-05 / UBAM 0341",
+      start_date: "2026-02-10",
+      status: "active",
+      created_at: new Date().toISOString(),
+      created_by: "prof-mt-01",
+      updated_at: new Date().toISOString(),
+      updated_by: "prof-mt-01",
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("neuroconecta_active_mt_case", JSON.stringify(currentCase));
+    } catch {}
+  }, [currentCase]);
 
   const [sessions, setSessions] = useState<MusicTherapySession[]>(() => {
     try {
@@ -441,61 +494,159 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
       
       {/* Primary Clinical Section Switcher */}
-      <div className={`p-2 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm ${
+      <div className={`p-2 rounded-3xl border flex flex-col gap-2 shadow-sm ${
         isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
       }`}>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 w-full">
           <button
             type="button"
-            onClick={() => setMainSection("historico")}
-            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-              mainSection === "historico"
+            onClick={() => setMainSection("painel_caso")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "painel_caso"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <UserCheck className="w-4 h-4 text-teal-300" />
+            <span>Prontuário & Caso</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("avaliacao")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "avaliacao"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4 text-sky-300" />
+            <span>Avaliação (8 Domínios)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("plano_metas")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "plano_metas"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <Target className="w-4 h-4 text-indigo-300" />
+            <span>Plano Terapêutico (PTS-MT)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("sessoes")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "sessoes" || mainSection === "nova_sessao"
                 ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
                 : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             <Activity className="w-4 h-4 text-teal-300" />
-            <span>Histórico Longitudinal Auditável</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950/40 text-teal-200 font-black">
+            <span>Sessões Clínicas</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/50 text-teal-200 font-bold">
               {sessions.length}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setMainSection("nova_sessao")}
-            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-              mainSection === "nova_sessao"
+            onClick={() => setMainSection("indicadores")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "indicadores"
                 ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
                 : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <PlusCircle className="w-4 h-4 text-emerald-300" />
-            <span>Registrar Sessão de Musicoterapia</span>
+            <TrendingUp className="w-4 h-4 text-emerald-300" />
+            <span>Indicadores & Curva</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("relatorios")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "relatorios"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <FileText className="w-4 h-4 text-amber-300" />
+            <span>Relatório Pericial</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMainSection("documentos")}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
+              mainSection === "documentos"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <FolderLock className="w-4 h-4 text-rose-300" />
+            <span>Documentos & Guias</span>
           </button>
 
           <button
             type="button"
             onClick={() => setMainSection("laboratorio_sons")}
-            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
               mainSection === "laboratorio_sons"
                 ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
                 : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             <Sliders className="w-4 h-4 text-cyan-300" />
-            <span>Biblioteca & Recursos Sonoros</span>
+            <span>Laboratório de Sons</span>
           </button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 pr-3 text-[11px] text-slate-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-          <span>Estrutura Clínica: Objetivos ➔ Intervenção ➔ Resposta ➔ Parecer</span>
+        <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-800/50 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-teal-400">Caso Selecionado:</span>
+            <span className="text-slate-200 font-bold">{currentCase.patient_name}</span>
+            <span className="text-[10px] text-slate-400">({currentCase.patient_ciptea || "CIPTEA Ativo"})</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+            <span>Musicoterapia Especializada • Protocolo Clínico NC-MT1</span>
+          </div>
         </div>
       </div>
 
-      {/* VIEW 1: Histórico Longitudinal Auditável */}
-      {mainSection === "historico" && (
+      {/* VIEW 0: Painel de Gestão de Casos Clínicos & Prontuários */}
+      {mainSection === "painel_caso" && (
+        <MusicTherapyCaseManagement
+          currentCase={currentCase}
+          onSelectCase={(selected) => setCurrentCase(selected)}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 1: Avaliação Clínica (8 Domínios - Fato Observado vs Interpretação) */}
+      {mainSection === "avaliacao" && (
+        <MusicTherapyAssessmentForm
+          currentCase={currentCase}
+          isDark={isDark}
+          onSaved={() => setMainSection("plano_metas")}
+        />
+      )}
+
+      {/* VIEW 2: Plano Terapêutico Singular (PTS-MT) & Metas SMART */}
+      {mainSection === "plano_metas" && (
+        <MusicTherapyPlanManagement
+          currentCase={currentCase}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 3: Sessões Clínicas Auditáveis & Histórico */}
+      {mainSection === "sessoes" && (
         <MusicTherapyLongitudinalAudit
           sessions={sessions}
           onNewSession={() => setMainSection("nova_sessao")}
@@ -505,12 +656,36 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         />
       )}
 
-      {/* VIEW 2: Registrar Nova Sessão Clínica Estruturada */}
+      {/* VIEW 4: Registrar Nova Sessão Clínica Estruturada */}
       {mainSection === "nova_sessao" && (
         <MusicTherapySessionFlow
           currentSessionNumber={nextSessionNumber}
           onSaveSession={handleSaveSession}
-          onCancel={() => setMainSection("historico")}
+          onCancel={() => setMainSection("sessoes")}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 5: Indicadores & Curva de Desenvolvimento */}
+      {mainSection === "indicadores" && (
+        <MusicTherapyIndicatorsView
+          currentCase={currentCase}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 6: Relatório Clínico Longitudinal Pericial */}
+      {mainSection === "relatorios" && (
+        <MusicTherapyReportGenerator
+          currentCase={currentCase}
+          isDark={isDark}
+        />
+      )}
+
+      {/* VIEW 7: Repositório de Documentos Clínicos & Guias de Convênio */}
+      {mainSection === "documentos" && (
+        <MusicTherapyDocumentsView
+          currentCase={currentCase}
           isDark={isDark}
         />
       )}

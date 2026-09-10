@@ -9,7 +9,16 @@ export type AuditAction =
   | "RECORD_CREATED"
   | "RECORD_UPDATED"
   | "RECORD_DELETED"
-  | "SETTINGS_CHANGED";
+  | "SETTINGS_CHANGED"
+  | "CLINICAL_SESSION_FINALIZED"
+  | "SUPERADMIN_CLINICAL_RECORD_VIEWED"
+  | "SUPERADMIN_SUPPORT_STARTED"
+  | "SUPERADMIN_RECORD_CORRECTED"
+  | "SUPERADMIN_RELATIONSHIP_FIXED"
+  | "SUPERADMIN_PERMISSION_CHANGED"
+  | "SUPERADMIN_DOCUMENT_ACCESSED"
+  | "SUPERADMIN_REPORT_ACCESSED"
+  | "SUPERADMIN_SUPPORT_FINISHED";
 
 export interface AuditEventPayload {
   actorUserId?: string | null;
@@ -66,17 +75,31 @@ function sanitizeAuditData(data: any): any {
 export const auditService = {
   /**
    * Log an immutable audit event to Supabase public.audit_events
-   * With resilient non-blocking fallback to local audit trail cache if offline
+   * Resolves canonical actor from Supabase Auth to prevent client spoofing.
    */
   async log(payload: AuditEventPayload): Promise<void> {
-    const sanitizedBefore = sanitizeAuditData(payload.beforeData);
-    const sanitizedAfter = sanitizeAuditData(payload.afterData);
     const source = payload.source || "neuroconecta_web_client";
     const timestamp = new Date().toISOString();
 
+    // Canonical actor resolution
+    let resolvedActorId = payload.actorUserId || null;
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        // Se o usuário está autenticado, NUNCA permitir que o cliente envie outro actorUserId
+        resolvedActorId = authData.user.id;
+      }
+    } catch {
+      // Offline fallback: mantém o actor informado se existir
+    }
+
+    // Metadados sanitizados (nunca prontuário clínico integral)
+    const sanitizedBefore = sanitizeAuditData(payload.beforeData);
+    const sanitizedAfter = sanitizeAuditData(payload.afterData);
+
     const localEntry: StoredAuditEvent = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      actor_user_id: payload.actorUserId || null,
+      actor_user_id: resolvedActorId,
       action: payload.action,
       entity_type: payload.entityType,
       entity_id: payload.entityId || null,
@@ -87,22 +110,22 @@ export const auditService = {
       created_at: timestamp,
     };
 
-    // Cache locally for fast immediate inspection and offline resilience
+    // Cache local volátil para inspeção imediata na sessão do usuário
     try {
       const raw = localStorage.getItem(LOCAL_AUDIT_KEY) || "[]";
       const list = JSON.parse(raw);
       list.unshift(localEntry);
-      if (list.length > 200) list.length = 200; // Cap cache
+      if (list.length > 100) list.length = 100;
       localStorage.setItem(LOCAL_AUDIT_KEY, JSON.stringify(list));
     } catch {
-      // ignore local cache error
+      // ignore
     }
 
-    // Persist to Supabase if authenticated actor
-    if (payload.actorUserId) {
+    // Persistência canônica append-only no Supabase Database
+    if (resolvedActorId) {
       try {
         await supabase.from("audit_events").insert({
-          actor_user_id: payload.actorUserId,
+          actor_user_id: resolvedActorId,
           action: payload.action,
           entity_type: payload.entityType,
           entity_id: payload.entityId || null,
@@ -113,9 +136,18 @@ export const auditService = {
           created_at: timestamp,
         });
       } catch (err) {
-        console.warn("Auditoria remota: registrado no cache de resiliência local.", err);
+        // Falha tolerante e silenciosa para não travar o fluxo do usuário
       }
     }
+  },
+
+  /**
+   * Limpa cache local de auditoria no encerramento de sessão
+   */
+  clearLocalCache(): void {
+    try {
+      localStorage.removeItem(LOCAL_AUDIT_KEY);
+    } catch {}
   },
 
   /**

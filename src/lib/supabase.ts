@@ -251,7 +251,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
     COALESCE(NEW.raw_user_meta_data->>'preferred_name', split_part(NEW.email, '@', 1)),
     COALESCE(NEW.raw_user_meta_data->>'user_role', 'pcd'),
-    CASE WHEN LOWER(NEW.email) IN ('sistemastop@gmail.com', 'fomentocariri@gmail.com') THEN true ELSE false END
+    COALESCE((NEW.raw_user_meta_data->>'user_role' = 'superadmin'), false)
   )
   ON CONFLICT (id) DO UPDATE SET
     updated_at = timezone('utc'::text, now());
@@ -348,7 +348,24 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 5. ROW LEVEL SECURITY (RLS) — NEGAR POR PADRÃO
+-- 5. BACKFILL SEGURO DE PERFIS EXISTENTES (NÃO apaga nenhum usuário, cria o perfil caso falte)
+INSERT INTO public.profiles (
+  id,
+  display_name,
+  preferred_name,
+  user_role,
+  is_super_admin
+)
+SELECT 
+  u.id,
+  COALESCE(u.raw_user_meta_data->>'full_name', u.email),
+  COALESCE(u.raw_user_meta_data->>'preferred_name', split_part(u.email, '@', 1)),
+  COALESCE(u.raw_user_meta_data->>'user_role', 'pcd'),
+  COALESCE((u.raw_user_meta_data->>'user_role' = 'superadmin'), false)
+FROM auth.users u
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. ROW LEVEL SECURITY (RLS) IDEMPOTENTE & ACESSO SUPERADMIN
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.test_history ENABLE ROW LEVEL SECURITY;
@@ -357,16 +374,102 @@ ALTER TABLE public.mood_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.caregiver_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agenda_events ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+-- Remove políticas anteriores para evitar erro 'policy already exists' ao refazer o script
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_superadmin_all" ON public.profiles;
 
-CREATE POLICY "audit_events_insert_own" ON public.audit_events FOR INSERT WITH CHECK (auth.uid() = actor_user_id);
-CREATE POLICY "audit_events_select_own" ON public.audit_events FOR SELECT USING (auth.uid() = actor_user_id);
+DROP POLICY IF EXISTS "audit_events_insert_own" ON public.audit_events;
+DROP POLICY IF EXISTS "audit_events_select_own" ON public.audit_events;
 
-CREATE POLICY "test_history_owner" ON public.test_history FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
-CREATE POLICY "routine_tasks_owner" ON public.routine_tasks FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
-CREATE POLICY "mood_logs_owner" ON public.mood_logs FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
-CREATE POLICY "caregiver_logs_owner" ON public.caregiver_logs FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
-CREATE POLICY "agenda_events_owner" ON public.agenda_events FOR ALL USING (auth.uid() = owner_user_id) WITH CHECK (auth.uid() = owner_user_id);
+DROP POLICY IF EXISTS "test_history_owner" ON public.test_history;
+DROP POLICY IF EXISTS "test_history_superadmin" ON public.test_history;
+
+DROP POLICY IF EXISTS "routine_tasks_owner" ON public.routine_tasks;
+DROP POLICY IF EXISTS "mood_logs_owner" ON public.mood_logs;
+DROP POLICY IF EXISTS "caregiver_logs_owner" ON public.caregiver_logs;
+DROP POLICY IF EXISTS "agenda_events_owner" ON public.agenda_events;
+
+-- Políticas de Profiles (Usuário próprio OU SuperAdmin com papel no banco)
+CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT 
+USING (
+  auth.uid() = id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+);
+
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE 
+USING (
+  auth.uid() = id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+)
+WITH CHECK (
+  auth.uid() = id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+);
+
+-- Políticas de Auditoria (Append-only e actor verificado)
+CREATE POLICY "audit_events_insert_own" ON public.audit_events FOR INSERT 
+WITH CHECK (auth.uid() = actor_user_id);
+
+CREATE POLICY "audit_events_select_own" ON public.audit_events FOR SELECT 
+USING (
+  auth.uid() = actor_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+);
+
+-- Políticas de Testes (Usuário próprio OU SuperAdmin)
+CREATE POLICY "test_history_owner" ON public.test_history FOR ALL 
+USING (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+)
+WITH CHECK (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND (p.is_super_admin = true OR p.user_role = 'superadmin'))
+);
+
+-- Políticas de Rotinas, Humor, Cuidadores e Agenda
+CREATE POLICY "routine_tasks_owner" ON public.routine_tasks FOR ALL 
+USING (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+) 
+WITH CHECK (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+);
+
+CREATE POLICY "mood_logs_owner" ON public.mood_logs FOR ALL 
+USING (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+) 
+WITH CHECK (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+);
+
+CREATE POLICY "caregiver_logs_owner" ON public.caregiver_logs FOR ALL 
+USING (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+) 
+WITH CHECK (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+);
+
+CREATE POLICY "agenda_events_owner" ON public.agenda_events FOR ALL 
+USING (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+) 
+WITH CHECK (
+  auth.uid() = owner_user_id 
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.is_super_admin = true)
+);
 `;

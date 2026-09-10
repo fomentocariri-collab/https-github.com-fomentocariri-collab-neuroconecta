@@ -102,10 +102,9 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
       <p>Plataforma de Tecnologia Assistiva e Apoio Funcional</p>
     </div>
     <div class="company-info">
-      <strong>SISTEMASTOP Soluções Tecnológicas</strong><br/>
-      Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE<br/>
-      CEP: 63.119-060 | WhatsApp: +55 (88) 99673-9128<br/>
-      sistemastop@gmail.com
+      <strong>NeuroConecta • Tecnologia Assistiva e Apoio Clínico</strong><br/>
+      Canal de Suporte e Ouvidoria Institucional<br/>
+      Crato - CE &bull; Apoio à Autonomia e Inclusão
     </div>
   </div>
 
@@ -452,7 +451,7 @@ export const EducationHub: React.FC<{ isDark?: boolean }> = ({ isDark = true }) 
               Rua Doutor Rolim, 366 - Bairro Independência, Crato - CE, CEP 63.119-060
             </p>
             <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
-              📞 +55 (88) 99673-9128 (WhatsApp) | ✉️ sistemastop@gmail.com
+              📞 +55 (88) 99673-9128 (WhatsApp) | Central Oficial de Atendimento
             </p>
           </div>
         </div>

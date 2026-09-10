@@ -25,15 +25,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mode, setMode] = useState<"login" | "register">("login");
   
   // Form states
-  const [email, setEmail] = useState("fomentocariri@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("Fomento Cariri");
-  const [birthDate, setBirthDate] = useState("2012-05-15");
-  const [userRole, setUserRole] = useState<UserRole>("superadmin");
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("2000-01-01");
+  const [userRole, setUserRole] = useState<UserRole>("profissional");
   const [professionalRoleType, setProfessionalRoleType] = useState<ProfessionalRoleType>("medico");
   const [professionalRegisterNumber, setProfessionalRegisterNumber] = useState("");
-  const [diagnosisStatus, setDiagnosisStatus] = useState("laudo_formal");
+  const [diagnosisStatus, setDiagnosisStatus] = useState("nao_informado");
   const [lgpdConsent, setLgpdConsent] = useState(true);
   
   const [errorMessage, setErrorMessage] = useState("");
@@ -124,12 +124,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
 
     try {
-      const isSuperAdminEmail = email.trim().toLowerCase() === "sistemastop@gmail.com" || email.trim().toLowerCase() === "fomentocariri@gmail.com" || userRole === "superadmin";
+      const isSuperAdminRequested = userRole === "superadmin";
 
       const res = await signUp(email, password, {
         preferredName: name.trim(),
-        userRole: isSuperAdminEmail ? "superadmin" : userRole,
-        professionalRoleType: isSuperAdminEmail ? "medico" : professionalRoleType,
+        userRole: isSuperAdminRequested ? "superadmin" : userRole,
+        professionalRoleType: isSuperAdminRequested ? "medico" : professionalRoleType,
         professionalRegisterNumber: professionalRegisterNumber.trim() || undefined,
         diagnosisStatus: diagnosisStatus as any,
         birthDate: birthDate,
@@ -155,8 +155,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             preferredName: name.trim(),
             pronouns: "não informado",
             birthDate: birthDate,
-            userRole: isSuperAdminEmail ? "superadmin" : userRole,
-            professionalRoleType: isSuperAdminEmail ? "medico" : professionalRoleType,
+            userRole: isSuperAdminRequested ? "superadmin" : userRole,
+            professionalRoleType: isSuperAdminRequested ? "medico" : professionalRoleType,
             professionalRegisterNumber: professionalRegisterNumber.trim() || undefined,
             diagnosisStatus: diagnosisStatus as any,
             supportLevel: "nao_especificado",
@@ -165,7 +165,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             lowStimulationMode: false,
             onboardingCompleted: true,
             isGuest: false,
-            isSuperAdmin: isSuperAdminEmail,
+            isSuperAdmin: isSuperAdminRequested || Boolean(res.user.user_metadata?.is_super_admin),
           });
         }
         onClose();
@@ -252,7 +252,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             lowStimulationMode: false,
             onboardingCompleted: true,
             isGuest: false,
-            isSuperAdmin: targetRole === "superadmin" || targetEmail === "fomentocariri@gmail.com" || targetEmail === "sistemastop@gmail.com",
+            isSuperAdmin: targetRole === "superadmin" || Boolean(res.user.user_metadata?.is_super_admin),
           });
         }
         onClose();
@@ -439,24 +439,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <p className={`text-[11px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                   Se o servidor Supabase estiver inacessível ou se preferir acesso imediato, entre direto no Modo Local Seguro:
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-1 gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => handleQuickDirectLogin("fomentocariri@gmail.com", "Fomento Cariri", "superadmin")}
-                    disabled={loading}
-                    className="py-2 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
-                  >
-                    <Key className="w-3.5 h-3.5" /> Administrador (Cariri)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDirectLogin(email.trim() || "usuario@local.dev", name.trim() || "Usuário Local", userRole)}
+                    onClick={() => handleQuickDirectLogin(email.trim() || "profissional@neuroconecta.local", name.trim() || "Profissional Clínico", userRole || "profissional")}
                     disabled={loading}
                     className={`py-2 px-2.5 border rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition ${
                       isDark ? "bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800" : "bg-white border-teal-300 text-teal-900 hover:bg-teal-100"
                     }`}
                   >
-                    <LogIn className="w-3.5 h-3.5 text-teal-500" /> Entrar com {email.trim() ? email.split("@")[0] : "E-mail"}
+                    <LogIn className="w-3.5 h-3.5 text-teal-500" /> Acessar com {email.trim() ? email.split("@")[0] : "Perfil Clínico Local"}
                   </button>
                 </div>
               </div>
