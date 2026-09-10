@@ -138,16 +138,16 @@ const SOUND_PRESETS: SoundPreset[] = [
 
 export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = false }) => {
   const [mainSection, setMainSection] = useState<
+    | "historico"
+    | "nova_sessao"
+    | "laboratorio_sons"
     | "painel_caso"
     | "avaliacao"
     | "plano_metas"
-    | "sessoes"
-    | "nova_sessao"
     | "indicadores"
     | "relatorios"
     | "documentos"
-    | "laboratorio_sons"
-  >("painel_caso");
+  >("historico");
 
   const [currentCase, setCurrentCase] = useState<MusicotherapyCase>(() => {
     try {
@@ -494,127 +494,152 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
       
       {/* Primary Clinical Section Switcher */}
-      <div className={`p-2 rounded-3xl border flex flex-col gap-2 shadow-sm ${
+      <div className={`p-3 rounded-3xl border space-y-3 shadow-sm ${
         isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
       }`}>
-        <div className="flex flex-wrap items-center gap-1.5 w-full">
-          <button
-            type="button"
-            onClick={() => setMainSection("painel_caso")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "painel_caso"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <UserCheck className="w-4 h-4 text-teal-300" />
-            <span>Prontuário & Caso</span>
-          </button>
+        {/* NAVEGAÇÃO PRINCIPAL (3 MODOS ORIGINAIS) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            <button
+              type="button"
+              onClick={() => setMainSection("historico")}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm ${
+                mainSection === "historico"
+                  ? "bg-teal-600 text-white shadow-teal-600/30 ring-2 ring-teal-400/20"
+                  : isDark ? "text-slate-300 hover:text-white hover:bg-slate-800" : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+              }`}
+            >
+              <Activity className="w-4 h-4 text-teal-300" />
+              <span>Histórico Longitudinal Auditável</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950/40 text-teal-200 font-black">
+                {sessions.length}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMainSection("avaliacao")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "avaliacao"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <ClipboardCheck className="w-4 h-4 text-sky-300" />
-            <span>Avaliação (8 Domínios)</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setMainSection("nova_sessao")}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm ${
+                mainSection === "nova_sessao"
+                  ? "bg-emerald-600 text-white shadow-emerald-600/30 ring-2 ring-emerald-400/20"
+                  : "bg-emerald-600/90 hover:bg-emerald-500 text-white"
+              }`}
+            >
+              <PlusCircle className="w-4 h-4 text-emerald-100" />
+              <span>Registrar Sessão de Musicoterapia</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMainSection("plano_metas")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "plano_metas"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <Target className="w-4 h-4 text-indigo-300" />
-            <span>Plano Terapêutico (PTS-MT)</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setMainSection("laboratorio_sons")}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm ${
+                mainSection === "laboratorio_sons"
+                  ? "bg-teal-600 text-white shadow-teal-600/30 ring-2 ring-teal-400/20"
+                  : isDark ? "text-slate-300 hover:text-white hover:bg-slate-800" : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+              }`}
+            >
+              <Sliders className="w-4 h-4 text-cyan-300" />
+              <span>Biblioteca & Recursos Sonoros</span>
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setMainSection("sessoes")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "sessoes" || mainSection === "nova_sessao"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <Activity className="w-4 h-4 text-teal-300" />
-            <span>Sessões Clínicas</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/50 text-teal-200 font-bold">
-              {sessions.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMainSection("indicadores")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "indicadores"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4 text-emerald-300" />
-            <span>Indicadores & Curva</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMainSection("relatorios")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "relatorios"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <FileText className="w-4 h-4 text-amber-300" />
-            <span>Relatório Pericial</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMainSection("documentos")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "documentos"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <FolderLock className="w-4 h-4 text-rose-300" />
-            <span>Documentos & Guias</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMainSection("laboratorio_sons")}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 ${
-              mainSection === "laboratorio_sons"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
-                : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-            }`}
-          >
-            <Sliders className="w-4 h-4 text-cyan-300" />
-            <span>Laboratório de Sons</span>
-          </button>
+          <div className="hidden lg:flex items-center gap-2 pr-2 text-[11px] text-slate-400 shrink-0">
+            <ShieldCheck className="w-4 h-4 text-teal-400" />
+            <span>Estrutura Clínica Auditável • Protocolo NC-MT1</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-800/50 text-[11px] text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-teal-400">Caso Selecionado:</span>
-            <span className="text-slate-200 font-bold">{currentCase.patient_name}</span>
-            <span className="text-[10px] text-slate-400">({currentCase.patient_ciptea || "CIPTEA Ativo"})</span>
+        {/* SUB-BARRA: GESTÃO DO PRONTUÁRIO & CASO */}
+        <div className={`p-2 rounded-2xl border flex flex-wrap items-center justify-between gap-2 text-xs ${
+          isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"
+        }`}>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1">
+              Prontuário & PTS-MT:
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("painel_caso")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "painel_caso"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-teal-400" />
+              <span>Identificação & Caso</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("avaliacao")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "avaliacao"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <ClipboardCheck className="w-3.5 h-3.5 text-sky-400" />
+              <span>Avaliação 8 Domínios</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("plano_metas")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "plano_metas"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <Target className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Plano Terapêutico (PTS-MT)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("indicadores")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "indicadores"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Indicadores & Curva</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("relatorios")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "relatorios"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span>Relatório Pericial</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainSection("documentos")}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                mainSection === "documentos"
+                  ? "bg-teal-600 text-white"
+                  : isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <FolderLock className="w-3.5 h-3.5 text-rose-400" />
+              <span>Documentos & Guias</span>
+            </button>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-            <span>Musicoterapia Especializada • Protocolo Clínico NC-MT1</span>
+
+          <div className="flex items-center gap-2 px-2 text-[11px]">
+            <span className="text-slate-400 font-medium">Paciente:</span>
+            <span className="text-teal-400 font-bold">{currentCase.patient_name}</span>
           </div>
         </div>
       </div>
@@ -645,8 +670,8 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         />
       )}
 
-      {/* VIEW 3: Sessões Clínicas Auditáveis & Histórico */}
-      {mainSection === "sessoes" && (
+      {/* VIEW 3: Sessões Clínicas Auditáveis & Histórico Longitudinal */}
+      {(mainSection === "historico" || (mainSection as any) === "sessoes") && (
         <MusicTherapyLongitudinalAudit
           sessions={sessions}
           onNewSession={() => setMainSection("nova_sessao")}
@@ -661,7 +686,7 @@ export const MusicotherapyHub: React.FC<MusicotherapyHubProps> = ({ isDark = fal
         <MusicTherapySessionFlow
           currentSessionNumber={nextSessionNumber}
           onSaveSession={handleSaveSession}
-          onCancel={() => setMainSection("sessoes")}
+          onCancel={() => setMainSection("historico")}
           isDark={isDark}
         />
       )}
