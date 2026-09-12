@@ -326,6 +326,7 @@ export interface EducationArticle {
 }
 
 export * from "./types/musicotherapy";
+export * from "./types/smartPlanner";
 
 // -------------------------------------------------------------
 // SESSÃO DE MUSICOTERAPIA - ESTRUTURA CLÍNICA AUDITÁVEL

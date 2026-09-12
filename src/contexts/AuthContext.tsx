@@ -692,3 +692,5 @@ export const useCurrentUser = (): AuthContextType => {
   }
   return context;
 };
+
+export const useAuth = useCurrentUser;
